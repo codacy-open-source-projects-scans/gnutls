@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2019 Nikos Mavrogiannopoulos
+# Copyright (C) 2023 Elias Gustafsson
 #
 # This file is part of GnuTLS.
 #
@@ -17,30 +17,33 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-: ${srcdir=.}
-: ${CERTTOOL=../../src/certtool${EXEEXT}}
+#set -e
+
+srcdir=.
+CERTTOOL=../../src/certtool${EXEEXT}
 OUTFILE=out.$$.tmp
+SERIAL_NUMBER=0xf12345
+TMPFILE=tmp-negative-serial.pem.$$.tmp
 
 if ! test -x "${CERTTOOL}"; then
 	exit 77
 fi
 
-"${CERTTOOL}" --certificate-info --infile "${srcdir}/data/dup-exts.pem" >${OUTFILE} 2>&1
-RET=$?
-if test ${RET} =  0; then
-	echo "Successfully loaded a certificate with duplicate extensions"
-	cat ${OUTFILE}
-	exit 1
+if ! test -z "${VALGRIND}"; then
+	VALGRIND="${LIBTOOL:-libtool} --mode=execute ${VALGRIND}"
 fi
 
-grep "Duplicate extension in" ${OUTFILE} 2>/dev/null
-if test $? !=  0; then
-	echo "Could not find the expected error value"
-	cat ${OUTFILE}
+${VALGRIND} "${CERTTOOL}" --generate-self-signed \
+    --load-privkey "${srcdir}/../../doc/credentials/x509/key-rsa.pem" \
+    --load-ca-privkey "${srcdir}/../../doc/credentials/x509/ca-key.pem" \
+    --load-ca-certificate "${srcdir}/../../doc/credentials/x509/ca.pem" \
+    --template "${srcdir}/templates/template-negative-serial.tmpl" \
+    --outfile ${TMPFILE}
+rc=$?
+
+rm ${TMPFILE}
+
+if test "${rc}" = "0";then
+	echo "negative serial number was accepted"
 	exit 1
 fi
-
-
-rm -f ${OUTFILE}
-
-exit 0

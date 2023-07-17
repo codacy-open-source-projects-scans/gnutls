@@ -35,6 +35,7 @@
 #include <timespec.h>
 #include <parse-datetime.h>
 #include "cfg.h"
+#include "common.h"
 #include <intprops.h>
 #include <gnutls/crypto.h>
 #include <libtasn1.h>
@@ -1521,7 +1522,7 @@ static int default_crl_number(unsigned char *serial, size_t *size)
 	 * |  5 b |  4 b  |  11b
 	 * | secs | nsecs | rnd  |
 	 */
-	gettime(&ts);
+	get_system_time(&ts);
 
 	if (*size < 20) {
 		return GNUTLS_E_SHORT_MEMORY_BUFFER;
@@ -1610,6 +1611,14 @@ static void read_serial_value(unsigned char *serial, size_t *size,
 			continue;
 		}
 
+		if (decoded.data[0] & 0x80) {
+			fprintf(stderr,
+				"%s serial number is negative, "
+				"see RFC 5280, section %s\n",
+				label, rfc_section);
+			continue;
+		}
+
 		if (decoded.size > max_size) {
 			fprintf(stderr, "maximum %zu octets allowed for %s\n",
 				max_size, label);
@@ -1662,6 +1671,14 @@ static void get_serial_value(unsigned char *serial, size_t *size,
 			label, rfc_section);
 		exit(1);
 	}
+
+	if (serial[0] & 0x80) {
+		fprintf(stderr,
+			"%s serial number is negative, "
+			"see RFC 5280, section %s\n",
+			label, rfc_section);
+		exit(1);
+	}
 }
 
 static int default_serial(unsigned char *serial, size_t *size)
@@ -1706,35 +1723,48 @@ static time_t get_date(const char *date)
 
 time_t get_activation_date(void)
 {
+	struct timespec ts;
+
 	if (batch && cfg.activation_date != NULL) {
 		return get_date(cfg.activation_date);
 	}
 
-	return time(NULL);
+	get_system_time(&ts);
+	return ts.tv_sec;
 }
 
 time_t get_crl_revocation_date(void)
 {
+	struct timespec ts;
+
 	if (batch && cfg.revocation_date != NULL) {
 		return get_date(cfg.revocation_date);
 	}
 
-	return time(NULL);
+	get_system_time(&ts);
+	return ts.tv_sec;
 }
 
 time_t get_crl_this_update_date(void)
 {
+	struct timespec ts;
+
 	if (batch && cfg.this_update_date != NULL) {
 		return get_date(cfg.this_update_date);
 	}
 
-	return time(NULL);
+	get_system_time(&ts);
+	return ts.tv_sec;
 }
 
 static time_t days_to_secs(int days)
 {
 	time_t secs = days;
-	time_t now = time(NULL);
+	struct timespec ts;
+	time_t now;
+
+	get_system_time(&ts);
+	now = ts.tv_sec;
 
 	if (secs != (time_t)-1) {
 		if (INT_MULTIPLY_OVERFLOW(secs, 24 * 60 * 60)) {
