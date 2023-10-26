@@ -41,17 +41,17 @@
 
 #include "gnutls_int.h"
 #include "errors.h"
-#include <num.h>
-#include <record.h>
-#include <buffers.h>
-#include <mbuffers.h>
-#include <state.h>
-#include <dtls.h>
-#include <system.h>
-#include <constate.h> /* gnutls_epoch_get */
-#include <handshake.h> /* remaining_time() */
+#include "num.h"
+#include "record.h"
+#include "buffers.h"
+#include "mbuffers.h"
+#include "state.h"
+#include "dtls.h"
+#include "system.h"
+#include "constate.h" /* gnutls_epoch_get */
+#include "handshake.h" /* remaining_time() */
 #include <errno.h>
-#include <system.h>
+#include "system.h"
 #include "debug.h"
 
 #ifndef EAGAIN
@@ -984,14 +984,16 @@ static int merge_handshake_packet(gnutls_session_t session,
 		return gnutls_assert_val(GNUTLS_E_TOO_MANY_HANDSHAKE_PACKETS);
 
 	if (!exists) {
-		if (hsk->length > 0 && hsk->end_offset > 0 &&
-		    hsk->end_offset - hsk->start_offset + 1 != hsk->length) {
+		if (hsk->length != hsk->data.length) {
 			ret = _gnutls_buffer_resize(&hsk->data, hsk->length);
 			if (ret < 0)
 				return gnutls_assert_val(ret);
 
 			hsk->data.length = hsk->length;
+		}
 
+		if (hsk->length > 0 && hsk->end_offset > 0 &&
+		    hsk->end_offset - hsk->start_offset + 1 != hsk->length) {
 			memmove(&hsk->data.data[hsk->start_offset],
 				hsk->data.data,
 				hsk->end_offset - hsk->start_offset + 1);

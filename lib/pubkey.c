@@ -24,19 +24,19 @@
 #include <stdio.h>
 #include <string.h>
 #include "errors.h"
-#include <datum.h>
-#include <pkcs11_int.h>
+#include "datum.h"
+#include "pkcs11_int.h"
 #include <gnutls/abstract.h>
-#include <tls-sig.h>
-#include <pk.h>
-#include <x509_int.h>
-#include <num.h>
-#include <x509/common.h>
-#include <x509_b64.h>
-#include <abstract_int.h>
-#include <fips.h>
+#include "tls-sig.h"
+#include "pk.h"
+#include "x509_int.h"
+#include "num.h"
+#include "x509/common.h"
+#include "x509_b64.h"
+#include "abstract_int.h"
+#include "fips.h"
 #include "urls.h"
-#include <ecc.h>
+#include "ecc.h"
 
 static int pubkey_verify_hashed_data(const gnutls_sign_entry_st *se,
 				     const mac_entry_st *me,
@@ -700,6 +700,7 @@ int gnutls_pubkey_import_pkcs11(gnutls_pubkey_t key, gnutls_pkcs11_obj_t obj,
 						    &obj->pubkey[1]);
 		break;
 	case GNUTLS_PK_EDDSA_ED25519:
+	case GNUTLS_PK_EDDSA_ED448:
 		ret = gnutls_pubkey_import_ecc_eddsa(key, &obj->pubkey[0],
 						     &obj->pubkey[1]);
 		break;
