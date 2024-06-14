@@ -57,6 +57,8 @@ if test "$ac_cv_prog_cc_c99" = "no"; then
   AC_MSG_WARN([[Compiler does not support C99. It may not be able to compile the project.]])
 fi
 
+AM_CONDITIONAL(CROSS_COMPILING, test "$cross_compiling" = yes)
+
 AX_CODE_COVERAGE
 
 AM_MAINTAINER_MODE([enable])
@@ -268,8 +270,6 @@ fi
 AC_ARG_ENABLE(tls13-interop,
   AS_HELP_STRING([--disable-tls13-interop], [disable TLS1.3 interoperability testing with openssl]),
     enable_tls13_interop=$enableval, enable_tls13_interop=yes)
-
-AM_CONDITIONAL(ENABLE_TLS13_INTEROP, test "$enable_tls13_interop" != "no")
 
 dnl Check for iovec type
 AC_CHECK_MEMBERS([struct iovec.iov_base],
