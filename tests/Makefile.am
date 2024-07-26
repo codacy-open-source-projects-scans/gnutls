@@ -600,6 +600,10 @@ ctests += win32-certopenstore
 
 endif
 
+if ENABLE_LIBOQS
+dist_check_SCRIPTS += pqc-hybrid-kx.sh
+endif
+
 cpptests =
 if ENABLE_CXX
 if HAVE_CMOCKA
@@ -649,6 +653,12 @@ if ENABLE_SSL3
 TESTS_ENVIRONMENT += ENABLE_SSL3=1
 else
 TESTS_ENVIRONMENT += ENABLE_SSL3=0
+endif
+
+if ENABLE_DSA
+TESTS_ENVIRONMENT += ENABLE_DSA=1
+else
+TESTS_ENVIRONMENT += ENABLE_DSA=0
 endif
 
 if ENABLE_GOST

@@ -9,51 +9,51 @@
 #include "config.h"
 #endif
 
-#include "zlib.h"
+#include "oqs.h"
 
-#if defined(GNUTLS_ZLIB_ENABLE_DLOPEN) && GNUTLS_ZLIB_ENABLE_DLOPEN
+#if defined(GNUTLS_OQS_ENABLE_DLOPEN) && GNUTLS_OQS_ENABLE_DLOPEN
 
 #include <assert.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdlib.h>
 
-/* If Z_LIBRARY_SONAME_UNUSED is defined, dlopen handle can be automatically
+/* If OQS_LIBRARY_SONAME_UNUSED is defined, dlopen handle can be automatically
  * set; otherwise, the caller needs to call
- * gnutls_zlib_ensure_library with soname determined at run time.
+ * gnutls_oqs_ensure_library with soname determined at run time.
  */
-#ifdef Z_LIBRARY_SONAME_UNUSED
+#ifdef OQS_LIBRARY_SONAME_UNUSED
 
 static void
 ensure_library (void)
 {
-  if (gnutls_zlib_ensure_library (Z_LIBRARY_SONAME_UNUSED, RTLD_LAZY | RTLD_LOCAL) < 0)
+  if (gnutls_oqs_ensure_library (OQS_LIBRARY_SONAME_UNUSED, RTLD_LAZY | RTLD_LOCAL) < 0)
     abort ();
 }
 
-#if defined(GNUTLS_ZLIB_ENABLE_PTHREAD) && GNUTLS_ZLIB_ENABLE_PTHREAD
+#if defined(GNUTLS_OQS_ENABLE_PTHREAD) && GNUTLS_OQS_ENABLE_PTHREAD
 #include <pthread.h>
 
 static pthread_once_t dlopen_once = PTHREAD_ONCE_INIT;
 
 #define ENSURE_LIBRARY pthread_once(&dlopen_once, ensure_library)
 
-#else /* GNUTLS_ZLIB_ENABLE_PTHREAD */
+#else /* GNUTLS_OQS_ENABLE_PTHREAD */
 
 #define ENSURE_LIBRARY do {	    \
-    if (!gnutls_zlib_dlhandle) \
+    if (!gnutls_oqs_dlhandle) \
       ensure_library();		    \
   } while (0)
 
-#endif /* !GNUTLS_ZLIB_ENABLE_PTHREAD */
+#endif /* !GNUTLS_OQS_ENABLE_PTHREAD */
 
-#else /* Z_LIBRARY_SONAME_UNUSED */
+#else /* OQS_LIBRARY_SONAME_UNUSED */
 
 #define ENSURE_LIBRARY do {} while (0)
 
-#endif /* !Z_LIBRARY_SONAME_UNUSED */
+#endif /* !OQS_LIBRARY_SONAME_UNUSED */
 
-static void *gnutls_zlib_dlhandle;
+static void *gnutls_oqs_dlhandle;
 
 /* Define redirection symbols */
 #pragma GCC diagnostic push
@@ -61,13 +61,13 @@ static void *gnutls_zlib_dlhandle;
 
 #if (2 <= __GNUC__ || (4 <= __clang_major__))
 #define FUNC(ret, name, args, cargs)			\
-  static __typeof__(name)(*gnutls_zlib_sym_##name);
+  static __typeof__(name)(*gnutls_oqs_sym_##name);
 #else
 #define FUNC(ret, name, args, cargs)		\
-  static ret(*gnutls_zlib_sym_##name)args;
+  static ret(*gnutls_oqs_sym_##name)args;
 #endif
 #define VOID_FUNC FUNC
-#include "zlibfuncs.h"
+#include "oqsfuncs.h"
 #undef VOID_FUNC
 #undef FUNC
 
@@ -78,20 +78,20 @@ static void *gnutls_zlib_dlhandle;
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
 #define FUNC(ret, name, args, cargs)        \
-ret gnutls_zlib_func_##name args           \
+ret gnutls_oqs_func_##name args           \
 {					    \
   ENSURE_LIBRARY;			    \
-  assert (gnutls_zlib_sym_##name);	    \
-  return gnutls_zlib_sym_##name cargs;	    \
+  assert (gnutls_oqs_sym_##name);	    \
+  return gnutls_oqs_sym_##name cargs;	    \
 }
 #define VOID_FUNC(ret, name, args, cargs)   \
-ret gnutls_zlib_func_##name args           \
+ret gnutls_oqs_func_##name args           \
 {					    \
   ENSURE_LIBRARY;			    \
-  assert (gnutls_zlib_sym_##name);	    \
-  gnutls_zlib_sym_##name cargs;		    \
+  assert (gnutls_oqs_sym_##name);	    \
+  gnutls_oqs_sym_##name cargs;		    \
 }
-#include "zlibfuncs.h"
+#include "oqsfuncs.h"
 #undef VOID_FUNC
 #undef FUNC
 
@@ -102,7 +102,7 @@ ensure_symbol (const char *name, void **symp)
 {
   if (!*symp)
     {
-      void *sym = dlsym (gnutls_zlib_dlhandle, name);
+      void *sym = dlsym (gnutls_oqs_dlhandle, name);
       if (!sym)
 	return -errno;
       *symp = sym;
@@ -111,19 +111,19 @@ ensure_symbol (const char *name, void **symp)
 }
 
 int
-gnutls_zlib_ensure_library (const char *soname, int flags)
+gnutls_oqs_ensure_library (const char *soname, int flags)
 {
   int err;
 
-  if (!gnutls_zlib_dlhandle)
+  if (!gnutls_oqs_dlhandle)
     {
-      gnutls_zlib_dlhandle = dlopen (soname, flags);
-      if (!gnutls_zlib_dlhandle)
+      gnutls_oqs_dlhandle = dlopen (soname, flags);
+      if (!gnutls_oqs_dlhandle)
 	return -errno;
     }
 
 #define ENSURE_SYMBOL(name)					\
-  ensure_symbol(#name, (void **)&gnutls_zlib_sym_##name)
+  ensure_symbol(#name, (void **)&gnutls_oqs_sym_##name)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-macros"
@@ -132,11 +132,11 @@ gnutls_zlib_ensure_library (const char *soname, int flags)
   err = ENSURE_SYMBOL(name);			\
   if (err < 0)					\
     {						\
-      gnutls_zlib_dlhandle = NULL;		\
+      gnutls_oqs_dlhandle = NULL;		\
       return err;				\
     }
 #define VOID_FUNC FUNC
-#include "zlibfuncs.h"
+#include "oqsfuncs.h"
 #undef VOID_FUNC
 #undef FUNC
 
@@ -147,21 +147,21 @@ gnutls_zlib_ensure_library (const char *soname, int flags)
 }
 
 void
-gnutls_zlib_unload_library (void)
+gnutls_oqs_unload_library (void)
 {
-  if (gnutls_zlib_dlhandle)
+  if (gnutls_oqs_dlhandle)
     {
-      dlclose (gnutls_zlib_dlhandle);
-      gnutls_zlib_dlhandle = NULL;
+      dlclose (gnutls_oqs_dlhandle);
+      gnutls_oqs_dlhandle = NULL;
     }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
 #define FUNC(ret, name, args, cargs)		\
-  gnutls_zlib_sym_##name = NULL;
+  gnutls_oqs_sym_##name = NULL;
 #define VOID_FUNC FUNC
-#include "zlibfuncs.h"
+#include "oqsfuncs.h"
 #undef VOID_FUNC
 #undef FUNC
 
@@ -169,15 +169,15 @@ gnutls_zlib_unload_library (void)
 }
 
 unsigned
-gnutls_zlib_is_usable (void)
+gnutls_oqs_is_usable (void)
 {
-  return gnutls_zlib_dlhandle != NULL;
+  return gnutls_oqs_dlhandle != NULL;
 }
 
-#else /* GNUTLS_ZLIB_ENABLE_DLOPEN */
+#else /* GNUTLS_OQS_ENABLE_DLOPEN */
 
 int
-gnutls_zlib_ensure_library (const char *soname, int flags)
+gnutls_oqs_ensure_library (const char *soname, int flags)
 {
   (void) soname;
   (void) flags;
@@ -185,15 +185,15 @@ gnutls_zlib_ensure_library (const char *soname, int flags)
 }
 
 void
-gnutls_zlib_unload_library (void)
+gnutls_oqs_unload_library (void)
 {
 }
 
 unsigned
-gnutls_zlib_is_usable (void)
+gnutls_oqs_is_usable (void)
 {
   /* The library is linked at build time, thus always usable */
   return 1;
 }
 
-#endif /* !GNUTLS_ZLIB_ENABLE_DLOPEN */
+#endif /* !GNUTLS_OQS_ENABLE_DLOPEN */

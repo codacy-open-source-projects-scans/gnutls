@@ -41,6 +41,7 @@
 #include "system-keys.h"
 #include "str.h"
 #include "global.h"
+#include "liboqs/liboqs.h"
 
 /* Minimum library versions we accept. */
 #define GNUTLS_MIN_LIBTASN1_VERSION "0.3.4"
@@ -443,6 +444,9 @@ static void _gnutls_global_deinit(unsigned destructor)
 #endif
 #ifdef HAVE_TPM2
 		_gnutls_tpm2_deinit();
+#endif
+#ifdef HAVE_LIBOQS
+		_gnutls_liboqs_deinit();
 #endif
 
 		_gnutls_nss_keylog_deinit();

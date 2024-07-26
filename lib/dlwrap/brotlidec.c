@@ -18,16 +18,16 @@
 #include <errno.h>
 #include <stdlib.h>
 
-/* If BROTLIDEC_LIBRARY_SONAME is defined, dlopen handle can be automatically
+/* If BROTLIDEC_LIBRARY_SONAME_UNUSED is defined, dlopen handle can be automatically
  * set; otherwise, the caller needs to call
  * gnutls_brotlidec_ensure_library with soname determined at run time.
  */
-#ifdef BROTLIDEC_LIBRARY_SONAME
+#ifdef BROTLIDEC_LIBRARY_SONAME_UNUSED
 
 static void
 ensure_library (void)
 {
-  if (gnutls_brotlidec_ensure_library (BROTLIDEC_LIBRARY_SONAME, RTLD_LAZY | RTLD_LOCAL) < 0)
+  if (gnutls_brotlidec_ensure_library (BROTLIDEC_LIBRARY_SONAME_UNUSED, RTLD_LAZY | RTLD_LOCAL) < 0)
     abort ();
 }
 
@@ -47,11 +47,11 @@ static pthread_once_t dlopen_once = PTHREAD_ONCE_INIT;
 
 #endif /* !GNUTLS_BROTLIDEC_ENABLE_PTHREAD */
 
-#else /* BROTLIDEC_LIBRARY_SONAME */
+#else /* BROTLIDEC_LIBRARY_SONAME_UNUSED */
 
 #define ENSURE_LIBRARY do {} while (0)
 
-#endif /* !BROTLIDEC_LIBRARY_SONAME */
+#endif /* !BROTLIDEC_LIBRARY_SONAME_UNUSED */
 
 static void *gnutls_brotlidec_dlhandle;
 
@@ -128,10 +128,13 @@ gnutls_brotlidec_ensure_library (const char *soname, int flags)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
-#define FUNC(ret, name, args, cargs)	\
-  err = ENSURE_SYMBOL(name);		\
-  if (err < 0)				\
-    return err;
+#define FUNC(ret, name, args, cargs)		\
+  err = ENSURE_SYMBOL(name);			\
+  if (err < 0)					\
+    {						\
+      gnutls_brotlidec_dlhandle = NULL;		\
+      return err;				\
+    }
 #define VOID_FUNC FUNC
 #include "brotlidecfuncs.h"
 #undef VOID_FUNC
@@ -147,7 +150,10 @@ void
 gnutls_brotlidec_unload_library (void)
 {
   if (gnutls_brotlidec_dlhandle)
-    dlclose (gnutls_brotlidec_dlhandle);
+    {
+      dlclose (gnutls_brotlidec_dlhandle);
+      gnutls_brotlidec_dlhandle = NULL;
+    }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-macros"
@@ -160,8 +166,12 @@ gnutls_brotlidec_unload_library (void)
 #undef FUNC
 
 #pragma GCC diagnostic pop
+}
 
-#undef RESET_SYMBOL
+unsigned
+gnutls_brotlidec_is_usable (void)
+{
+  return gnutls_brotlidec_dlhandle != NULL;
 }
 
 #else /* GNUTLS_BROTLIDEC_ENABLE_DLOPEN */
@@ -177,6 +187,13 @@ gnutls_brotlidec_ensure_library (const char *soname, int flags)
 void
 gnutls_brotlidec_unload_library (void)
 {
+}
+
+unsigned
+gnutls_brotlidec_is_usable (void)
+{
+  /* The library is linked at build time, thus always usable */
+  return 1;
 }
 
 #endif /* !GNUTLS_BROTLIDEC_ENABLE_DLOPEN */
