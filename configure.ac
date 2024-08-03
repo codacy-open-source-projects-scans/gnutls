@@ -592,6 +592,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wredundant-decls"        # Some files cannot be compiled with that (gl_fd_to_handle)
   nw="$nw -Wtype-limits"            # Too many warnings in gnulib macros
   nw="$nw -Warith-conversion"       # Too compiler dependent
+  nw="$nw -Wmissing-variable-declarations" # asn1Parser provides no way to embed declarations in generated code
 
   gl_MANYWARN_ALL_GCC([ws])
   gl_MANYWARN_COMPLEMENT(ws, [$ws], [$nw])
@@ -981,25 +982,56 @@ AC_ARG_WITH(tpm2,
 	AS_HELP_STRING([--without-tpm2],
 		[Disable TPM2 support.]),
 	[with_tpm2=$withval], [with_tpm2=auto])
-if test "$with_tpm2" != "no"; then
-	PKG_CHECK_MODULES(TSS2, [tss2-esys tss2-mu tss2-tctildr],
-		[have_tpm2=yes], [have_tpm2=no])
-	if test "$have_tpm2" = "yes"; then
-		tss2lib="tss2-esys tss2-mu tss2-tctildr"
-		AC_DEFINE([HAVE_TSS2], 1, [Have TSS2])
-		with_tpm2=yes
-		need_ltlibdl=yes
-	elif test "$with_tpm2" = "yes"; then
-		AC_MSG_ERROR([[
+AS_IF([test "$with_tpm2" != no], [
+	PKG_CHECK_MODULES(TSS2_ESYS, [tss2-esys],
+		[have_tss2_esys=yes], [have_tss2_esys=no])
+	PKG_CHECK_MODULES(TSS2_MU, [tss2-mu],
+		[have_tss2_mu=yes], [have_tss2_mu=no])
+	PKG_CHECK_MODULES(TSS2_TCTILDR, [tss2-tctildr],
+		[have_tss2_tctildr=yes], [have_tss2_tctildr=no])
+])
+AS_IF([test "$have_tss2_esys" = yes && test "$have_tss2_mu" = yes && test "$have_tss2_tctildr" = yes], [
+	tss2lib="tss2-esys tss2-mu tss2-tctildr"
+	AC_DEFINE([HAVE_TSS2], 1, [Have TSS2])
+	with_tpm2=yes
+	need_ltlibdl=yes
+],
+      [test "$with_tpm2" = yes], [
+	AC_MSG_ERROR([[
 ***
 *** TPM2 support was requested but the required libraries were not found.
 *** To disable TPM2 support use --without-tpm2, otherwise you may get tpm2-tss from
 *** https://github.com/tpm2-software/tpm2-tss
 *** ]])
-	fi
-fi
+])
 
-AM_CONDITIONAL(ENABLE_TPM2, test "$have_tpm2" = "yes")
+AM_CONDITIONAL(ENABLE_TPM2, test -n "$tss2lib")
+
+AS_IF([test "$ac_cv_dlopen_soname_works" = yes], [
+    save_LIBS=$LIBS
+    LIBS="$LIBS $TSS2_ESYS_LIBS"
+    LIBGNUTLS_CHECK_SONAME([tss2-esys], [AC_LANG_PROGRAM([
+                   #include <tss2/tss2_esys.h>],[
+                   Esys_Initialize (0, 0, 0);])])
+    LIBS="$save_LIBS"
+    CFLAGS="$save_CFLAGS"
+
+    save_LIBS=$LIBS
+    LIBS="$LIBS $TSS2_MU_LIBS"
+    LIBGNUTLS_CHECK_SONAME([tss2-mu], [AC_LANG_PROGRAM([
+                   #include <tss2/tss2_mu.h>],[
+                   Tss2_MU_INT8_Marshal (0, 0, 0, 0);])])
+    LIBS="$save_LIBS"
+    CFLAGS="$save_CFLAGS"
+
+    save_LIBS=$LIBS
+    LIBS="$LIBS $TSS2_TCTILDR_LIBS"
+    LIBGNUTLS_CHECK_SONAME([tss2-tctildr], [AC_LANG_PROGRAM([
+                   #include <tss2/tss2_tctildr.h>],[
+                   Tss2_TctiLdr_Initialize (0, 0);])])
+    LIBS="$save_LIBS"
+    CFLAGS="$save_CFLAGS"
+])
 
 AC_ARG_WITH(tpm,
 	AS_HELP_STRING([--without-tpm],
@@ -1189,9 +1221,9 @@ AC_ARG_WITH(liboqs,
 	AS_HELP_STRING([--with-liboqs],
 		[Enable liboqs support.]),
 	[with_liboqs=$withval], [with_liboqs=no])
-AS_IF([test "$with_liboqs" != "no"], [PKG_CHECK_MODULES(LIBOQS, [liboqs >= 0.10.1], [have_liboqs=yes], [have_liboqs=no])])
-AS_IF([test "$have_liboqs" = "yes"], [AC_DEFINE([HAVE_LIBOQS], 1, [Have liboqs])],
-      [test "$with_liboqs" = "yes"], [AC_MSG_ERROR([[
+AS_IF([test "$with_liboqs" != no], [PKG_CHECK_MODULES(LIBOQS, [liboqs >= 0.10.1], [have_liboqs=yes], [have_liboqs=no])])
+AS_IF([test "$have_liboqs" = yes], [AC_DEFINE([HAVE_LIBOQS], 1, [Have liboqs])],
+      [test "$with_liboqs" = yes], [AC_MSG_ERROR([[
 ***
 *** liboqs support was requested but the required libraries were not found.
 *** ]])])
@@ -1206,7 +1238,7 @@ CFLAGS="$save_CFLAGS"
 # https://github.com/open-quantum-safe/liboqs/pull/1832
 AM_CONDITIONAL(NEED_LIBOQS_SHA3_OPS_H, test "$ac_cv_have_decl_OQS_SHA3_set_callbacks" != yes)
 
-AM_CONDITIONAL(ENABLE_LIBOQS, test "$have_liboqs" = "yes")
+AM_CONDITIONAL(ENABLE_LIBOQS, test "$have_liboqs" = yes)
 
 AS_IF([test "$ac_cv_dlopen_soname_works" = yes], [
     save_CFLAGS=$CFLAGS
@@ -1499,7 +1531,6 @@ if features are disabled)
   Non-SuiteB curves:    $enable_non_suiteb
   FIPS140 mode:         $enable_fips
   Strict DER time:	$ac_strict_der_time
-  liboqs:               $have_liboqs
 ])
 
 AC_MSG_NOTICE([Optional libraries:
