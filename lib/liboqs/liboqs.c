@@ -33,19 +33,62 @@
 #define OQS_LIBRARY_SONAME "none"
 #endif
 
+#include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "errors.h"
 #include "locks.h"
 
 #include "dlwrap/oqs.h"
 #include "liboqs/rand.h"
+#include "liboqs/sha2.h"
 #include "liboqs/sha3.h"
+#include "liboqs/sha3x4.h"
 
 /* We can't use GNUTLS_ONCE here, as it wouldn't allow manual unloading */
 GNUTLS_STATIC_MUTEX(liboqs_init_mutex);
 static int _liboqs_init = 0;
 
+static bool parse_version(const char *version, long *major, long *minor,
+			  long *micro)
+{
+	long components[3] = { 0, 0, 0 };
+	const char *start = version, *end = version + strlen(version);
+
+	for (size_t i = 0; start < end && i < 3; i++) {
+		char *next;
+
+		components[i] = strtol(start, &next, 10);
+		if (components[i] < 0 || components[i] == LONG_MAX)
+			return false;
+
+		start = next + 1;
+	}
+	if (major)
+		*major = components[0];
+	if (minor)
+		*minor = components[1];
+	if (micro)
+		*micro = components[2];
+
+	return true;
+}
+
+static bool check_version(const char *version, long req_major, long req_minor,
+			  long req_micro)
+{
+	long major, minor, micro;
+
+	return parse_version(version, &major, &minor, &micro) &&
+	       (major > req_major ||
+		(major == req_major &&
+		 (minor > req_minor ||
+		  (minor == req_minor && micro >= req_micro))));
+}
+
 int _gnutls_liboqs_ensure(void)
 {
+	const char *version;
 	int ret;
 
 	if (_liboqs_init)
@@ -63,7 +106,24 @@ int _gnutls_liboqs_ensure(void)
 		goto out;
 	}
 
+	version = GNUTLS_OQS_FUNC(OQS_version)();
+	if (unlikely(version == NULL)) {
+		_gnutls_debug_log(
+			"liboqs: unable to retrieve liboqs version\n");
+		ret = gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
+		goto out;
+	}
+	if (!check_version(version, MIN_LIBOQS_VERSION_MAJOR,
+			   MIN_LIBOQS_VERSION_MINOR,
+			   MIN_LIBOQS_VERSION_MICRO)) {
+		_gnutls_debug_log("liboqs: unsupported liboqs version\n");
+		ret = gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
+		goto out;
+	}
+
+	_gnutls_liboqs_sha2_init();
 	_gnutls_liboqs_sha3_init();
+	_gnutls_liboqs_sha3x4_init();
 	GNUTLS_OQS_FUNC(OQS_init)();
 	_gnutls_liboqs_rand_init();
 
@@ -82,9 +142,26 @@ out:
 void _gnutls_liboqs_deinit(void)
 {
 	if (_liboqs_init) {
+		const char *version;
+
 		_gnutls_liboqs_rand_deinit();
+		_gnutls_liboqs_sha3x4_deinit();
 		_gnutls_liboqs_sha3_deinit();
-		GNUTLS_OQS_FUNC(OQS_destroy)();
+		_gnutls_liboqs_sha2_deinit();
+
+		/* OQS_destroy in liboqs 0.11.0 unconditionally calls
+		 * OpenSSL functions for cleanup; see:
+		 * https://github.com/open-quantum-safe/liboqs/pull/1982
+		 *
+		 * As it doesn't do anything other than that so far,
+		 * just skip it for now */
+		version = GNUTLS_OQS_FUNC(OQS_version)();
+		if (unlikely(version == NULL)) {
+			_gnutls_debug_log(
+				"liboqs: unable to retrieve liboqs version\n");
+		} else if (check_version(version, 0, 11, 1)) {
+			GNUTLS_OQS_FUNC(OQS_destroy)();
+		}
 	}
 
 	gnutls_oqs_unload_library();

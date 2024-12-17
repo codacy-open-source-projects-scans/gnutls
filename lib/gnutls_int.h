@@ -756,6 +756,8 @@ typedef struct gnutls_cipher_suite_entry_st {
 	gnutls_mac_algorithm_t prf;
 } gnutls_cipher_suite_entry_st;
 
+#define MAX_HYBRID_GROUPS 2
+
 typedef struct gnutls_group_entry_st {
 	const char *name;
 	gnutls_group_t id;
@@ -765,7 +767,11 @@ typedef struct gnutls_group_entry_st {
 	const unsigned *q_bits;
 	gnutls_ecc_curve_t curve;
 	gnutls_pk_algorithm_t pk;
-	gnutls_pk_algorithm_t pk2;
+	gnutls_group_t ids[MAX_HYBRID_GROUPS + 1]; /* IDs of subgroups
+						    * comprising a
+						    * hybrid group,
+						    * terminated with
+						    * GNUTLS_GROUP_INVALID */
 	unsigned tls_id; /* The RFC4492 namedCurve ID or TLS 1.3 group ID */
 } gnutls_group_entry_st;
 

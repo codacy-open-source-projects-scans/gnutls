@@ -243,6 +243,11 @@ static int privkey_to_pubkey(gnutls_pk_algorithm_t pk,
 	case GNUTLS_PK_EDDSA_ED448:
 	case GNUTLS_PK_ECDH_X25519:
 	case GNUTLS_PK_ECDH_X448:
+#ifdef HAVE_LIBOQS
+	case GNUTLS_PK_ML_DSA_44:
+	case GNUTLS_PK_ML_DSA_65:
+	case GNUTLS_PK_ML_DSA_87:
+#endif
 		ret = _gnutls_set_datum(&pub->raw_pub, priv->raw_pub.data,
 					priv->raw_pub.size);
 		if (ret < 0)
@@ -1924,13 +1929,14 @@ int gnutls_privkey_verify_params(gnutls_privkey_t key)
 int gnutls_privkey_get_spki(gnutls_privkey_t privkey, gnutls_x509_spki_t spki,
 			    unsigned int flags)
 {
-	gnutls_x509_spki_t p = &privkey->key.x509->params.spki;
+	gnutls_x509_spki_t p;
 
 	if (privkey == NULL || privkey->type != GNUTLS_PRIVKEY_X509) {
 		gnutls_assert();
 		return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;
 	}
 
+	p = &privkey->key.x509->params.spki;
 	if (p->pk == GNUTLS_PK_UNKNOWN)
 		return gnutls_assert_val(GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE);
 

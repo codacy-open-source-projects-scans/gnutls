@@ -668,8 +668,7 @@ void doit(void)
 	}
 	FIPS_POP_CONTEXT(APPROVED);
 
-	/* Create a SHA256 hashed data for 2-pass signature API; not a
-	 * crypto operation */
+	/* Create a SHA256 hashed data for 2-pass signature API; approved */
 	FIPS_PUSH_CONTEXT();
 	ret = gnutls_hash_fast(GNUTLS_DIG_SHA256, data.data, data.size, hash);
 	if (ret < 0) {
@@ -677,7 +676,7 @@ void doit(void)
 	}
 	hashed_data.data = hash;
 	hashed_data.size = 32;
-	FIPS_POP_CONTEXT(INITIAL);
+	FIPS_POP_CONTEXT(APPROVED);
 
 	/* Create a signature with ECDSA and SHA256 (2-pass API); not-approved */
 	FIPS_PUSH_CONTEXT();
@@ -729,8 +728,7 @@ void doit(void)
 	FIPS_POP_CONTEXT(NOT_APPROVED);
 	gnutls_free(signature.data);
 
-	/* Create a SHA1 hashed data for 2-pass signature API; not a
-	 * crypto operation */
+	/* Create a SHA1 hashed data for 2-pass signature API; approved */
 	FIPS_PUSH_CONTEXT();
 	ret = gnutls_hash_fast(GNUTLS_DIG_SHA1, data.data, data.size, hash);
 	if (ret < 0) {
@@ -738,7 +736,7 @@ void doit(void)
 	}
 	hashed_data.data = hash;
 	hashed_data.size = 20;
-	FIPS_POP_CONTEXT(INITIAL);
+	FIPS_POP_CONTEXT(APPROVED);
 
 	/* Create a signature with ECDSA and SHA1 (2-pass API); not-approved */
 	FIPS_PUSH_CONTEXT();
@@ -758,6 +756,33 @@ void doit(void)
 		fail("gnutls_privkey_sign_hash failed\n");
 	}
 	FIPS_POP_CONTEXT(NOT_APPROVED);
+	gnutls_free(signature.data);
+
+	gnutls_pubkey_deinit(pubkey);
+	gnutls_privkey_deinit(privkey);
+
+	/* Import ED25519 key; not a security function */
+	FIPS_PUSH_CONTEXT();
+	import_keypair(&privkey, &pubkey, "ed25519.pem");
+	FIPS_POP_CONTEXT(INITIAL);
+
+	/* Create a signature with ED25519; approved */
+	FIPS_PUSH_CONTEXT();
+	ret = gnutls_privkey_sign_data2(privkey, GNUTLS_SIGN_EDDSA_ED25519, 0,
+					&data, &signature);
+	if (ret < 0) {
+		fail("gnutls_privkey_sign_data2 failed\n");
+	}
+	FIPS_POP_CONTEXT(APPROVED);
+
+	/* Verify a signature with ED25519; approved */
+	FIPS_PUSH_CONTEXT();
+	ret = gnutls_pubkey_verify_data2(pubkey, GNUTLS_SIGN_EDDSA_ED25519, 0,
+					 &data, &signature);
+	if (ret < 0) {
+		fail("gnutls_pubkey_verify_data2 failed\n");
+	}
+	FIPS_POP_CONTEXT(APPROVED);
 	gnutls_free(signature.data);
 
 	gnutls_pubkey_deinit(pubkey);
