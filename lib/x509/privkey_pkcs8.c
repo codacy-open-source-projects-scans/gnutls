@@ -39,10 +39,6 @@
 #include "attributes.h"
 #include "prov-seed.h"
 
-#ifdef HAVE_LIBOQS
-#include <dlwrap/oqs.h>
-#endif
-
 static int _decode_pkcs8_ecc_key(asn1_node pkcs8_asn,
 				 gnutls_x509_privkey_t pkey);
 static int pkcs8_key_info(const gnutls_datum_t *raw_key,
@@ -55,15 +51,128 @@ static int decode_private_key_info(const gnutls_datum_t *der,
 #define PEM_PKCS8 "ENCRYPTED PRIVATE KEY"
 #define PEM_UNENCRYPTED_PKCS8 "PRIVATE KEY"
 
-/* Returns a negative error code if the encryption schema in
- * the OID is not supported. The schema ID is returned.
- */
+typedef enum ml_dsa_privkey_format_flags_t {
+	ML_DSA_PRIVKEY_FORMAT_NONE = 0,
+	ML_DSA_PRIVKEY_FORMAT_SEED = 1 << 0,
+	ML_DSA_PRIVKEY_FORMAT_EXPANDED = 1 << 1,
+	ML_DSA_PRIVKEY_FORMAT_BOTH = ML_DSA_PRIVKEY_FORMAT_SEED |
+				     ML_DSA_PRIVKEY_FORMAT_EXPANDED,
+} ml_dsa_privkey_format_flags_t;
+
+static inline ml_dsa_privkey_format_flags_t
+flags_to_ml_dsa_privkey_format(gnutls_pkcs_encrypt_flags_t flags)
+{
+	ml_dsa_privkey_format_flags_t format = ML_DSA_PRIVKEY_FORMAT_NONE;
+
+	if (flags & GNUTLS_PKCS_MLDSA_SEED)
+		format |= ML_DSA_PRIVKEY_FORMAT_SEED;
+	if (flags & GNUTLS_PKCS_MLDSA_EXPANDED)
+		format |= ML_DSA_PRIVKEY_FORMAT_EXPANDED;
+
+	return format;
+}
+
+static int encode_ml_dsa_inner_private_key(const gnutls_x509_privkey_t pkey,
+					   gnutls_datum_t *raw_key,
+					   ml_dsa_privkey_format_flags_t format)
+{
+	int ret = 0;
+	asn1_node inner_asn = NULL;
+
+	/* The default is the "both" format if seed is available;
+	 * otherwise, "expanded" */
+	if (format == ML_DSA_PRIVKEY_FORMAT_NONE) {
+		format = pkey->params.raw_seed.data ?
+				 ML_DSA_PRIVKEY_FORMAT_BOTH :
+				 ML_DSA_PRIVKEY_FORMAT_EXPANDED;
+	}
+
+	/* libtasn1 doesn't support encoding instructions in CHOICE,
+	 * format it manually */
+	if (format == ML_DSA_PRIVKEY_FORMAT_SEED) {
+		raw_key->data = gnutls_malloc(34);
+		if (!raw_key->data)
+			return GNUTLS_E_MEMORY_ERROR;
+
+		raw_key->data[0] = 0x80;
+		raw_key->data[1] = 0x20;
+		memcpy(&raw_key->data[2], pkey->params.raw_seed.data, 32);
+		raw_key->size = 34;
+	} else {
+		int result;
+
+		result = asn1_create_element(_gnutls_get_gnutls_asn(),
+					     "GNUTLS.MLDSAInnerPrivateKey",
+					     &inner_asn);
+		if (result != ASN1_SUCCESS)
+			return gnutls_assert_val(_gnutls_asn2err(result));
+
+		switch (format) {
+		case ML_DSA_PRIVKEY_FORMAT_EXPANDED:
+			result = asn1_write_value(inner_asn, "", "expandedKey",
+						  1);
+			if (result != ASN1_SUCCESS) {
+				gnutls_assert();
+				ret = _gnutls_asn2err(result);
+				goto cleanup;
+			}
+			result = asn1_write_value(inner_asn, "expandedKey",
+						  pkey->params.raw_priv.data,
+						  pkey->params.raw_priv.size);
+			if (result != ASN1_SUCCESS) {
+				gnutls_assert();
+				ret = _gnutls_asn2err(result);
+				goto cleanup;
+			}
+			break;
+		case ML_DSA_PRIVKEY_FORMAT_BOTH:
+			result = asn1_write_value(inner_asn, "", "both", 1);
+			if (result != ASN1_SUCCESS) {
+				gnutls_assert();
+				ret = _gnutls_asn2err(result);
+				goto cleanup;
+			}
+			result = asn1_write_value(inner_asn, "both.seed",
+						  pkey->params.raw_seed.data,
+						  pkey->params.raw_seed.size);
+			if (result != ASN1_SUCCESS) {
+				gnutls_assert();
+				ret = _gnutls_asn2err(result);
+				goto cleanup;
+			}
+			result = asn1_write_value(inner_asn, "both.expandedKey",
+						  pkey->params.raw_priv.data,
+						  pkey->params.raw_priv.size);
+			if (result != ASN1_SUCCESS) {
+				gnutls_assert();
+				ret = _gnutls_asn2err(result);
+				goto cleanup;
+			}
+			break;
+		default:
+			ret = gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
+			goto cleanup;
+		}
+
+		ret = _gnutls_x509_der_encode(inner_asn, "", raw_key, 0);
+		if (ret < 0) {
+			gnutls_assert();
+			goto cleanup;
+		}
+	}
+
+cleanup:
+	asn1_delete_structure2(&inner_asn, ASN1_DELETE_FLAG_ZEROIZE);
+	return ret;
+}
+
 /* Encodes a private key to the raw format PKCS #8 needs.
  * For RSA it is a PKCS #1 DER private key and for DSA it is
  * an ASN.1 INTEGER of the x value.
  */
 inline static int _encode_privkey(gnutls_x509_privkey_t pkey,
-				  gnutls_datum_t *raw)
+				  gnutls_datum_t *raw,
+				  gnutls_pkcs_encrypt_flags_t flags)
 {
 	int ret;
 	asn1_node spk = NULL;
@@ -82,19 +191,14 @@ inline static int _encode_privkey(gnutls_x509_privkey_t pkey,
 		if (ret < 0)
 			gnutls_assert();
 		return ret;
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
-		ret = _gnutls_x509_encode_string(
-			ASN1_ETYPE_OCTET_STRING, pkey->params.raw_priv.data,
-			pkey->params.raw_priv.size + pkey->params.raw_pub.size,
-			raw);
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
+		ret = encode_ml_dsa_inner_private_key(
+			pkey, raw, flags_to_ml_dsa_privkey_format(flags));
 		if (ret < 0)
 			gnutls_assert();
-		return ret;
-#endif
-
+		break;
 	case GNUTLS_PK_GOST_01:
 	case GNUTLS_PK_GOST_12_256:
 	case GNUTLS_PK_GOST_12_512:
@@ -167,7 +271,6 @@ inline static int _encode_privkey(gnutls_x509_privkey_t pkey,
 
 error:
 	asn1_delete_structure2(&spk, ASN1_DELETE_FLAG_ZEROIZE);
-	asn1_delete_structure(&spk);
 	return ret;
 }
 
@@ -177,7 +280,8 @@ error:
  * the asn1_node of private key info will be returned.
  */
 static int encode_to_private_key_info(gnutls_x509_privkey_t pkey,
-				      gnutls_datum_t *der, asn1_node *pkey_info)
+				      gnutls_datum_t *der, asn1_node *pkey_info,
+				      gnutls_pkcs_encrypt_flags_t flags)
 {
 	int result, len;
 	uint8_t null = 0;
@@ -237,7 +341,7 @@ static int encode_to_private_key_info(gnutls_x509_privkey_t pkey,
 
 	/* Write the raw private key
 	 */
-	result = _encode_privkey(pkey, &algo_privkey);
+	result = _encode_privkey(pkey, &algo_privkey, flags);
 	if (result < 0) {
 		gnutls_assert();
 		goto error;
@@ -272,7 +376,7 @@ static int encode_to_private_key_info(gnutls_x509_privkey_t pkey,
 			goto error;
 		}
 	} else {
-		/* Append an empty Attributes field.
+		/* Append an empty attributes field.
 		 */
 		result = asn1_write_value(*pkey_info, "attributes", NULL, 0);
 		if (result != ASN1_SUCCESS) {
@@ -280,6 +384,15 @@ static int encode_to_private_key_info(gnutls_x509_privkey_t pkey,
 			result = _gnutls_asn2err(result);
 			goto error;
 		}
+	}
+
+	/* Append an empty publicKey field.
+	 */
+	result = asn1_write_value(*pkey_info, "publicKey", NULL, 0);
+	if (result != ASN1_SUCCESS) {
+		gnutls_assert();
+		result = _gnutls_asn2err(result);
+		goto error;
 	}
 
 	/* DER Encode the generated private key info.
@@ -454,7 +567,7 @@ int gnutls_x509_privkey_export_pkcs8(gnutls_x509_privkey_t key,
 	/* Get the private key info
 	 * tmp holds the DER encoding.
 	 */
-	ret = encode_to_private_key_info(key, &tmp, &pkey_info);
+	ret = encode_to_private_key_info(key, &tmp, &pkey_info, flags);
 	if (ret < 0) {
 		gnutls_assert();
 		return ret;
@@ -648,7 +761,7 @@ int gnutls_x509_privkey_export2_pkcs8(gnutls_x509_privkey_t key,
 	/* Get the private key info
 	 * tmp holds the DER encoding.
 	 */
-	ret = encode_to_private_key_info(key, &tmp, &pkey_info);
+	ret = encode_to_private_key_info(key, &tmp, &pkey_info, flags);
 	if (ret < 0) {
 		gnutls_assert();
 		return ret;
@@ -1470,95 +1583,235 @@ error:
 	return ret;
 }
 
-#ifdef HAVE_LIBOQS
-struct pq_key_length_st {
-	gnutls_pk_algorithm_t algorithm;
-	int secret_key_length;
-	int public_key_length;
-};
-
-static const struct pq_key_length_st pq_key_lengths[] = {
-	{ GNUTLS_PK_ML_DSA_44, OQS_SIG_ml_dsa_44_length_secret_key,
-	  OQS_SIG_ml_dsa_44_length_public_key },
-	{ GNUTLS_PK_ML_DSA_65, OQS_SIG_ml_dsa_65_length_secret_key,
-	  OQS_SIG_ml_dsa_65_length_public_key },
-	{ GNUTLS_PK_ML_DSA_87, OQS_SIG_ml_dsa_87_length_secret_key,
-	  OQS_SIG_ml_dsa_87_length_public_key },
-
-	{ GNUTLS_PK_UNKNOWN, 0, 0 }
-};
-
-static int _get_pqc_keys_length(const gnutls_pk_algorithm_t algo,
-				int *pqc_alg_secret_key_length,
-				int *pqc_alg_public_key_length)
-{
-	const struct pq_key_length_st *pqc_key_length = pq_key_lengths;
-	while (pqc_key_length->algorithm != algo &&
-	       pqc_key_length->algorithm != GNUTLS_PK_UNKNOWN)
-		pqc_key_length++;
-
-	if (pqc_key_length->algorithm == GNUTLS_PK_UNKNOWN)
-		return GNUTLS_E_UNKNOWN_ALGORITHM;
-
-	*pqc_alg_secret_key_length = pqc_key_length->secret_key_length;
-	*pqc_alg_public_key_length = pqc_key_length->public_key_length;
-
-	return 0;
-}
-
-static int _decode_pkcs8_pqc_alg_key(asn1_node pkcs8_asn,
-				     gnutls_x509_privkey_t pkey,
-				     const char *oid)
+static int decode_ml_dsa_inner_private_key(const gnutls_datum_t *raw_key,
+					   size_t raw_pub_size,
+					   size_t raw_priv_size,
+					   gnutls_x509_privkey_t pkey)
 {
 	int ret;
-	gnutls_datum_t private_key;
-	gnutls_pk_algorithm_t algo = pkey->params.algo;
-	int pqc_alg_secret_key_length;
-	int pqc_alg_public_key_length;
+	asn1_node inner_asn = NULL;
 
-	ret = _get_pqc_keys_length(pkey->params.algo,
-				   &pqc_alg_secret_key_length,
-				   &pqc_alg_public_key_length);
-	if (ret < 0) {
-		gnutls_assert();
-		goto error;
+	/* libtasn1 doesn't support encoding instructions in CHOICE,
+	 * parse it manually */
+	if (raw_key->size == 34 && raw_key->data[0] == 0x80 &&
+	    raw_key->data[1] == 0x20) {
+		_gnutls_free_key_datum(&pkey->params.raw_seed);
+		ret = _gnutls_set_datum(&pkey->params.raw_seed,
+					&raw_key->data[2], 32);
+		if (ret < 0)
+			return gnutls_assert_val(ret);
+	} else {
+		int result;
+		char choice_name[16];
+		int choice_name_size = sizeof(choice_name) - 1;
+		unsigned int etype;
+
+		result = asn1_create_element(_gnutls_get_gnutls_asn(),
+					     "GNUTLS.MLDSAInnerPrivateKey",
+					     &inner_asn);
+		if (result != ASN1_SUCCESS)
+			return gnutls_assert_val(_gnutls_asn2err(result));
+
+		result = _asn1_strict_der_decode(&inner_asn, raw_key->data,
+						 raw_key->size, NULL);
+		if (result != ASN1_SUCCESS) {
+			ret = gnutls_assert_val(_gnutls_asn2err(result));
+			goto cleanup;
+		}
+
+		result = asn1_read_value_type(inner_asn, "", choice_name,
+					      &choice_name_size, &etype);
+		if (result != ASN1_SUCCESS) {
+			ret = gnutls_assert_val(_gnutls_asn2err(result));
+			goto cleanup;
+		}
+
+		if (etype != ASN1_ETYPE_CHOICE) {
+			ret = gnutls_assert_val(GNUTLS_E_INVALID_REQUEST);
+			goto cleanup;
+		}
+
+		choice_name[choice_name_size] = '\0';
+		if (strcmp(choice_name, "expandedKey") == 0) {
+			_gnutls_free_key_datum(&pkey->params.raw_priv);
+			ret = _gnutls_x509_read_value(inner_asn, choice_name,
+						      &pkey->params.raw_priv);
+			if (ret < 0) {
+				gnutls_assert();
+				goto cleanup;
+			}
+
+			/* The legacy format used in
+			 * liboqs/oqsprovider, which embeds public key
+			 * in the "privateKey" field after a private
+			 * key, falls to this branch */
+			if (pkey->params.raw_priv.size ==
+			    raw_pub_size + raw_priv_size) {
+				ret = _gnutls_set_datum(
+					&pkey->params.raw_pub,
+					&pkey->params.raw_priv
+						 .data[raw_priv_size],
+					raw_pub_size);
+				if (ret < 0) {
+					gnutls_assert();
+					goto cleanup;
+				}
+				pkey->params.raw_priv.size = raw_priv_size;
+			}
+		} else if (strcmp(choice_name, "both") == 0) {
+			_gnutls_free_key_datum(&pkey->params.raw_seed);
+			ret = _gnutls_x509_read_value(inner_asn, "both.seed",
+						      &pkey->params.raw_seed);
+			if (ret < 0) {
+				gnutls_assert();
+				goto cleanup;
+			}
+			if (pkey->params.raw_seed.size != 32) {
+				ret = gnutls_assert_val(
+					GNUTLS_E_INVALID_REQUEST);
+				goto cleanup;
+			}
+			_gnutls_free_key_datum(&pkey->params.raw_priv);
+			ret = _gnutls_x509_read_value(inner_asn,
+						      "both.expandedKey",
+						      &pkey->params.raw_priv);
+			if (ret < 0) {
+				gnutls_assert();
+				goto cleanup;
+			}
+		} else {
+			ret = gnutls_assert_val(GNUTLS_E_INVALID_REQUEST);
+			goto cleanup;
+		}
 	}
 
-	/* TODO: support OneAsymmetricKey to read public key from a
-	 * separate field
-	 */
+	/* Expand seed if set */
+	if (pkey->params.raw_seed.data) {
+		/* For checking any inconsistency */
+		gnutls_datum_t raw_priv =
+			_gnutls_steal_datum(&pkey->params.raw_priv);
+
+		pkey->params.pkflags |= GNUTLS_PK_FLAG_EXPAND_KEYS_FROM_SEED;
+		ret = _gnutls_pk_generate_keys(pkey->params.algo, 0,
+					       &pkey->params, 0);
+		if (ret < 0) {
+			gnutls_assert();
+			_gnutls_free_key_datum(&raw_priv);
+			goto cleanup;
+		}
+
+		if (raw_priv.data &&
+		    (pkey->params.raw_priv.size != raw_priv.size ||
+		     gnutls_memcmp(pkey->params.raw_priv.data, raw_priv.data,
+				   pkey->params.raw_priv.size) != 0)) {
+			ret = gnutls_assert_val(GNUTLS_E_INVALID_REQUEST);
+			_gnutls_free_key_datum(&raw_priv);
+			goto cleanup;
+		}
+		_gnutls_free_key_datum(&raw_priv);
+	}
+
+cleanup:
+	asn1_delete_structure2(&inner_asn, ASN1_DELETE_FLAG_ZEROIZE);
+	return ret;
+}
+
+static int _decode_pkcs8_ml_dsa_key(asn1_node pkcs8_asn,
+				    gnutls_x509_privkey_t pkey,
+				    gnutls_pk_algorithm_t algo)
+{
+	int ret;
+	unsigned int version;
+	gnutls_datum_t raw_priv = { NULL, 0 };
+	size_t raw_pub_size, raw_priv_size;
+
+	switch (algo) {
+	case GNUTLS_PK_MLDSA44:
+		raw_priv_size = MLDSA44_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA44_PUBKEY_SIZE;
+		break;
+	case GNUTLS_PK_MLDSA65:
+		raw_priv_size = MLDSA65_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA65_PUBKEY_SIZE;
+		break;
+	case GNUTLS_PK_MLDSA87:
+		raw_priv_size = MLDSA87_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA87_PUBKEY_SIZE;
+		break;
+	default:
+		return gnutls_assert_val(
+			GNUTLS_E_UNSUPPORTED_SIGNATURE_ALGORITHM);
+	}
 
 	gnutls_pk_params_init(&pkey->params);
+	pkey->params.algo = algo;
 
-	ret = _gnutls_x509_read_string(pkcs8_asn, "privateKey", &private_key,
-				       ASN1_ETYPE_OCTET_STRING, 1);
+	ret = _gnutls_x509_read_uint(pkcs8_asn, "version", &version);
 	if (ret < 0) {
 		gnutls_assert();
-		goto error;
+		goto cleanup;
+	}
+	if (version != 0 && version != 1)
+		return gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
+
+	ret = _gnutls_x509_read_value(pkcs8_asn, "privateKey", &raw_priv);
+	if (ret < 0) {
+		gnutls_assert();
+		goto cleanup;
 	}
 
-	pkey->params.algo = algo;
-	pkey->params.raw_priv.data = private_key.data;
-	pkey->params.raw_priv.size = pqc_alg_secret_key_length;
+	/* Try the CHOICE format defined in
+	 * draft-ietf-lamps-dilithium-certificates-12, section 6 */
+	ret = decode_ml_dsa_inner_private_key(&raw_priv, raw_pub_size,
+					      raw_priv_size, pkey);
+	if (ret < 0) {
+		gnutls_assert();
+		goto cleanup;
+	}
 
-	pkey->params.raw_pub.data = gnutls_malloc(pqc_alg_public_key_length);
-	memcpy(pkey->params.raw_pub.data,
-	       &private_key.data[pqc_alg_secret_key_length],
-	       pqc_alg_public_key_length);
-	pkey->params.raw_pub.size = pqc_alg_public_key_length;
+	/* If version is 1, a public key may be embedded in a separate
+	 * field */
+	if (version == 1) {
+		/* For checking any inconsistency */
+		gnutls_datum_t raw_pub =
+			_gnutls_steal_datum(&pkey->params.raw_pub);
 
-	private_key.data = NULL;
+		ret = _gnutls_x509_read_value(pkcs8_asn, "publicKey",
+					      &pkey->params.raw_pub);
+		if (ret < 0) {
+			gnutls_assert();
+			_gnutls_free_key_datum(&raw_pub);
+			goto cleanup;
+		}
 
-	return GNUTLS_E_SUCCESS;
+		if (raw_pub.data &&
+		    (pkey->params.raw_pub.size != raw_pub.size ||
+		     gnutls_memcmp(pkey->params.raw_pub.data, raw_pub.data,
+				   pkey->params.raw_pub.size) != 0)) {
+			ret = gnutls_assert_val(GNUTLS_E_INVALID_REQUEST);
+			_gnutls_free_key_datum(&raw_pub);
+			goto cleanup;
+		}
+		_gnutls_free_key_datum(&raw_pub);
+	}
 
-error:
-	gnutls_free(pkey->params.raw_priv.data);
-	gnutls_pk_params_clear(&pkey->params);
-	gnutls_pk_params_release(&pkey->params);
+	/* Sanity check that the resulting keys have the expected sizes */
+	if ((pkey->params.raw_pub.data &&
+	     pkey->params.raw_pub.size != raw_pub_size) ||
+	    pkey->params.raw_priv.size != raw_priv_size) {
+		ret = gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
+		goto cleanup;
+	}
+
+cleanup:
+	if (ret < 0) {
+		gnutls_pk_params_clear(&pkey->params);
+		gnutls_pk_params_release(&pkey->params);
+	}
+	_gnutls_free_key_datum(&raw_priv);
 
 	return ret;
 }
-#endif
 
 static int decode_private_key_info(const gnutls_datum_t *der,
 				   gnutls_x509_privkey_t pkey)
@@ -1638,13 +1891,12 @@ static int decode_private_key_info(const gnutls_datum_t *der,
 		result = _decode_pkcs8_gost_key(pkcs8_asn, pkey,
 						pkey->params.algo);
 		break;
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
-		result = _decode_pkcs8_pqc_alg_key(pkcs8_asn, pkey, oid);
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
+		result = _decode_pkcs8_ml_dsa_key(pkcs8_asn, pkey,
+						  pkey->params.algo);
 		break;
-#endif
 	default:
 		result = gnutls_assert_val(GNUTLS_E_UNIMPLEMENTED_FEATURE);
 		goto error;
@@ -1786,7 +2038,7 @@ cleanup:
 	asn1_delete_structure2(&key->key, ASN1_DELETE_FLAG_ZEROIZE);
 	key->params.algo = GNUTLS_PK_UNKNOWN;
 	if (need_free) {
-		zeroize_temp_key(_data.data, _data.size);
+		zeroize_key(_data.data, _data.size);
 		_gnutls_free_datum(&_data);
 	}
 	return result;

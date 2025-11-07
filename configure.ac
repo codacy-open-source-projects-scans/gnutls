@@ -18,10 +18,10 @@ dnl Process this file with autoconf to produce a configure script.
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-AC_PREREQ(2.64)
+AC_PREREQ([2.71])
 
 dnl when updating version also update LT_REVISION in m4/hooks.m4
-AC_INIT([GnuTLS], [3.8.8], [bugs@gnutls.org])
+AC_INIT([GnuTLS],[3.8.10],[bugs@gnutls.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4 src/gl/m4 lib/unistring/m4])
 AC_CANONICAL_HOST
@@ -51,11 +51,11 @@ AC_USE_SYSTEM_EXTENSIONS
 
 #
 # Require C99 support
-#    
-AC_PROG_CC_C99
-if test "$ac_cv_prog_cc_c99" = "no"; then
-  AC_MSG_WARN([[Compiler does not support C99. It may not be able to compile the project.]])
-fi
+#
+AS_CASE([$ac_prog_cc_stdc],
+  [c11 | c99], [AC_DEFINE([C99_MACROS], 1, [C99 macros are supported])],
+  [AC_MSG_WARN([[Compiler does not support C99. It may not be able to compile the project.]])]
+)
 
 AM_CONDITIONAL(CROSS_COMPILING, test "$cross_compiling" = yes)
 
@@ -77,31 +77,30 @@ AS_IF([test -n "$FAKETIME"], [FAKETIME_F_OPT="-f"; AC_SUBST([FAKETIME_F_OPT])], 
   ])
 ])
 
-AC_MSG_CHECKING([whether faketime program works])
-AC_RUN_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <stdio.h>
-      #include <stdlib.h>
-      #include <time.h>
-    ]],
-    [[time_t t = time(NULL);
-      struct tm *tmp = localtime(&t);
-      char outstr[200];
-      if (!tmp) return 0;
-      if (!strftime(outstr, sizeof(outstr), "%s", tmp)) return 0;
-      puts(outstr);
-      return 0;
-    ]])],
-  [AS_IF([test -n "$FAKETIME" && test "`TZ=UTC $FAKETIME $FAKETIME_F_OPT "2006-09-23 00:00:00" ./conftest$EXEEXT`" = "1158969600"], [
-     ac_cv_faketime_works=yes
-   ], [
-     ac_cv_faketime_works=no
-   ])],
-  [ac_cv_faketime_works=no],
-  [ac_cv_faketime_works=cross-compiling])
+AC_CACHE_CHECK([whether faketime program works], [gnutls_cv_prog_faketime_works],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <stdio.h>
+        #include <stdlib.h>
+        #include <time.h>
+      ]],
+      [[time_t t = time(NULL);
+        struct tm *tmp = localtime(&t);
+        char outstr[200];
+        if (!tmp) return 0;
+        if (!strftime(outstr, sizeof(outstr), "%s", tmp)) return 0;
+        puts(outstr);
+        return 0;
+      ]])],
+    [AS_IF([test -n "$FAKETIME" && test "`TZ=UTC $FAKETIME $FAKETIME_F_OPT "2006-09-23 00:00:00" ./conftest$EXEEXT`" = "1158969600"], [
+       gnutls_cv_prog_faketime_works=yes
+     ], [
+       gnutls_cv_prog_faketime_works=no
+     ])],
+    [gnutls_cv_prog_faketime_works=no],
+    [gnutls_cv_prog_faketime_works=cross-compiling])])
 
-AC_MSG_RESULT([$ac_cv_faketime_works])
-AC_SUBST([ac_cv_faketime_works])
+AC_SUBST([gnutls_cv_prog_faketime_works])
 
 AC_ARG_ENABLE(bash-tests,
   AS_HELP_STRING([--disable-bash-tests], [skip some tests that badly need bash]),
@@ -136,7 +135,11 @@ AC_SUBST(NUMBER_VERSION, `printf "0x%02x%02x%02x" $MAJOR_VERSION $MINOR_VERSION 
 
 dnl C and C++ capabilities
 AC_C_INLINE
-AC_HEADER_STDC
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 
 # For the C++ code
 AC_ARG_ENABLE(cxx,
@@ -255,15 +258,21 @@ if test "$hw_accel" = aarch64; then
 fi
 
 # check for gcc's __get_cpuid_count functionality
-AC_MSG_CHECKING([for __get_cpuid_count])
-AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([
-    #include <cpuid.h>
-    int main(void) { unsigned t1; return __get_cpuid_count(7, 0, &t1, &t1, &t1, &t1); }
-   ])],
-   [AC_DEFINE([HAVE_GET_CPUID_COUNT], [1], [use __get_cpuid_count]) AC_MSG_RESULT([yes])],
-   [AC_MSG_RESULT([no])]
-)
+AC_CACHE_CHECK([for __get_cpuid_count], [gnutls_cv_func___get_cpuid_count],
+  [AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM(
+       [[#include <cpuid.h>
+       ]],
+       [[unsigned t1;
+         return __get_cpuid_count(7, 0, &t1, &t1, &t1, &t1);
+       ]])],
+     [gnutls_cv_func___get_cpuid_count=yes],
+     [gnutls_cv_func___get_cpuid_count=no]
+  )])
+
+AS_IF([test "$ac_cv_have___get_cpuid_count" = yes], [
+  AC_DEFINE([HAVE_GET_CPUID_COUNT], [1], [use __get_cpuid_count])
+])
 
 fi
 
@@ -322,53 +331,60 @@ AM_CONDITIONAL(ASM_X86, test x"$hw_accel" = x"x86" || test x"$hw_accel" = x"x86-
 AM_CONDITIONAL(HAVE_GCC_GNU89_INLINE_OPTION, test "$gnu89_inline" = "yes"])
 AM_CONDITIONAL(HAVE_GCC, test "$GCC" = "yes")
 
-dnl check for getrandom()
+dnl check for getrandom, KERN_ARND, and getentropy, in the order of precedence
 rnd_variant="auto-detect"
-AC_MSG_CHECKING([for getrandom])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([
-	   #include <sys/random.h>],[
-		   getrandom(0, 0, 0);
-		  ])],
-		  [AC_MSG_RESULT(yes)
-		   AC_DEFINE([HAVE_GETRANDOM], 1, [Enable the Linux getrandom function])
-		   rnd_variant=getrandom],
-		  [AC_MSG_RESULT(no)])
 
-AC_MSG_CHECKING([for KERN_ARND])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([
-	   #include <sys/sysctl.h>
-           #ifdef __linux__
-           #error 1
-           #endif
-           static int name[] = {CTL_KERN, KERN_ARND};
-	   ],[
-		   sysctl(0, 0, 0, 0, 0, 0);
-		  ])],
-		  [AC_MSG_RESULT(yes)
-		   AC_DEFINE([HAVE_KERN_ARND], 1, [Enable the BSD sysctl(KERN_ARND) function])
-		   rnd_variant=kern_arnd],
-		  [AC_MSG_RESULT(no)])
+AC_CACHE_CHECK([for getrandom], [gnutls_cv_func_getrandom],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <sys/random.h>
+      ]],
+      [[getrandom(0, 0, 0);]])],
+    [gnutls_cv_func_getrandom=yes],
+    [gnutls_cv_func_getrandom=no])])
 
-AM_CONDITIONAL(HAVE_KERN_ARND, test "$rnd_variant" = "kern_arnd")
+AS_IF([test "$gnutls_cv_func_getrandom" = yes], [
+  AC_DEFINE([HAVE_GETRANDOM], 1, [Enable the Linux getrandom function])
+  rnd_variant=getrandom
+])
 
-AC_MSG_CHECKING([for getentropy])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([
-	   #include <unistd.h>
-           #ifdef __APPLE__
-           #include <sys/random.h>
-           #endif
-           #ifdef __linux__
-           #error 1
-           #endif
-	   ],[
-		   getentropy(0, 0);
-		  ])],
-		  [AC_MSG_RESULT(yes)
-		   AC_DEFINE([HAVE_GETENTROPY], 1, [Enable the OpenBSD getentropy function])
-		   rnd_variant=getentropy],
-		  [AC_MSG_RESULT(no)])
+AC_CACHE_CHECK([for KERN_ARND], [gnutls_cv_kern_arnd],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <sys/sysctl.h>
+        #ifdef __linux__
+        #error 1
+        #endif
+        static int name[] = {CTL_KERN, KERN_ARND};
+      ]],
+      [[sysctl(0, 0, 0, 0, 0, 0);]])],
+    [gnutls_cv_kern_arnd=yes],
+    [gnutls_cv_kern_arnd=no])])
 
-AM_CONDITIONAL(HAVE_GETENTROPY, test "$rnd_variant" = "getentropy")
+AM_CONDITIONAL(HAVE_KERN_ARND, test "$gnutls_cv_kern_arnd" = yes)
+AM_COND_IF([HAVE_KERN_ARND],
+  [AC_DEFINE([HAVE_KERN_ARND], 1, [Enable the BSD sysctl(KERN_ARND) function])
+   rnd_variant=kern_arnd])
+
+AC_CACHE_CHECK([for getentropy], [gnutls_cv_func_getentropy],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <unistd.h>
+        #ifdef __APPLE__
+        #include <sys/random.h>
+        #endif
+        #ifdef __linux__
+        #error 1
+        #endif
+      ]],
+      [[getentropy(0, 0);]])],
+    [gnutls_cv_func_getentropy=yes],
+    [gnutls_cv_func_getentropy=no])])
+
+AM_CONDITIONAL(HAVE_GETENTROPY, test "$gnutls_cv_func_getentropy" = yes)
+AM_COND_IF([HAVE_GETENTROPY],
+  [AC_DEFINE([HAVE_GETENTROPY], 1, [Enable the OpenBSD getentropy function])
+   rnd_variant=getentropy])
 
 dnl Try the hooks.m4
 LIBGNUTLS_HOOKS
@@ -409,16 +425,31 @@ dnl headers. If we bypass the headers and just try linking (as AC_CHECK_FUNCS
 dnl does), we will accidentally detect functions which we shouldn't use. Set
 dnl ac_cv_func_* as well, to avoid later AC_CHECK_FUNCS from other included
 dnl scripts from overriding it.
-AC_MSG_CHECKING([for clock_gettime])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <time.h>], [clock_gettime(0, 0);])],
-  [AC_MSG_RESULT(yes); ac_cv_func_clock_gettime=yes
-  AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Define to 1 if you have the `clock_gettime' function.])],
-  [AC_MSG_RESULT(no); ac_cv_func_clock_gettime=no])
-AC_MSG_CHECKING([for fmemopen])
-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <stdio.h>], [fmemopen(0, 0, 0);])],
-  [AC_MSG_RESULT(yes); ac_cv_func_fmemopen=yes
-  AC_DEFINE([HAVE_FMEMOPEN], 1, [Define to 1 if you have the `fmemopen' function.])],
-  [AC_MSG_RESULT(no); ac_cv_func_fmemopen=no])
+AC_CACHE_CHECK([for clock_gettime], [gnutls_cv_func_clock_gettime],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <time.h>
+      ]],
+      [[clock_gettime(0, 0);]])],
+    [gnutls_cv_func_clock_gettime=yes],
+    [gnutls_cv_func_clock_gettime=no])])
+
+AS_IF([test "$gnutls_cv_func_clock_gettime" = yes], [
+  AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Define to 1 if you have the `clock_gettime' function.])
+])
+
+AC_CACHE_CHECK([for fmemopen], [gnutls_cv_func_fmemopen],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <stdio.h>
+      ]],
+      [[fmemopen(0, 0, 0);]])],
+    [gnutls_cv_func_fmemopen=yes],
+    [gnutls_cv_func_fmemopen=no])])
+
+AS_IF([test "$gnutls_cv_func_fmemopen" = yes], [
+  AC_DEFINE([HAVE_FMEMOPEN], 1, [Define to 1 if you have the `fmemopen' function.])
+])
 
 AM_CONDITIONAL(HAVE_FORK, test "$ac_cv_func_fork" != "no")
 
@@ -456,7 +487,7 @@ if test "$ac_cv_func_nanosleep" != "yes";then
   gnutls_needs_librt=yes
 fi
 
-if test "$ac_cv_func_clock_gettime" != "yes";then
+if test "$gnutls_cv_func_clock_gettime" != "yes";then
   AC_LIB_HAVE_LINKFLAGS(rt,, [#include <time.h>], [clock_gettime (0, 0);])
   gnutls_needs_librt=yes
 fi
@@ -530,8 +561,17 @@ fi
 
 AM_CONDITIONAL(WANT_TEST_SUITE, test "$full_test_suite" = "yes")
 
-# parts of the extended test suite use Python
-AM_PATH_PYTHON([3.6],, [:])
+dnl Python is required when building from git (for the cligen tool) and
+dnl when running the extended test suite.
+if test "$full_test_suite" = yes || test -e "${srcdir}/.git"; then
+	AM_PATH_PYTHON([3.6])
+fi
+
+AM_CONDITIONAL([HAVE_PYTHON_SIX], [$PYTHON -c 'import six' 2>/dev/null])
+if test "$full_test_suite" = yes; then
+   AM_COND_IF([HAVE_PYTHON_SIX],,
+        AC_MSG_WARN(['six' python module not found; skipping tls-fuzzer tests]))
+fi
 
 AC_ARG_ENABLE(oldgnutls-interop,
   AS_HELP_STRING([--enable-oldgnutls-interop], [enable interoperability testing with old gnutls version]),
@@ -904,7 +944,7 @@ fi
 AC_DEFINE_UNQUOTED([UNBOUND_ROOT_KEY_FILE],
   ["$unbound_root_key_file"], [The DNSSEC root key file])
 
-system_config_file="/etc/gnutls/config"
+system_config_file='${sysconfdir}/gnutls/config'
 AC_ARG_WITH(system-priority-file, AS_HELP_STRING([--with-system-priority-file],
                                  [specify the system-wide config file (set empty to disable)]),
             system_config_file="$withval"
@@ -916,8 +956,7 @@ if test -z "${system_config_file}";then
 	AC_DEFINE([DISABLE_SYSTEM_CONFIG], 1, [Whether to disable system configuration])
 fi
 
-AC_DEFINE_UNQUOTED([SYSTEM_PRIORITY_FILE],
-  ["$system_config_file"], [The system-wide gnutls configuration file])
+AC_SUBST([system_config_file])
 
 AC_ARG_WITH(default-priority-string, AS_HELP_STRING([--with-default-priority-string],
                                  [specify the default priority string used by gnutls_set_default_priority (default is NORMAL)]),
@@ -955,7 +994,6 @@ AM_CONDITIONAL(P11KIT_0_23_11_API, $PKG_CONFIG --atleast-version=0.23.11 p11-kit
 
 AM_CONDITIONAL(ENABLE_PKCS11, test "$with_p11_kit" != "no")
 
-AC_MSG_CHECKING([whether we can dlopen helper-libraries])
 save_LIBS=$LIBS
 LIBS="$LIBS -lm"
 LIBGNUTLS_CHECK_SONAME([m], [AC_LANG_PROGRAM([
@@ -964,21 +1002,20 @@ LIBGNUTLS_CHECK_SONAME([m], [AC_LANG_PROGRAM([
 LIBS="$save_LIBS"
 CFLAGS="$save_CFLAGS"
 
-AC_RUN_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <dlfcn.h>
-      #include <stdlib.h>
-    ]],
-    [[void *handle = dlopen("$M_LIBRARY_SONAME", RTLD_LAZY | RTLD_GLOBAL);
-      return handle != NULL ? 0 : 1;
-    ]])],
-  [ac_cv_dlopen_soname_works=yes],
-  [ac_cv_dlopen_soname_works=no],
-  [ac_cv_dlopen_soname_works=cross-compiling])
+AC_CACHE_CHECK([whether dlopen works with SONAME], [gnutls_cv_dlopen_soname_works],
+  [AC_RUN_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <dlfcn.h>
+        #include <stdlib.h>
+      ]],
+      [[void *handle = dlopen("$M_LIBRARY_SONAME", RTLD_LAZY | RTLD_GLOBAL);
+        return handle != NULL ? 0 : 1;
+      ]])],
+    [gnutls_cv_dlopen_soname_works=yes],
+    [gnutls_cv_dlopen_soname_works=no],
+    [gnutls_cv_dlopen_soname_works=cross-compiling])])
 
-AC_MSG_RESULT([$ac_cv_dlopen_soname_works])
-
-AM_CONDITIONAL([ENABLE_DLOPEN], [test "$ac_cv_dlopen_soname_works" = yes])
+AM_CONDITIONAL([ENABLE_DLOPEN], [test "$gnutls_cv_dlopen_soname_works" = yes])
 need_ltlibdl=no
 
 AC_ARG_WITH(tpm2,
@@ -1049,6 +1086,19 @@ AS_IF([test "$with_tpm2" = dlopen], [
     LIBS="$save_LIBS"
     CFLAGS="$save_CFLAGS"
 ])
+
+AS_IF([test -n "$tss2lib"], [
+    # Check for Esys_SetCryptoCallbacks availability
+    save_LIBS=$LIBS
+    save_CFLAGS=$CFLAGS
+    LIBS="$LIBS $TSS2_ESYS_LIBS"
+    CFLAGS="$CFLAGS $TSS2_ESYS_CFLAGS"
+    AC_CHECK_FUNCS([Esys_SetCryptoCallbacks])
+    LIBS="$save_LIBS"
+    CFLAGS="$save_CFLAGS"
+])
+
+AM_CONDITIONAL(NEED_ESYS_CRYPTO_CALLBACKS, test "$ac_cv_func_Esys_SetCryptoCallbacks" = "yes")
 
 AC_ARG_WITH(tpm,
 	AS_HELP_STRING([--without-tpm],
@@ -1286,54 +1336,23 @@ AS_IF([test "$ac_libzstd" = dlopen], [
     fi
 ])
 
-AC_ARG_WITH(liboqs,
-   [AS_HELP_STRING([--with-liboqs=yes/link/dlopen --with-liboqs],
-                  [customize/enable liboqs support])],
-            ac_liboqs=$withval, ac_liboqs=no)
-AS_CASE([$ac_liboqs],
-  [yes],
-    [AM_COND_IF([ENABLE_DLOPEN], [ac_liboqs=dlopen], [ac_liboqs=link])],
-  [dlopen],
-    [AM_COND_IF([ENABLE_DLOPEN], [:],[AC_MSG_ERROR([[
-***
-*** Unable to dlopen LIBOQS, try --with-liboqs.
-*** ]])])],
-  [link], [:],
-  [no], [:],
-  [AC_MSG_ERROR([[Unknown argument ${ac_liboqs} for --with-liboqs]])])
+AC_ARG_WITH(leancrypto,
+   [AS_HELP_STRING([--with-leancrypto],
+                  [enable leancrypto support])],
+            ac_leancrypto=$withval, ac_leancrypto=no)
 
-m4_define([min_liboqs_version_major], [0])
-m4_define([min_liboqs_version_minor], [11])
-m4_define([min_liboqs_version_micro], [0])
+AS_IF([test x$ac_leancrypto != xno],
+    [PKG_CHECK_MODULES([LEANCRYPTO], [leancrypto >= 1.2.0],
+      [AC_DEFINE([HAVE_LEANCRYPTO], 1, [Have leancrypto])],
+      [AC_MSG_ERROR([leancrypto support was requested but the required libraries were not found.])])])
 
-AS_IF([test x$ac_liboqs != xno],
-    [PKG_CHECK_MODULES([LIBOQS],[liboqs >= min_liboqs_version_major.min_liboqs_version_minor.min_liboqs_version_micro],
-      [AC_DEFINE([HAVE_LIBOQS], 1, [Have liboqs])
-      AC_DEFINE([MIN_LIBOQS_VERSION_MAJOR], min_liboqs_version_major, [Major version of liboqs required])
-      AC_DEFINE([MIN_LIBOQS_VERSION_MINOR], min_liboqs_version_minor, [Minor version of liboqs required])
-      AC_DEFINE([MIN_LIBOQS_VERSION_MICRO], min_liboqs_version_micro, [Micro version of liboqs required])
-      need_ltlibdl=yes],
-      [AC_MSG_ERROR([liboqs support was requested but the required libraries were not found.])])])
+AM_CONDITIONAL(ENABLE_LEANCRYPTO, test "$ac_leancrypto" != "no")
 
-AM_CONDITIONAL(ENABLE_LIBOQS, test "$ac_liboqs" != "no")
-AM_CONDITIONAL([LIBOQS_ENABLE_DLOPEN], [test "$ac_liboqs" = dlopen])
-
-AS_IF([test "$ac_liboqs" = dlopen], [
-    save_CFLAGS=$CFLAGS
-    CFLAGS="$CFLAGS $LIBOQS_CFLAGS"
-    save_LIBS=$LIBS
-    LIBS="$LIBS $LIBOQS_LIBS"
-    LIBGNUTLS_CHECK_SONAME([oqs], [AC_LANG_PROGRAM([
-                   #include <oqs/oqs.h>],[
-                   OQS_version ();])])
-    CFLAGS="$save_CFLAGS"
-    LIBS="$save_LIBS"
-],
-    [test "$ac_liboqs" = link], [
+AM_COND_IF([ENABLE_LEANCRYPTO], [
     if test "x$GNUTLS_REQUIRES_PRIVATE" = x; then
-        GNUTLS_REQUIRES_PRIVATE="Requires.private: liboqs"
+        GNUTLS_REQUIRES_PRIVATE="Requires.private: leancrypto"
     else
-        GNUTLS_REQUIRES_PRIVATE="$GNUTLS_REQUIRES_PRIVATE, liboqs"
+        GNUTLS_REQUIRES_PRIVATE="$GNUTLS_REQUIRES_PRIVATE, leancrypto"
     fi
 ])
 
@@ -1504,6 +1523,17 @@ AC_DEFINE([INI_STOP_ON_FIRST_ERROR], 1, [whether to stop on first error])
 AC_DEFINE_UNQUOTED([INI_INLINE_COMMENT_PREFIXES], [";#"], [The inline comment prefixes])
 AC_DEFINE_UNQUOTED([INI_START_COMMENT_PREFIXES], [";#"], [The comment prefixes])
 
+AH_VERBATIM([gnutls_lib_no_replace_fchdir], [
+/* Work around build failure on mingw caused by mis-interactions
+ * between 'close' and 'fchdir' Gnulib modules through dependencies,
+ * suggested in:
+ * <https://lists.gnu.org/archive/html/bug-gnulib/2024-12/msg00179.html>
+ */
+#ifdef GNUTLS_BUILDING_LIB
+# undef REPLACE_FCHDIR
+#endif
+])
+
 AC_CONFIG_FILES([
   Makefile
   doc/Makefile
@@ -1534,9 +1564,9 @@ AC_CONFIG_FILES([
   lib/gnutls.pc
   lib/includes/Makefile
   lib/includes/gnutls/gnutls.h
-  lib/liboqs/Makefile
   lib/minitasn1/Makefile
   lib/nettle/Makefile
+  lib/pkcs11/Makefile
   lib/x509/Makefile
   lib/unistring/Makefile
   po/Makefile.in
@@ -1616,6 +1646,7 @@ if features are disabled)
   Non-SuiteB curves:    $enable_non_suiteb
   FIPS140 mode:         $enable_fips
   Strict DER time:	$ac_strict_der_time
+  Audit trace:		$enable_crypto_auditing
 ])
 
 AC_MSG_NOTICE([Optional libraries:

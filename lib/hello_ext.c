@@ -438,8 +438,6 @@ int _gnutls_gen_hello_extensions(gnutls_session_t session,
 	int pos, ret;
 	size_t i;
 	hello_ext_ctx_st ctx;
-	/* To shuffle extension sending order */
-	extensions_t indices[MAX_EXT_TYPES];
 
 	msg &= GNUTLS_EXT_FLAG_SET_ONLY_FLAGS_MASK;
 
@@ -469,26 +467,39 @@ int _gnutls_gen_hello_extensions(gnutls_session_t session,
 				ret - 4);
 	}
 
-	/* Initializing extensions array */
-	for (i = 0; i < MAX_EXT_TYPES; i++) {
-		indices[i] = i;
-	}
+	if (msg & GNUTLS_EXT_FLAG_CLIENT_HELLO &&
+	    !session->internals.client_hello_exts_set) {
+		/* Initializing extensions array */
+		for (i = 0; i < MAX_EXT_TYPES; i++) {
+			session->internals.client_hello_exts[i] = i;
+		}
 
-	if (!session->internals.priorities->no_shuffle_extensions) {
-		/* Ordering padding and pre_shared_key as last extensions */
-		swap_exts(indices, MAX_EXT_TYPES - 2, GNUTLS_EXTENSION_DUMBFW);
-		swap_exts(indices, MAX_EXT_TYPES - 1,
-			  GNUTLS_EXTENSION_PRE_SHARED_KEY);
+		if (!session->internals.priorities->no_shuffle_extensions) {
+			/* Ordering padding and pre_shared_key as last extensions */
+			swap_exts(session->internals.client_hello_exts,
+				  MAX_EXT_TYPES - 2, GNUTLS_EXTENSION_DUMBFW);
+			swap_exts(session->internals.client_hello_exts,
+				  MAX_EXT_TYPES - 1,
+				  GNUTLS_EXTENSION_PRE_SHARED_KEY);
 
-		ret = shuffle_exts(indices, MAX_EXT_TYPES - 2);
-		if (ret < 0)
-			return gnutls_assert_val(ret);
+			ret = shuffle_exts(session->internals.client_hello_exts,
+					   MAX_EXT_TYPES - 2);
+			if (ret < 0)
+				return gnutls_assert_val(ret);
+		}
+		session->internals.client_hello_exts_set = true;
 	}
 
 	/* hello_ext_send() ensures we don't send duplicates, in case
 	 * of overridden extensions */
 	for (i = 0; i < MAX_EXT_TYPES; i++) {
-		size_t ii = indices[i];
+		size_t ii;
+
+		if (msg & GNUTLS_EXT_FLAG_CLIENT_HELLO)
+			ii = session->internals.client_hello_exts[i];
+		else
+			ii = i;
+
 		if (!extfunc[ii])
 			continue;
 
@@ -858,6 +869,11 @@ int gnutls_ext_register(const char *name, int id,
 		return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
 
 	tmp_mod->name = gnutls_strdup(name);
+	if (tmp_mod->name == NULL) {
+		gnutls_free(tmp_mod);
+		return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
+	}
+
 	tmp_mod->free_struct = 1;
 	tmp_mod->tls_id = id;
 	tmp_mod->gid = gid;
@@ -967,6 +983,9 @@ int gnutls_session_ext_register(gnutls_session_t session, const char *name,
 
 	memset(&tmp_mod, 0, sizeof(hello_ext_entry_st));
 	tmp_mod.name = gnutls_strdup(name);
+	if (tmp_mod.name == NULL)
+		return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
+
 	tmp_mod.free_struct = 1;
 	tmp_mod.tls_id = id;
 	tmp_mod.gid = gid;
@@ -994,6 +1013,7 @@ int gnutls_session_ext_register(gnutls_session_t session, const char *name,
 	}
 
 	if (unlikely(INT_ADD_OVERFLOW(session->internals.rexts_size, 1))) {
+		gnutls_free(tmp_mod.name);
 		return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
 	}
 
@@ -1001,6 +1021,7 @@ int gnutls_session_ext_register(gnutls_session_t session, const char *name,
 				    session->internals.rexts_size + 1,
 				    sizeof(*exts));
 	if (exts == NULL) {
+		gnutls_free(tmp_mod.name);
 		return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
 	}
 

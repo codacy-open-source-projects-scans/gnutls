@@ -41,7 +41,15 @@
 #include "system-keys.h"
 #include "str.h"
 #include "global.h"
-#include "liboqs/liboqs.h"
+#ifdef HAVE_LEANCRYPTO
+#include <leancrypto.h>
+#endif
+
+#ifdef ENABLE_PKCS11
+#include "pkcs11/p11_provider.h"
+#endif
+
+#include "audit.h"
 
 /* Minimum library versions we accept. */
 #define GNUTLS_MIN_LIBTASN1_VERSION "0.3.4"
@@ -242,6 +250,10 @@ static int _gnutls_global_init(unsigned constructor)
 	int ret = 0, res;
 	int level;
 	const char *e;
+#if defined(ENABLE_PKCS11) && defined(ENABLE_FIPS140)
+	const char *p11_provider_url = NULL;
+	const char *p11_provider_pin = NULL;
+#endif
 
 	if (!constructor) {
 		ret = gnutls_static_mutex_lock(&global_init_mutex);
@@ -270,6 +282,14 @@ static int _gnutls_global_init(unsigned constructor)
 #ifdef HAVE_DCGETTEXT
 	bindtextdomain(PACKAGE, LOCALEDIR);
 #endif
+
+	e = secure_getenv("GNUTLS_BUFFER_RECLAIM");
+	if (e != NULL) {
+		bool reclaiming = e[0] == '1' && e[1] == '\0';
+		_gnutls_debug_log("Using %s buffer allocator...\n",
+				  reclaiming ? "reclaiming" : "non-reclaiming");
+		_gnutls_buffer_set_reclaiming(reclaiming);
+	}
 
 	res = gnutls_crypto_init();
 	if (res != 0) {
@@ -366,6 +386,9 @@ static int _gnutls_global_init(unsigned constructor)
 	_gnutls_register_accel_crypto();
 	_gnutls_cryptodev_init();
 	_gnutls_afalg_init();
+#ifdef HAVE_LEANCRYPTO
+	lc_init(0);
+#endif
 
 #ifdef ENABLE_FIPS140
 	/* These self tests are performed on the overridden algorithms
@@ -386,8 +409,26 @@ static int _gnutls_global_init(unsigned constructor)
 		_gnutls_fips_mode_reset_zombie();
 	}
 #endif
+
 	_gnutls_prepare_to_load_system_priorities();
+
+#if defined(ENABLE_PKCS11) && defined(ENABLE_FIPS140)
+	p11_provider_url = _gnutls_config_get_p11_provider_url();
+	p11_provider_pin = _gnutls_config_get_p11_provider_pin();
+
+	if (res == 1 && p11_provider_url != NULL) {
+		ret = _p11_provider_init(p11_provider_url,
+					 (const uint8_t *)p11_provider_pin,
+					 strlen(p11_provider_pin));
+		if (ret < 0) {
+			gnutls_assert();
+			goto out;
+		}
+	}
+#endif
+
 	_gnutls_switch_lib_state(LIB_STATE_OPERATIONAL);
+
 	ret = 0;
 
 out:
@@ -430,6 +471,10 @@ static void _gnutls_global_deinit(unsigned destructor)
 		_gnutls_supplemental_deinit();
 		_gnutls_unload_system_priorities();
 
+#if defined(ENABLE_PKCS11) && defined(ENABLE_FIPS140)
+		_p11_provider_deinit();
+#endif
+
 #ifdef ENABLE_PKCS11
 		/* Do not try to deinitialize the PKCS #11 libraries
 		 * from the destructor. If we do and the PKCS #11 modules
@@ -444,9 +489,6 @@ static void _gnutls_global_deinit(unsigned destructor)
 #endif
 #ifdef HAVE_TPM2
 		_gnutls_tpm2_deinit();
-#endif
-#ifdef HAVE_LIBOQS
-		_gnutls_liboqs_deinit();
 #endif
 
 		_gnutls_nss_keylog_deinit();
@@ -581,6 +623,15 @@ static const struct gnutls_library_config_st _gnutls_library_config[] = {
 #endif
 	{ "hardware-features", HW_FEATURES },
 	{ "tls-features", TLS_FEATURES },
+#ifdef DEFAULT_TRUST_STORE_PKCS11
+	{ "default-trust-store-pkcs11", DEFAULT_TRUST_STORE_PKCS11 },
+#endif
+#ifdef DEFAULT_TRUST_STORE_DIR
+	{ "default-trust-store-dir", DEFAULT_TRUST_STORE_DIR },
+#endif
+#ifdef DEFAULT_TRUST_STORE_FILE
+	{ "default-trust-store-file", DEFAULT_TRUST_STORE_FILE },
+#endif
 	{ "default-system-config", SYSTEM_PRIORITY_FILE },
 	{ NULL, NULL }
 };

@@ -35,7 +35,7 @@
 #include "fips.h"
 #include "system-keys.h"
 #include "urls.h"
-#include "tpm2.h"
+#include "tpm2/tpm2.h"
 #include "pkcs11_int.h"
 #include "abstract_int.h"
 
@@ -243,11 +243,9 @@ static int privkey_to_pubkey(gnutls_pk_algorithm_t pk,
 	case GNUTLS_PK_EDDSA_ED448:
 	case GNUTLS_PK_ECDH_X25519:
 	case GNUTLS_PK_ECDH_X448:
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
-#endif
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
 		ret = _gnutls_set_datum(&pub->raw_pub, priv->raw_pub.data,
 					priv->raw_pub.size);
 		if (ret < 0)
@@ -1592,7 +1590,8 @@ int gnutls_privkey_decrypt_data(gnutls_privkey_t key, unsigned int flags,
 	switch (key->type) {
 	case GNUTLS_PRIVKEY_X509:
 		return _gnutls_pk_decrypt(key->pk_algorithm, plaintext,
-					  ciphertext, &key->key.x509->params);
+					  ciphertext, &key->key.x509->params,
+					  &key->key.x509->params.spki);
 #ifdef ENABLE_PKCS11
 	case GNUTLS_PRIVKEY_PKCS11:
 		return _gnutls_pkcs11_privkey_decrypt_data(
@@ -1659,7 +1658,8 @@ int gnutls_privkey_decrypt_data2(gnutls_privkey_t key, unsigned int flags,
 	case GNUTLS_PRIVKEY_X509:
 		return _gnutls_pk_decrypt2(key->pk_algorithm, ciphertext,
 					   plaintext, plaintext_size,
-					   &key->key.x509->params);
+					   &key->key.x509->params,
+					   &key->key.x509->params.spki);
 #ifdef ENABLE_PKCS11
 	case GNUTLS_PRIVKEY_PKCS11:
 		return _gnutls_pkcs11_privkey_decrypt_data2(key->key.pkcs11,

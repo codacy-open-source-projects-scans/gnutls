@@ -36,9 +36,6 @@
 #include "ecc.h"
 #include "pin.h"
 
-#ifdef HAVE_LIBOQS
-#include <dlwrap/oqs.h>
-#endif
 /**
  * gnutls_x509_privkey_init:
  * @key: A pointer to the type to be initialized
@@ -327,86 +324,106 @@ error:
 	return ret;
 }
 
-#ifdef HAVE_LIBOQS
-struct pqc_algorithm_version_st {
-	uint8_t version;
-	gnutls_pk_algorithm_t algorithm;
-	int secret_key_length;
-	int public_key_length;
-};
-
-int _gnutls_decode_pqc_keys(asn1_node *pkey_asn, const gnutls_datum_t *raw_key,
-			    gnutls_x509_privkey_t pkey, uint8_t *version)
+static int decode_ml_dsa_key(asn1_node *pkey_asn, const gnutls_datum_t *raw_key,
+			     gnutls_x509_privkey_t pkey)
 {
-	int result;
-	unsigned int _version;
+	int result, ret;
+	unsigned int version;
+	char oid[MAX_OID_SIZE];
+	int oid_size;
+	size_t raw_pub_size, raw_priv_size;
 
 	result = _asn1_strict_der_decode(pkey_asn, raw_key->data, raw_key->size,
 					 NULL);
 	if (result != ASN1_SUCCESS) {
 		gnutls_assert();
-		return result;
+		return _gnutls_asn2err(result);
 	}
 
-	result = _gnutls_x509_read_uint(*pkey_asn, "version", &_version);
-	*version = _version;
-	if (result < 0) {
+	ret = _gnutls_x509_read_uint(*pkey_asn, "version", &version);
+	if (ret < 0) {
 		gnutls_assert();
-		return result;
+		return ret;
 	}
 
-	result = _gnutls_x509_read_value(*pkey_asn, "privateKey",
-					 &pkey->params.raw_priv);
-	if (result < 0) {
+	oid_size = sizeof(oid);
+	result = asn1_read_value(*pkey_asn, "privateKeyAlgorithm.algorithm",
+				 oid, &oid_size);
+	if (result != ASN1_SUCCESS) {
 		gnutls_assert();
-		return result;
+		return _gnutls_asn2err(result);
 	}
 
-	result = _gnutls_x509_read_value(*pkey_asn, "publicKey",
-					 &pkey->params.raw_pub);
-	if (result < 0) {
-		gnutls_assert();
-		return result;
+	pkey->params.algo = gnutls_oid_to_pk(oid);
+
+	switch (pkey->params.algo) {
+	case GNUTLS_PK_MLDSA44:
+		raw_priv_size = MLDSA44_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA44_PUBKEY_SIZE;
+		break;
+	case GNUTLS_PK_MLDSA65:
+		raw_priv_size = MLDSA65_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA65_PUBKEY_SIZE;
+		break;
+	case GNUTLS_PK_MLDSA87:
+		raw_priv_size = MLDSA87_PRIVKEY_SIZE;
+		raw_pub_size = MLDSA87_PUBKEY_SIZE;
+		break;
+	default:
+		return gnutls_assert_val(
+			GNUTLS_E_UNSUPPORTED_SIGNATURE_ALGORITHM);
 	}
+
+	ret = _gnutls_x509_read_value(*pkey_asn, "privateKey",
+				      &pkey->params.raw_priv);
+	if (ret < 0) {
+		gnutls_assert();
+		return ret;
+	}
+
+	switch (version) {
+	case 0:
+		/* if version is 0, public key is embedded in
+		 * privateKey field, concatenated after a private
+		 * key */
+		if (pkey->params.raw_priv.size != raw_priv_size + raw_pub_size)
+			return gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
+		ret = _gnutls_set_datum(
+			&pkey->params.raw_pub,
+			&pkey->params.raw_priv.data[raw_priv_size],
+			raw_pub_size);
+		if (ret < 0) {
+			gnutls_assert();
+			return ret;
+		}
+		pkey->params.raw_priv.size = raw_priv_size;
+		break;
+	case 1:
+		/* if version is 1, public key is embedded in a
+		 * separate field */
+		ret = _gnutls_x509_read_value(*pkey_asn, "publicKey",
+					      &pkey->params.raw_pub);
+		if (ret < 0) {
+			gnutls_assert();
+			return ret;
+		}
+		break;
+	default:
+		return gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
+	}
+
+	if (pkey->params.raw_pub.size != raw_pub_size ||
+	    pkey->params.raw_priv.size != raw_priv_size)
+		return gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
 
 	return GNUTLS_E_SUCCESS;
 }
 
-static const struct pqc_algorithm_version_st ml_dsa_versions[] = {
-	{ '\x04', GNUTLS_PK_ML_DSA_44, OQS_SIG_ml_dsa_44_length_secret_key,
-	  OQS_SIG_ml_dsa_44_length_public_key },
-	{ '\x06', GNUTLS_PK_ML_DSA_65, OQS_SIG_ml_dsa_65_length_secret_key,
-	  OQS_SIG_ml_dsa_65_length_public_key },
-	{ '\x08', GNUTLS_PK_ML_DSA_87, OQS_SIG_ml_dsa_87_length_secret_key,
-	  OQS_SIG_ml_dsa_87_length_public_key },
-
-	{ '\x00', GNUTLS_PK_UNKNOWN, 0, 0 }
-};
-
-static int _gnutls_set_ml_dsa_params(const uint8_t *version,
-				     gnutls_x509_privkey_t pkey)
-{
-	const struct pqc_algorithm_version_st *v = ml_dsa_versions;
-	while (v->algorithm != GNUTLS_PK_UNKNOWN && v->version != *version)
-		v++;
-
-	pkey->params.raw_priv.size = v->secret_key_length;
-	pkey->params.raw_pub.size = v->public_key_length;
-	pkey->params.params_nr = ML_DSA_PRIVATE_PARAMS;
-	pkey->params.algo = v->algorithm;
-
-	if (v->algorithm == GNUTLS_PK_UNKNOWN)
-		return GNUTLS_E_UNKNOWN_ALGORITHM;
-
-	return 0;
-}
-
-int _gnutls_privkey_decode_ml_dsa_key(asn1_node *pkey_asn,
-				      const gnutls_datum_t *raw_key,
-				      gnutls_x509_privkey_t pkey)
+static int _gnutls_privkey_decode_ml_dsa_key(asn1_node *pkey_asn,
+					     const gnutls_datum_t *raw_key,
+					     gnutls_x509_privkey_t pkey)
 {
 	int result;
-	uint8_t version;
 
 	gnutls_pk_params_init(&pkey->params);
 
@@ -417,23 +434,15 @@ int _gnutls_privkey_decode_ml_dsa_key(asn1_node *pkey_asn,
 		return _gnutls_asn2err(result);
 	}
 
-	result = _gnutls_decode_pqc_keys(pkey_asn, raw_key, pkey, &version);
-	if (result < 0)
-		goto error;
-
-	result = _gnutls_set_ml_dsa_params(&version, pkey);
-	if (result < 0)
-		goto error;
-
-	return 0;
-
-error:
+	result = decode_ml_dsa_key(pkey_asn, raw_key, pkey);
 	asn1_delete_structure2(pkey_asn, ASN1_DELETE_FLAG_ZEROIZE);
-	gnutls_pk_params_clear(&pkey->params);
-	gnutls_pk_params_release(&pkey->params);
+	if (result < 0) {
+		gnutls_pk_params_clear(&pkey->params);
+		gnutls_pk_params_release(&pkey->params);
+	}
+
 	return result;
 }
-#endif
 
 static asn1_node decode_dsa_key(const gnutls_datum_t *raw_key,
 				gnutls_x509_privkey_t pkey)
@@ -519,9 +528,7 @@ error:
 #define PEM_KEY_DSA "DSA PRIVATE KEY"
 #define PEM_KEY_RSA "RSA PRIVATE KEY"
 #define PEM_KEY_ECC "EC PRIVATE KEY"
-#ifdef HAVE_LIBOQS
 #define PEM_KEY_ML_DSA "ML-DSA PRIVATE KEY"
-#endif
 #define PEM_KEY_PKCS8 "PRIVATE KEY"
 
 #define MAX_PEM_HEADER_SIZE 25
@@ -621,7 +628,6 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 					if (result >= 0)
 						key->params.algo =
 							GNUTLS_PK_DSA;
-#ifdef HAVE_LIBOQS
 				} else if (left > sizeof(PEM_KEY_ML_DSA) &&
 					   memcmp(ptr, PEM_KEY_ML_DSA,
 						  sizeof(PEM_KEY_ML_DSA) - 1) ==
@@ -631,9 +637,8 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 						&_data);
 					if (result >= 0) {
 						key->params.algo =
-							GNUTLS_PK_ML_DSA_44;
+							GNUTLS_PK_MLDSA44;
 					}
-#endif
 				}
 
 				if (key->params.algo == GNUTLS_PK_UNKNOWN &&
@@ -693,16 +698,13 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 			gnutls_assert();
 			key->key = NULL;
 		}
-#ifdef HAVE_LIBOQS
-	} else if (key->params.algo == GNUTLS_PK_ML_DSA_44) {
+	} else if (IS_ML_DSA(key->params.algo)) {
 		result = _gnutls_privkey_decode_ml_dsa_key(&key->key, &_data,
 							   key);
-
 		if (result < 0) {
 			gnutls_assert();
 			key->key = NULL;
 		}
-#endif
 	} else {
 		/* Try decoding each of the keys, and accept the one that
 		 * succeeds.
@@ -754,7 +756,7 @@ finish:
 
 cleanup:
 	if (need_free) {
-		zeroize_temp_key(_data.data, _data.size);
+		zeroize_key(_data.data, _data.size);
 		_gnutls_free_datum(&_data);
 	}
 
@@ -805,11 +807,7 @@ fail:
 	return ret;
 }
 
-#ifdef HAVE_LIBOQS
 #define MAX_ALGORITHM_NAME_SIZE_IN_PEM_HEADER 21
-#else
-#define MAX_ALGORITHM_NAME_SIZE_IN_PEM_HEADER 15
-#endif
 
 /**
  * gnutls_x509_privkey_import2:
@@ -880,13 +878,10 @@ int gnutls_x509_privkey_import2(gnutls_x509_privkey_t key,
 					    sizeof(PEM_KEY_ECC) - 1) == 0) ||
 				    (left > sizeof(PEM_KEY_DSA) &&
 				     memcmp(ptr, PEM_KEY_DSA,
-					    sizeof(PEM_KEY_DSA) - 1) == 0)
-#ifdef HAVE_LIBOQS
-				    || (left > sizeof(PEM_KEY_ML_DSA) &&
-					memcmp(ptr, PEM_KEY_ML_DSA,
-					       sizeof(PEM_KEY_ML_DSA) - 1) == 0)
-#endif
-				) {
+					    sizeof(PEM_KEY_DSA) - 1) == 0) ||
+				    (left > sizeof(PEM_KEY_ML_DSA) &&
+				     memcmp(ptr, PEM_KEY_ML_DSA,
+					    sizeof(PEM_KEY_ML_DSA) - 1) == 0)) {
 					head_enc = 0;
 				}
 			}
@@ -1638,12 +1633,10 @@ static const char *set_msg(gnutls_x509_privkey_t key)
 		return PEM_KEY_DSA;
 	case GNUTLS_PK_EC:
 		return PEM_KEY_ECC;
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
 		return PEM_KEY_ML_DSA;
-#endif
 	default:
 		return "UNKNOWN";
 	}

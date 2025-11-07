@@ -36,9 +36,7 @@
 #include "../ecc.h"
 #include "../algorithms.h"
 #include "pk.h"
-
-#define KYBER768_PUBLIC_KEY_SIZE 1184
-#define KYBER768_CIPHERTEXT_SIZE 1088
+#include "audit.h"
 
 static int key_share_recv_params(gnutls_session_t session, const uint8_t *data,
 				 size_t data_size);
@@ -184,6 +182,7 @@ static int client_gen_key_share_single(gnutls_session_t session,
 		break;
 
 	case GNUTLS_PK_MLKEM768:
+	case GNUTLS_PK_MLKEM1024:
 	case GNUTLS_PK_EXP_KYBER768:
 		gnutls_pk_params_release(&session->key.kshare.kem_params);
 		gnutls_pk_params_init(&session->key.kshare.kem_params);
@@ -254,11 +253,17 @@ static int client_gen_key_share(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
+	_gnutls_audit_new_context_with_data("name", CRAU_STRING,
+					    "tls::key_exchange", "tls::group",
+					    CRAU_WORD, group->tls_id, NULL);
+
 	for (size_t i = 0; groups[i]; i++) {
 		ret = client_gen_key_share_single(session, groups[i], extdata);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 	}
+
+	gnutls_audit_pop_context();
 
 	/* copy actual length */
 	_gnutls_write_uint16(extdata->length - length_pos - 2,
@@ -320,6 +325,7 @@ static int server_gen_key_share_single(gnutls_session_t session,
 		break;
 
 	case GNUTLS_PK_MLKEM768:
+	case GNUTLS_PK_MLKEM1024:
 	case GNUTLS_PK_EXP_KYBER768:
 		ret = gnutls_buffer_append_data(
 			extdata, session->key.kshare.kem_params.raw_pub.data,
@@ -374,11 +380,17 @@ static int server_gen_key_share(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
+	_gnutls_audit_new_context_with_data("name", CRAU_STRING,
+					    "tls::key_exchange", "tls::group",
+					    CRAU_WORD, group->tls_id, NULL);
+
 	for (size_t i = 0; groups[i]; i++) {
 		ret = server_gen_key_share_single(session, groups[i], extdata);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 	}
+
+	gnutls_audit_pop_context();
 
 	/* copy actual length */
 	_gnutls_write_uint16(extdata->length - length_pos - 2,
@@ -434,7 +446,8 @@ static int server_use_key_share_single(gnutls_session_t session,
 						   &pub.params[ECC_X],
 						   &pub.params[ECC_Y]);
 		if (ret < 0)
-			return gnutls_assert_val(ret);
+			return gnutls_assert_val(
+				GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 
 		pub.algo = group->pk;
 		pub.curve = curve->id;
@@ -562,8 +575,9 @@ static int server_use_key_share_single(gnutls_session_t session,
 
 		return 0;
 
+	case GNUTLS_PK_EXP_KYBER768:
 	case GNUTLS_PK_MLKEM768:
-	case GNUTLS_PK_EXP_KYBER768: {
+	case GNUTLS_PK_MLKEM1024:
 		gnutls_pk_params_release(&session->key.kshare.kem_params);
 		gnutls_pk_params_init(&session->key.kshare.kem_params);
 
@@ -574,14 +588,13 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		/* server's public key is unused, but the raw_pub field
-		 * is used to store ciphertext */
+		* is used to store ciphertext */
 		gnutls_free(session->key.kshare.kem_params.raw_pub.data);
 
-		if (KYBER768_PUBLIC_KEY_SIZE > buffer->length)
+		if (group->pubkey_size > buffer->length)
 			return gnutls_assert_val(
 				GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
-		_gnutls_buffer_pop_datum(buffer, &data,
-					 KYBER768_PUBLIC_KEY_SIZE);
+		_gnutls_buffer_pop_datum(buffer, &data, group->pubkey_size);
 
 		ret = _gnutls_pk_encaps(group->pk,
 					&session->key.kshare.kem_params.raw_pub,
@@ -595,7 +608,7 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		return 0;
-	}
+
 	default:
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}
@@ -619,11 +632,17 @@ static int server_use_key_share(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
+	_gnutls_audit_new_context_with_data("name", CRAU_STRING,
+					    "tls::key_exchange", "tls::group",
+					    CRAU_WORD, group->tls_id, NULL);
+
 	for (size_t i = 0; groups[i]; i++) {
 		ret = server_use_key_share_single(session, groups[i], &buffer);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 	}
+
+	gnutls_audit_pop_context();
 
 	if (buffer.length > 0)
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
@@ -665,7 +684,8 @@ static int client_use_key_share_single(gnutls_session_t session,
 						   &pub.params[ECC_X],
 						   &pub.params[ECC_Y]);
 		if (ret < 0)
-			return gnutls_assert_val(ret);
+			return gnutls_assert_val(
+				GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 
 		pub.algo = group->pk;
 		pub.curve = curve->id;
@@ -762,13 +782,13 @@ static int client_use_key_share_single(gnutls_session_t session,
 
 		return 0;
 
+	case GNUTLS_PK_EXP_KYBER768:
 	case GNUTLS_PK_MLKEM768:
-	case GNUTLS_PK_EXP_KYBER768: {
-		if (KYBER768_CIPHERTEXT_SIZE > buffer->length)
+	case GNUTLS_PK_MLKEM1024:
+		if (group->ciphertext_size > buffer->length)
 			return gnutls_assert_val(
 				GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
-		_gnutls_buffer_pop_datum(buffer, &data,
-					 KYBER768_CIPHERTEXT_SIZE);
+		_gnutls_buffer_pop_datum(buffer, &data, group->ciphertext_size);
 
 		ret = _gnutls_pk_decaps(
 			group->pk, &key, &data,
@@ -782,7 +802,7 @@ static int client_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		return 0;
-	}
+
 	default:
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}
@@ -806,11 +826,17 @@ static int client_use_key_share(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
+	_gnutls_audit_new_context_with_data("name", CRAU_STRING,
+					    "tls::key_exchange", "tls::group",
+					    CRAU_WORD, group->tls_id, NULL);
+
 	for (size_t i = 0; groups[i]; i++) {
 		ret = client_use_key_share_single(session, groups[i], &buffer);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 	}
+
+	gnutls_audit_pop_context();
 
 	if (buffer.length > 0)
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);

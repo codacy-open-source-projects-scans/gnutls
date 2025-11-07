@@ -33,6 +33,13 @@ fi
 
 . "${srcdir}/scripts/common.sh"
 
+: ${ac_cv_sizeof_time_t=8}
+if test "${ac_cv_sizeof_time_t}" -ge 8; then
+	ATTIME_VALID="2038-10-12"  # almost the pregenerated cert expiration
+else
+	ATTIME_VALID="2030-12-17"  # end of epoch − 2590 days of validity
+fi
+
 # First check any mismatch in the gnutls-cli --list
 if ! "${CLI}" --list | grep '^Groups: .*GROUP-X25519-KYBER768.*' >/dev/null; then
     if "${CLI}" --list | grep '^Public Key Systems: .*KYBER768.*' >/dev/null; then
@@ -54,8 +61,17 @@ else
     fi
 fi
 
-# If none of those hybrid groups is supported, skip the test
-if ! "${CLI}" --list | grep '^Groups: .*GROUP-\(X25519-KYBER768\|SECP256R1-MLKEM768\|X25519-MLKEM768\).*' >/dev/null; then
+if ! "${CLI}" --list | grep '^Groups: .*GROUP-SECP384R1-MLKEM1024.*' >/dev/null; then
+    if "${CLI}" --list | grep '^Public Key Systems: .*ML-KEM-1024.*' >/dev/null; then
+        fail '' 'ML-KEM-1024 is in Public Key Systems, while GROUP-SECP384R1-MLKEM1024 is NOT in Groups'
+    fi
+else
+    if ! "${CLI}" --list | grep '^Public Key Systems: .*ML-KEM-1024.*' >/dev/null; then
+        fail '' 'ML-KEM-1024 is NOT in Public Key Systems, while GROUP-SECP384R1-MLKEM1024 is in Groups'
+    fi
+fi
+# If none of those hybrid groups is supported, and TESTS_ENABLED_GROUPS is not set, skip the test
+if test "${TESTS_ENABLED_GROUPS+unset}" = unset && ! "${CLI}" --list | grep '^Groups: .*GROUP-\(X25519-KYBER768\|SECP256R1-MLKEM768\|SECP384R1-MLKEM1024\|X25519-MLKEM768\).*' >/dev/null; then
     exit 77
 fi
 
@@ -66,10 +82,17 @@ CERT="$srcdir/../doc/credentials/x509/cert-ecc.pem"
 CACERT="$srcdir/../doc/credentials/x509/ca.pem"
 
 # Test all supported hybrid groups
-for group in X25519-KYBER768 SECP256R1-MLKEM768 X25519-MLKEM768; do
+for group in X25519-KYBER768 SECP256R1-MLKEM768 SECP384R1-MLKEM1024 X25519-MLKEM768; do
     if ! "${CLI}" --list | grep "^Groups: .*GROUP-$group.*" >/dev/null; then
-	echo "$group is not supported, skipping" >&2
-	continue
+	case "$TESTS_ENABLED_GROUPS" in
+	    *"$group"*)
+		fail '' "$group must be enabled"
+		;;
+	    *)
+		echo "$group is not supported nor enabled, skipping" >&2
+		continue
+		;;
+	esac
     fi
 
     eval "${GETPORT}"
@@ -77,7 +100,7 @@ for group in X25519-KYBER768 SECP256R1-MLKEM768 X25519-MLKEM768; do
     PID=$!
     wait_server ${PID}
 
-    ${VALGRIND} "${CLI}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
+    ${VALGRIND} "${CLI}" --attime "${ATTIME_VALID}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
     kill ${PID}
     wait
 
@@ -85,7 +108,7 @@ for group in X25519-KYBER768 SECP256R1-MLKEM768 X25519-MLKEM768; do
 done
 
 # KEM based groups cannot be used standalone
-for group in KYBER768 MLKEM768; do
+for group in KYBER768 MLKEM768 MLKEM1024; do
     if ! "${CLI}" --list | grep "^Groups: .*GROUP-$group.*" >/dev/null; then
 	"$group is not supported, skipping"
 	continue
@@ -96,7 +119,7 @@ for group in KYBER768 MLKEM768; do
     PID=$!
     wait_server ${PID}
 
-    ${VALGRIND} "${CLI}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
+    ${VALGRIND} "${CLI}" --attime "${ATTIME_VALID}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
     rc=$?
     kill ${PID}
     wait
@@ -113,7 +136,7 @@ cat <<_EOF_ > "$testdir/test.config"
 disabled-curve = x25519
 _EOF_
 
-for group in X25519-KYBER768 SECP256R1-MLKEM768 X25519-MLKEM768; do
+for group in X25519-KYBER768 SECP256R1-MLKEM768 SECP384R1-MLKEM1024 X25519-MLKEM768; do
     if ! "${CLI}" --list | grep "^Groups: .*GROUP-$group.*" >/dev/null; then
 	echo "$group is not supported, skipping" >&2
 	continue
@@ -124,7 +147,7 @@ for group in X25519-KYBER768 SECP256R1-MLKEM768 X25519-MLKEM768; do
     PID=$!
     wait_server ${PID}
 
-    ${VALGRIND} "${CLI}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
+    ${VALGRIND} "${CLI}" --attime "${ATTIME_VALID}" -p "${PORT}" localhost --priority "NORMAL:-GROUP-ALL:+GROUP-$group" --x509cafile="$CACERT" --logfile="$testdir/cli.log" </dev/null
     rc=$?
     kill ${PID}
     wait

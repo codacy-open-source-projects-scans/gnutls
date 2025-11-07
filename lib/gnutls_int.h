@@ -767,6 +767,8 @@ typedef struct gnutls_group_entry_st {
 	const unsigned *q_bits;
 	gnutls_ecc_curve_t curve;
 	gnutls_pk_algorithm_t pk;
+	size_t pubkey_size; /* for KEM based groups */
+	size_t ciphertext_size; /* for KEM based groups */
 	gnutls_group_t ids[MAX_HYBRID_GROUPS + 1]; /* IDs of subgroups
 						    * comprising a
 						    * hybrid group,
@@ -873,9 +875,6 @@ typedef struct {
 
 	/* The epoch that the next handshake will initialize. */
 	uint16_t epoch_next;
-
-	/* The epoch at index 0 of record_parameters. */
-	uint16_t epoch_min;
 
 	/* this is the ciphersuite we are going to use
 	 * moved here from internals in order to be restored
@@ -1664,12 +1663,16 @@ typedef struct {
 	/* Compression method for certificate compression */
 	gnutls_compression_method_t compress_certificate_method;
 
+	/* To shuffle extension sending order */
+	extensions_t client_hello_exts[MAX_EXT_TYPES];
+	bool client_hello_exts_set;
+
 	/* If you add anything here, check _gnutls_handshake_internal_state_clear().
 	 */
 } internals_st;
 
 /* Maximum number of epochs we keep around. */
-#define MAX_EPOCH_INDEX 4
+#define MAX_EPOCH_INDEX 16
 
 #define reset_cand_groups(session)                                            \
 	session->internals.cand_ec_group = session->internals.cand_dh_group = \
@@ -1804,5 +1807,8 @@ extern unsigned int _gnutls_global_version;
 
 bool _gnutls_config_is_ktls_enabled(void);
 bool _gnutls_config_is_rsa_pkcs1_encrypt_allowed(void);
+int _gnutls_config_set_certificate_compression_methods(gnutls_session_t session);
+const char *_gnutls_config_get_p11_provider_url(void);
+const char *_gnutls_config_get_p11_provider_pin(void);
 
 #endif /* GNUTLS_LIB_GNUTLS_INT_H */

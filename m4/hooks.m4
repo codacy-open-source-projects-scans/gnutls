@@ -41,7 +41,7 @@ AC_DEFUN([LIBGNUTLS_HOOKS],
   #
   # Interfaces removed:                           AGE=0 (+bump all symbol versions in .map)
   AC_SUBST(LT_CURRENT, 70)
-  AC_SUBST(LT_REVISION, 2)
+  AC_SUBST(LT_REVISION, 4)
   AC_SUBST(LT_AGE, 40)
 
   AC_SUBST(LT_SSL_CURRENT, 27)
@@ -128,21 +128,6 @@ LIBTASN1_MINIMUM=4.9
   if test "$included_libtasn1" = "no"; then
     GNUTLS_REQUIRES_PRIVATE="${GNUTLS_REQUIRES_PRIVATE}, libtasn1"
   fi
-
-  AC_MSG_CHECKING([whether C99 macros are supported])
-  AC_TRY_COMPILE(,
-  [
-    #define test_mac(...)
-    int z,y,x;
-    test_mac(x,y,z);
-    return 0;
-  ], [
-    AC_DEFINE([C99_MACROS], 1, [C99 macros are supported])
-    AC_MSG_RESULT(yes)
-  ], [
-    AC_MSG_RESULT(no)
-    AC_MSG_WARN([C99 macros not supported. This may affect compiling.])
-  ])
 
   ac_strict_der_time=yes
   AC_MSG_CHECKING([whether to disable strict DER time encodings for backwards compatibility])
@@ -400,6 +385,33 @@ LIBTASN1_MINIMUM=4.9
   fi
   AM_CONDITIONAL(ENABLE_OCSP, test "$ac_enable_ocsp" != "no")
 
+  # For crypto-auditing trace
+  AC_MSG_CHECKING([whether to enable crypto-auditing trace support])
+  AC_ARG_ENABLE([crypto-auditing],
+    [AS_HELP_STRING([--enable-crypto-auditing],
+                   [enable crypto-auditing trace support])],
+    [enable_crypto_auditing=$enableval], [enable_crypto_auditing=no])
+  AC_MSG_RESULT([$enable_crypto_auditing])
+  AC_CHECK_HEADERS([sys/sdt.h])
+  AC_CACHE_CHECK([whether <sys/sdt.h> defines DTRACE_PROBE],
+    [gnutls_cv_sys_sdt_dtrace_probe],
+    [AC_PREPROC_IFELSE(
+       [AC_LANG_SOURCE([[#include <sys/sdt.h>
+                         #ifndef DTRACE_PROBE
+                         # error "DTRACE_PROBE is not defined"
+                         #endif]])],
+       [gnutls_cv_sys_sdt_dtrace_probe=yes],
+       [gnutls_cv_sys_sdt_dtrace_probe=no])])
+  AS_IF([test "$enable_crypto_auditing" != "no"],
+    [AS_IF([test "$gnutls_cv_sys_sdt_dtrace_probe" = "yes"],
+      [enable_crypto_auditing=yes],
+      [AS_CASE([$enable_crypto_auditing],
+        [yes], [AC_MSG_ERROR([no compatible sys/sdt.h found])],
+        [*], [enable_crypto_auditing=no])])])
+  AS_IF([test "$enable_crypto_auditing" = "yes"],
+        [AC_DEFINE([ENABLE_CRYPTO_AUDITING], [1], [enable crypto-auditing trace])])
+  AM_CONDITIONAL([ENABLE_CRYPTO_AUDITING], [test "$enable_crypto_auditing" = "yes"])
+
   # For storing integers in pointers without warnings
   # https://developer.gnome.org/doc/API/2.0/glib/glib-Type-Conversion-Macros.html#desc
   AC_CHECK_SIZEOF(void *)
@@ -426,18 +438,13 @@ AC_DEFUN([LIBGNUTLS_CHECK_SONAME],
 [
   m4_pushdef([soname], AS_TR_SH([$1]))
   m4_pushdef([SONAME], AS_TR_CPP([$1]))
-  AC_MSG_CHECKING([$1 [soname]])
-  AC_LINK_IFELSE([$2],
-	[soname[]_so=`(eval "$LDDPROG conftest$EXEEXT $LDDPOSTPROC") | grep '^lib[]$1\.so'`],
-	[soname[]_so=none])
-  if test -z "$soname[]_so"; then
-	soname[]_so=none
-  fi
-  AC_MSG_RESULT($soname[]_so)
-  if test "$soname[]_so" != none; then
-	SONAME[]_LIBRARY_SONAME="$soname[]_so"
-	AC_DEFINE_UNQUOTED([SONAME[]_LIBRARY_SONAME], ["$soname[]_so"], [The soname of $1 library])
-  fi
+  AC_CACHE_CHECK([$1 [soname]], [gnutls_cv_soname_[]soname],
+    [AC_LINK_IFELSE([$2],
+      [gnutls_cv_soname_[]soname=`(eval "$LDDPROG conftest$EXEEXT $LDDPOSTPROC") | grep '^lib[]$1\.so'`],
+      [gnutls_cv_soname_[]soname=])])
+  AS_IF([test -z "$gnutls_cv_soname_[]soname"], [gnutls_cv_soname_[]soname=none],
+        [SONAME[]_LIBRARY_SONAME="$gnutls_cv_soname_[]soname"
+	 AC_DEFINE_UNQUOTED([SONAME[]_LIBRARY_SONAME], ["$gnutls_cv_soname_[]soname"], [The soname of $1 library])])
   m4_popdef([soname])
   m4_popdef([SONAME])
 ])

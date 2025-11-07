@@ -5,6 +5,134 @@ Copyright (C) 2000-2016 Free Software Foundation, Inc.
 Copyright (C) 2013-2019 Nikos Mavrogiannopoulos
 See the end for copying conditions.
 
+* Version 3.8.11 (unreleased)
+
+** libgnutls: MAC algorithms for PSK binders is now configurable
+   The previous implementation assumed HMAC-SHA256 to calculate the
+   PSK binders. With the new gnutls_psk_allocate_client_credentials2()
+   and gnutls_psk_allocate_server_credentials2() functions, the
+   application can use other MAC algorithms such as HMAC-SHA384.
+
+** libgnutls: Expose a new function to provide the maximum record send size
+   A new function gnutls_record_get_max_send_size() has been added to
+   determine the maximum size of a TLS record to be sent to the peer.
+
+** libgnutls: Expose a new function to update keys without sending a KeyUpdate
+   to the peer. A new function gnutls_handshake_update_receiving_key()
+   has been added to allow updating the local receiving key without
+   sending any KeyUpdate messages.
+
+** libgnutls: PKCS#11 cryptographic provider configuration takes a token URI
+   instead of a module path. To allow using a PKCS#11 module exposing
+   multiple tokens, the "path" configuration keyword was replaced with
+   the "url" keyword.
+
+** libgnutls: Support crypto-auditing probe points
+   crypto-auditing is a project to monitor which cryptographic
+   operations are taking place in the library at run time, through
+   eBPF. This adds necessary probe points for that, in public key
+   cryptography and the TLS use-case. To enable this, run configure
+   with --enable-crypto-auditing.
+
+** API and ABI modifications:
+gnutls_psk_allocate_client_credentials2: New function
+gnutls_psk_allocate_server_credentials2: New function
+gnutls_record_get_max_send_size: New function
+gnutls_handshake_update_receiving_key: New function
+gnutls_audit_push_context: New function
+gnutls_audit_pop_context: New function
+gnutls_audit_current_context: New function
+
+* Version 3.8.10 (released 2025-07-08)
+
+** libgnutls: Fix NULL pointer dereference when 2nd Client Hello omits PSK
+   Reported by Stefan Bühler. [GNUTLS-SA-2025-07-07-4, CVSS: medium]
+   [CVE-2025-6395]
+
+** libgnutls: Fix heap read buffer overrun in parsing X.509 SCTS timestamps
+   Spotted by oss-fuzz and reported by OpenAI Security Research Team,
+   and fix developed by Andrew Hamilton. [GNUTLS-SA-2025-07-07-1,
+   CVSS: medium] [CVE-2025-32989]
+
+** libgnutls: Fix double-free upon error when exporting otherName in SAN
+   Reported by OpenAI Security Research Team. [GNUTLS-SA-2025-07-07-2,
+   CVSS: low] [CVE-2025-32988]
+
+** certtool: Fix 1-byte write buffer overrun when parsing template
+   Reported by David Aitel. [GNUTLS-SA-2025-07-07-3,
+   CVSS: low] [CVE-2025-32990]
+
+** libgnutls: PKCS#11 modules can now be used to override the default
+   cryptographic backend. Use the [provider] section in the system-wide config
+   to specify path and pin to the module (see system-wide config Documentation).
+
+** libgnutls: Linux kernel version 6.14 brings a Kernel TLS (kTLS) key update
+   support. The library running on the aforementioned version now utilizes the
+   kernel’s key update mechanism when kTLS is enabled, allowing uninterrupted
+   TLS session. The --enable-ktls configure option as well as the system-wide
+   kTLS configuration(see GnuTLS Documentation) are still required to enable
+   this feature.
+
+** libgnutls: liboqs support for PQC has been removed
+   For maintenance purposes, support for post-quantum cryptography
+   (PQC) is now only provided through leancrypto. The experimental key
+   exchange algorithm, X25519Kyber768Draft00, which is based on the
+   round 3 candidate of Kyber and only supported through liboqs has
+   also been removed altogether.
+
+** libgnutls: TLS certificate compression methods can now be set with
+   cert-compression-alg configuration option in the gnutls priority file.
+
+** libgnutls: All variants of ML-DSA private key formats are supported
+   While the previous implementation of ML-DSA was based on
+   draft-ietf-lamps-dilithium-certificates-04, this updates it to
+   draft-ietf-lamps-dilithium-certificates-12 with support for all 3
+   variants of private key formats: "seed", "expandedKey", and "both".
+
+** libgnutls: ML-DSA signatures can now be used in TLS
+   The ML-DSA signature algorithms, ML-DSA-44, ML-DSA-65, and
+   ML-DSA-87, can now be used to digitally sign TLS handshake
+   messages.
+
+** API and ABI modifications:
+GNUTLS_PKCS_MLDSA_SEED: New enum member of gnutls_pkcs_encrypt_flags_t
+GNUTLS_PKCS_MLDSA_EXPANDED: New enum member of gnutls_pkcs_encrypt_flags_t
+
+* Version 3.8.9 (released 2025-02-07)
+
+** libgnutls: leancrypto was added as an interim option for PQC
+   The library can now be built with leancrypto instead of liboqs for
+   post-quantum cryptography (PQC), when configured with
+   --with-leancrypto option instead of --with-liboqs.
+
+** libgnutls: Experimental support for ML-DSA signature algorithm
+   The library and certtool now support ML-DSA signature algorithm as
+   defined in FIPS 204 and based on
+   draft-ietf-lamps-dilithium-certificates-04. This feature is
+   currently marked as experimental and can only be enabled when
+   compiled with --with-leancrypto or --with-liboqs.
+   Contributed by David Dudas.
+
+** libgnutls: Support for ML-KEM-1024 key encapsulation mechanism
+   The support for ML-KEM post-quantum key encapsulation mechanisms
+   has been extended to cover ML-KEM-1024, in addition to ML-KEM-768.
+   MLKEM1024 is only offered as SecP384r1MLKEM1024 hybrid as per
+   draft-kwiatkowski-tls-ecdhe-mlkem-03.
+
+** libgnutls: Fix potential DoS in handling certificates with numerous name
+   constraints, as a follow-up of CVE-2024-12133 in libtasn1. The
+   bundled copy of libtasn1 has also been updated to the latest 4.20.0
+   release to complete the fix.  Reported by Bing Shi (#1553).
+   [GNUTLS-SA-2025-02-07, CVSS: medium] [CVE-2024-12243]
+
+** API and ABI modifications:
+GNUTLS_PK_MLDSA44: New enum member of gnutls_pk_algorithm_t
+GNUTLS_PK_MLDSA65: New enum member of gnutls_pk_algorithm_t
+GNUTLS_PK_MLDSA87: New enum member of gnutls_pk_algorithm_t
+GNUTLS_SIGN_MLDSA44: New enum member of gnutls_sign_algorithm_t
+GNUTLS_SIGN_MLDSA65: New enum member of gnutls_sign_algorithm_t
+GNUTLS_SIGN_MLDSA87: New enum member of gnutls_sign_algorithm_t
+
 * Version 3.8.8 (released 2024-11-05)
 
 ** libgnutls: Experimental support for X25519MLKEM768 and SecP256r1MLKEM768 key exchange in TLS 1.3
@@ -47,7 +175,7 @@ No changes since last version.
    the --with-liboqs configure option.
 
 ** API and ABI modifications:
-No changes since last version.
+GNUTLS_PK_MLKEM768: New enum member of gnutls_pk_algorithm_t
 
 * Version 3.8.6 (released 2024-07-03)
 

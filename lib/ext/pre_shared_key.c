@@ -785,8 +785,8 @@ cleanup:
 	if (free_username)
 		_gnutls_free_datum(&username);
 
-	_gnutls_free_temp_key_datum(&user_key);
-	_gnutls_free_temp_key_datum(&rkey);
+	_gnutls_free_key_datum(&user_key);
+	_gnutls_free_key_datum(&rkey);
 
 	return ret;
 }
@@ -827,7 +827,9 @@ static int server_recv_params(gnutls_session_t session,
 	struct timespec ticket_creation_time = { 0, 0 };
 	enum binder_type binder_type;
 	bool refuse_early_data = false;
+	gnutls_mac_algorithm_t mac = GNUTLS_MAC_SHA384;
 
+retry_binder:
 	ret = _gnutls13_psk_ext_parser_init(&psk_parser, data, len);
 	if (ret < 0) {
 		/* No PSKs advertised by client */
@@ -884,7 +886,9 @@ static int server_recv_params(gnutls_session_t session,
 			gnutls_psk_key_flags flags;
 			uint8_t ipsk[MAX_HASH_SIZE];
 
-			prf = pskcred->binder_algo;
+			prf = pskcred->binder_algo == NULL ?
+				      _gnutls_mac_to_entry(mac) :
+				      pskcred->binder_algo;
 
 			/* this fails only on configuration errors; as such we always
 			 * return its error code in that case */
@@ -922,11 +926,11 @@ static int server_recv_params(gnutls_session_t session,
 
 				ret = derive_ipsk(prf, &psk.identity, &key,
 						  ipsk);
-				_gnutls_free_temp_key_datum(&key);
 				if (ret < 0) {
 					gnutls_assert();
 					goto fail;
 				}
+				_gnutls_free_key_datum(&key);
 				ret = _gnutls_set_datum(&key, ipsk,
 							prf->output_size);
 				zeroize_key(ipsk, sizeof(ipsk));
@@ -974,6 +978,16 @@ static int server_recv_params(gnutls_session_t session,
 
 	if (_gnutls_mac_get_algo_len(prf) != binder_recvd.size ||
 	    gnutls_memcmp(binder_value, binder_recvd.data, binder_recvd.size)) {
+		/*
+		 * Older clients will always use SHA256 as binder algorithm
+		 * even for SHA384 PSKs, so we need to retry with SHA256
+		 * to calculate the correct binder value for those.
+		 */
+		if (pskcred->binder_algo == NULL && mac == GNUTLS_MAC_SHA384) {
+			mac = GNUTLS_MAC_SHA256;
+			_gnutls_free_key_datum(&key);
+			goto retry_binder;
+		}
 		gnutls_assert();
 		ret = GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER;
 		goto fail;
@@ -1072,7 +1086,7 @@ static int server_recv_params(gnutls_session_t session,
 	}
 
 fail:
-	_gnutls_free_datum(&key);
+	_gnutls_free_key_datum(&key);
 	return ret;
 }
 
@@ -1170,6 +1184,8 @@ static int _gnutls_psk_recv_params(gnutls_session_t session,
 
 	if (session->security_parameters.entity == GNUTLS_CLIENT) {
 		if (session->internals.hsk_flags & HSK_PSK_KE_MODES_SENT) {
+			DECR_LEN(len, 2);
+
 			uint16_t selected_identity = _gnutls_read_uint16(data);
 
 			for (i = 0; i < sizeof(session->key.binders) /

@@ -22,7 +22,7 @@ include $(top_srcdir)/lib/common.mk
 
 AM_CFLAGS += $(HOGWEED_CFLAGS) $(GMP_CFLAGS)
 
-AM_CPPFLAGS = \
+AM_CPPFLAGS += \
 	-I$(srcdir)/int		\
 	-I$(srcdir)/backport		\
 	-I$(srcdir)/../../gl		\
@@ -36,8 +36,8 @@ if ENABLE_MINITASN1
 AM_CPPFLAGS += -I$(srcdir)/../minitasn1
 endif
 
-if LIBOQS_ENABLE_DLOPEN
-AM_CPPFLAGS += $(LIBOQS_CFLAGS) -DGNUTLS_OQS_ENABLE_DLOPEN=1
+if ENABLE_LEANCRYPTO
+AM_CPPFLAGS += $(LEANCRYPTO_CFLAGS)
 endif
 
 noinst_LTLIBRARIES = libcrypto.la

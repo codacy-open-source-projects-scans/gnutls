@@ -223,6 +223,7 @@ typedef struct {
 	gnutls_gost_paramset_t gost_params; /* GNUTLS_PK_GOST_* */
 	gnutls_datum_t raw_pub; /* used by x25519 */
 	gnutls_datum_t raw_priv;
+	gnutls_datum_t raw_seed; /* used by ML-DSA */
 
 	unsigned int seed_size;
 	uint8_t seed[MAX_PVP_SEED_SIZE];
@@ -236,6 +237,12 @@ typedef struct {
 /**
  * gnutls_pk_flag_t:
  * @GNUTLS_PK_FLAG_NONE: No flag.
+ * @GNUTLS_PK_FLAG_PROVABLE: Use a provable construction when generating keys
+ * @GNUTLS_PK_FLAG_REPRODUCIBLE: Use a deterministic construction when generating keys
+ * @GNUTLS_PK_FLAG_RSA_PSS_FIXED_SALT_LENGTH: Disallow RSA-PSS signatures made
+ *   with mismatching salt length with digest length, as mandated in RFC 8446
+ *   4.2.3.
+ * @GNUTLS_PK_FLAG_EXPAND_KEYS_FROM_SEED: Expand keys from a seed.
  *
  * Enumeration of public-key flag.
  */
@@ -243,7 +250,8 @@ typedef enum {
 	GNUTLS_PK_FLAG_NONE = 0,
 	GNUTLS_PK_FLAG_PROVABLE = 1,
 	GNUTLS_PK_FLAG_REPRODUCIBLE = 2,
-	GNUTLS_PK_FLAG_RSA_PSS_FIXED_SALT_LENGTH = 4
+	GNUTLS_PK_FLAG_RSA_PSS_FIXED_SALT_LENGTH = 4,
+	GNUTLS_PK_FLAG_EXPAND_KEYS_FROM_SEED = 8
 } gnutls_pk_flag_t;
 
 #define FIX_SIGN_PARAMS(params, flags, dig)                            \
@@ -278,9 +286,7 @@ void gnutls_pk_params_init(gnutls_pk_params_st *p);
 #define RSA_PRIVATE_PARAMS 8
 #define ECC_PRIVATE_PARAMS 3
 #define GOST_PRIVATE_PARAMS 3
-#ifdef HAVE_LIBOQS
 #define ML_DSA_PRIVATE_PARAMS 4
-#endif
 
 #if MAX_PRIV_PARAMS_SIZE - RSA_PRIVATE_PARAMS < 0
 #error INCREASE MAX_PRIV_PARAMS
@@ -380,13 +386,16 @@ typedef struct gnutls_crypto_pk {
 	 * parameters, depending on the operation */
 	int (*encrypt)(gnutls_pk_algorithm_t, gnutls_datum_t *ciphertext,
 		       const gnutls_datum_t *plaintext,
-		       const gnutls_pk_params_st *pub);
+		       const gnutls_pk_params_st *pub,
+		       const gnutls_x509_spki_st *encrypt);
 	int (*decrypt)(gnutls_pk_algorithm_t, gnutls_datum_t *plaintext,
 		       const gnutls_datum_t *ciphertext,
-		       const gnutls_pk_params_st *priv);
+		       const gnutls_pk_params_st *priv,
+		       const gnutls_x509_spki_st *encrypt);
 	int (*decrypt2)(gnutls_pk_algorithm_t, const gnutls_datum_t *ciphertext,
 			unsigned char *plaintext, size_t paintext_size,
-			const gnutls_pk_params_st *priv);
+			const gnutls_pk_params_st *priv,
+			const gnutls_x509_spki_st *encrypt);
 	int (*sign)(gnutls_pk_algorithm_t, gnutls_datum_t *signature,
 		    const gnutls_datum_t *data, const gnutls_pk_params_st *priv,
 		    const gnutls_x509_spki_st *sign);
@@ -468,5 +477,11 @@ int _gnutls_rsa_pkcs1_sign_pad(size_t key_bits, const gnutls_datum_t *data,
 int _gnutls_rsa_pss_sign_pad(gnutls_x509_spki_st *params, size_t key_bits,
 			     const gnutls_datum_t *data, unsigned char *buffer,
 			     size_t buffer_size);
+
+const gnutls_crypto_cipher_st *_gnutls_cipher_backend(void) ATTRIBUTE_PURE;
+const gnutls_crypto_pk_st *_gnutls_pk_backend(void) ATTRIBUTE_PURE;
+const gnutls_crypto_mac_st *_gnutls_mac_backend(void) ATTRIBUTE_PURE;
+const gnutls_crypto_digest_st *_gnutls_digest_backend(void) ATTRIBUTE_PURE;
+const gnutls_crypto_kdf_st *_gnutls_kdf_backend(void) ATTRIBUTE_PURE;
 
 #endif /* GNUTLS_LIB_CRYPTO_BACKEND_H */

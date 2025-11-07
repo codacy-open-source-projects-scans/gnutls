@@ -110,7 +110,17 @@ EXTRA_DIST = data/ca-no-pathlen.pem data/no-ca-or-pathlen.pem data/aki-cert.pem 
 	data/pbmac1_512_256.good.p12 data/pbmac1_512_512.good.p12 \
 	data/pbmac1-simple.p12 \
 	templates/simple-policy.tmpl data/simple-policy.pem templates/template-negative-serial.tmpl \
-	templates/template-encryption-only.tmpl
+	templates/template-encryption-only.tmpl \
+	data/key-mldsa44-seed.pem data/key-mldsa44-expanded.pem \
+	data/key-mldsa44-both.pem \
+	data/key-mldsa65-seed.pem data/key-mldsa65-expanded.pem \
+	data/key-mldsa65-both.pem \
+	data/key-mldsa87-seed.pem data/key-mldsa87-expanded.pem \
+	data/key-mldsa87-both.pem \
+	data/key-mldsa-inconsistent1.pem \
+	data/key-mldsa-inconsistent2.pem \
+	data/key-mldsa-inconsistent3.pem \
+	templates/template-too-many-othernames.tmpl
 
 dist_check_SCRIPTS = pathlen.sh aki.sh invalid-sig.sh email.sh \
 	pkcs7.sh pkcs7-broken-sigs.sh privkey-import.sh name-constraints.sh certtool-long-cn.sh crl.sh provable-privkey.sh \
@@ -121,7 +131,7 @@ dist_check_SCRIPTS = pathlen.sh aki.sh invalid-sig.sh email.sh \
 	smime.sh cert-time.sh alt-chain.sh pkcs7-list-sign.sh pkcs7-eddsa.sh certtool-ecdsa.sh \
 	key-id.sh pkcs8.sh pkcs8-decode.sh ecdsa.sh illegal-rsa.sh pkcs8-invalid.sh key-invalid.sh \
 	pkcs8-eddsa.sh certtool-subca.sh certtool-verify-profiles.sh x509-duplicate-ext.sh x25519-and-x448.sh \
-	reject-negative-serial.sh
+	reject-negative-serial.sh mldsa.sh
 
 dist_check_SCRIPTS += key-id.sh ecdsa.sh pkcs8-invalid.sh key-invalid.sh pkcs8-decode.sh pkcs8.sh pkcs8-eddsa.sh \
 	certtool-utf8.sh crq.sh
@@ -199,7 +209,7 @@ endif
 TESTS_ENVIRONMENT +=					\
 	FAKETIME="$(FAKETIME)"				\
 	FAKETIME_F_OPT="$(FAKETIME_F_OPT)"		\
-	ac_cv_faketime_works="$(ac_cv_faketime_works)"
+	gnutls_cv_prog_faketime_works="$(gnutls_cv_prog_faketime_works)"
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(SHELL)

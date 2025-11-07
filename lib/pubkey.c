@@ -38,10 +38,6 @@
 #include "urls.h"
 #include "ecc.h"
 
-#ifdef HAVE_LIBOQS
-#include <dlwrap/oqs.h>
-#endif
-
 static int pubkey_verify_hashed_data(const gnutls_sign_entry_st *se,
 				     const mac_entry_st *me,
 				     const gnutls_datum_t *hash,
@@ -52,35 +48,6 @@ static int pubkey_verify_hashed_data(const gnutls_sign_entry_st *se,
 
 static int pubkey_supports_sig(gnutls_pubkey_t pubkey,
 			       const gnutls_sign_entry_st *se);
-
-#ifdef HAVE_LIBOQS
-struct pq_algorithm_pubkey_bits_st {
-	gnutls_pk_algorithm_t algorithm;
-	int pubkey_bits;
-};
-
-static const struct pq_algorithm_pubkey_bits_st pq_pubkey_bits[] = {
-	{ GNUTLS_PK_ML_DSA_44, OQS_SIG_ml_dsa_44_length_public_key },
-	{ GNUTLS_PK_ML_DSA_65, OQS_SIG_ml_dsa_65_length_public_key },
-	{ GNUTLS_PK_ML_DSA_87, OQS_SIG_ml_dsa_87_length_public_key },
-
-	{ GNUTLS_PK_UNKNOWN, 0 }
-};
-
-static int pq_pubkey_to_bits(const gnutls_pk_algorithm_t algo)
-{
-	const struct pq_algorithm_pubkey_bits_st *pubkey_to_bits =
-		pq_pubkey_bits;
-	while (pubkey_to_bits->algorithm != algo &&
-	       pubkey_to_bits->algorithm != GNUTLS_PK_UNKNOWN)
-		pubkey_to_bits++;
-
-	if (pubkey_to_bits->algorithm == GNUTLS_PK_UNKNOWN)
-		gnutls_assert();
-
-	return pubkey_to_bits->pubkey_bits;
-}
-#endif
 
 unsigned pubkey_to_bits(const gnutls_pk_params_st *params)
 {
@@ -100,12 +67,12 @@ unsigned pubkey_to_bits(const gnutls_pk_params_st *params)
 	case GNUTLS_PK_GOST_12_256:
 	case GNUTLS_PK_GOST_12_512:
 		return gnutls_ecc_curve_get_size(params->curve) * 8;
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
-		return pq_pubkey_to_bits(params->algo);
-#endif
+	case GNUTLS_PK_MLDSA44:
+		return MLDSA44_PUBKEY_SIZE * 8;
+	case GNUTLS_PK_MLDSA65:
+		return MLDSA65_PUBKEY_SIZE * 8;
+	case GNUTLS_PK_MLDSA87:
+		return MLDSA87_PUBKEY_SIZE * 8;
 	default:
 		return 0;
 	}
@@ -390,15 +357,13 @@ int gnutls_pubkey_get_preferred_hash_algorithm(gnutls_pubkey_t key,
 				pubkey_to_bits(&key->params));
 		ret = 0;
 		break;
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
 		if (hash)
 			*hash = GNUTLS_DIG_SHAKE_256;
 		ret = 0;
 		break;
-#endif
 	default:
 		gnutls_assert();
 		ret = GNUTLS_E_INTERNAL_ERROR;
@@ -517,7 +482,10 @@ static int gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
 					  const gnutls_datum_t *parameters,
 					  const gnutls_datum_t *ecpoint)
 {
-	int ret;
+	int ret, tag_len;
+	unsigned long tag = 0;
+	unsigned char class;
+	unsigned int etype;
 
 	gnutls_ecc_curve_t curve = GNUTLS_ECC_CURVE_INVALID;
 	gnutls_datum_t raw_point = { NULL, 0 };
@@ -527,16 +495,43 @@ static int gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
 		return gnutls_assert_val(ret);
 	}
 
-	ret = _gnutls_x509_decode_string(ASN1_ETYPE_OCTET_STRING, ecpoint->data,
-					 ecpoint->size, &raw_point, 0);
-	if (ret < 0) {
-		gnutls_assert();
-		gnutls_free(raw_point.data);
-		return ret;
+	/* Even though the PKCS#11 3.1 spec defines EC_POINT as
+	 * "Public key bytes in little endian order", previous version
+         * of the spec caused confusion and lot of implementations instead
+         * store EC_POINT DER encoded either as a BIT STRING or OCTET STRING.
+         * We need to check all three options.
+	 */
+	if (ecpoint->size == (unsigned int)gnutls_ecc_curve_get_size(curve)) {
+		raw_point.data = ecpoint->data;
+		raw_point.size = ecpoint->size;
+	} else {
+		ret = asn1_get_tag_der(ecpoint->data, ecpoint->size, &class,
+				       &tag_len, &tag);
+		if (ret != ASN1_SUCCESS)
+			return gnutls_assert_val(_gnutls_asn2err(ret));
+
+		switch (tag) {
+		case 0x03:
+			etype = ASN1_ETYPE_BIT_STRING;
+			break;
+		case 0x04:
+			etype = ASN1_ETYPE_OCTET_STRING;
+			break;
+		default:
+			return gnutls_assert_val(GNUTLS_E_ASN1_TAG_ERROR);
+		}
+
+		ret = _gnutls_x509_decode_string(etype, ecpoint->data,
+						 ecpoint->size, &raw_point, 0);
+		if (ret < 0)
+			return gnutls_assert_val(ret);
 	}
+
 	ret = gnutls_pubkey_import_ecc_raw(key, curve, &raw_point, NULL);
 
-	gnutls_free(raw_point.data);
+	if (raw_point.data != ecpoint->data)
+		gnutls_free(raw_point.data);
+
 	return ret;
 }
 
@@ -2341,7 +2336,7 @@ int gnutls_pubkey_encrypt_data(gnutls_pubkey_t key, unsigned int flags,
 	}
 
 	return _gnutls_pk_encrypt(key->params.algo, ciphertext, plaintext,
-				  &key->params);
+				  &key->params, &key->params.spki);
 }
 
 static int pubkey_supports_sig(gnutls_pubkey_t pubkey,
@@ -2521,10 +2516,7 @@ static int _pkcs1_rsa_verify_sig(gnutls_pk_algorithm_t pk,
 	d.size = digest_size;
 
 	if (pk == GNUTLS_PK_RSA) {
-		/* SHA-1 is allowed for SigVer in FIPS 140-3 in legacy
-		 * mode */
 		switch (me->id) {
-		case GNUTLS_MAC_SHA1:
 		case GNUTLS_MAC_SHA256:
 		case GNUTLS_MAC_SHA384:
 		case GNUTLS_MAC_SHA512:
@@ -2697,11 +2689,9 @@ int pubkey_verify_data(const gnutls_sign_entry_st *se, const mac_entry_st *me,
 
 	case GNUTLS_PK_EDDSA_ED25519:
 	case GNUTLS_PK_EDDSA_ED448:
-#ifdef HAVE_LIBOQS
-	case GNUTLS_PK_ML_DSA_44:
-	case GNUTLS_PK_ML_DSA_65:
-	case GNUTLS_PK_ML_DSA_87:
-#endif
+	case GNUTLS_PK_MLDSA44:
+	case GNUTLS_PK_MLDSA65:
+	case GNUTLS_PK_MLDSA87:
 		if (_gnutls_pk_verify(se->pk, data, signature, params,
 				      sign_params) != 0) {
 			gnutls_assert();

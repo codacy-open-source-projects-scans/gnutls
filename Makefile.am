@@ -18,9 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+# Note: libdane is required by the abi-check-latest target used in
+# distcheck-hook.
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--enable-doc \
 	--enable-gtk-doc \
+	--enable-libdane \
 	--disable-valgrind-tests
 
 SUBDIRS = gl lib extra
@@ -50,7 +53,7 @@ endif
 
 ACLOCAL_AMFLAGS = -I m4 -I src/gl/m4 -I lib/unistring/m4 --install
 
-EXTRA_DIST = cfg.mk maint.mk CONTRIBUTING.md README.md LICENSE AUTHORS NEWS \
+EXTRA_DIST = cfg.mk maint.mk CONTRIBUTING.md README.md COPYING.LESSERv2 COPYING AUTHORS NEWS \
 	ChangeLog THANKS INSTALL.md RELEASES.md .mailmap
 
 DISTCLEANFILES = AUTHORS
@@ -190,6 +193,9 @@ dist-hook:
 	$(MAKE) ChangeLog
 	mv ChangeLog $(distdir)
 	touch -c $(distdir)/doc/*.html $(distdir)/doc/*.pdf $(distdir)/doc/*.info
+
+distcheck-hook:
+	@test -d "$(top_srcdir)/po/.reference" || { echo "PO files are not downloaded; run ./bootstrap without --skip-po"; exit 1; }
 
 .PHONY: abi-check abi-dump-versioned abi-dump-latest pic-check symbol-check local-code-coverage-output files-update AUTHORS
 

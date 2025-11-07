@@ -222,7 +222,6 @@ lib/libgnutls-xssl.la
 lib/libgnutlsxx.la
 lib/Makefile
 lib/Makefile.in
-lib/liboqs/libcrypto.la
 lib/minitasn1/libminitasn1.la
 lib/minitasn1/Makefile
 lib/minitasn1/Makefile.in
@@ -236,6 +235,9 @@ lib/openpgp/libgnutls_openpgp.la
 lib/openpgp/Makefile
 lib/openpgp/Makefile.in
 lib/openpgp/pgp-api.texi
+lib/pkcs11/libgnutls_pkcs11.la
+lib/pkcs11/Makefile
+lib/pkcs11/Makefile.in
 lib/priority_options.h
 .libs
 libtool
@@ -350,6 +352,7 @@ tests/client
 tests/client-fastopen
 tests/client-sign-md5-rep
 tests/client_dsa_key
+tests/compress-cert-conf
 tests/conv-utf8
 tests/crl-basic
 tests/crl_apis
@@ -459,6 +462,7 @@ tests/ktls_keyupdate
 tests/libpkcs11mock1.la
 tests/libpkcs11mock2.la
 tests/libpkcs11mock3.la
+tests/libpkcs11mock4.la
 tests/libutils.la
 tests/long-session-id
 tests/mini
@@ -578,6 +582,7 @@ tests/pkcs11/gnutls_pcert_list_import_x509_file
 tests/pkcs11/gnutls_x509_crt_list_import_url
 tests/pkcs11/list-objects
 tests/pkcs11/list-tokens
+tests/pkcs11/os-locking-ok
 tests/pkcs11/pkcs11-chainverify
 tests/pkcs11/pkcs11-combo
 tests/pkcs11/pkcs11-ec-privkey-test
@@ -599,6 +604,10 @@ tests/pkcs11/pkcs11-pubkey-import-rsa
 tests/pkcs11/pkcs11-rsa-pss-privkey-test
 tests/pkcs11/tls-neg-pkcs11-key
 tests/pkcs11/tls-neg-pkcs11-no-key
+tests/pkcs11-provider/pkcs11-provider-cipher
+tests/pkcs11-provider/pkcs11-provider-hmac
+tests/pkcs11-provider/pkcs11-provider-pk
+tests/pkcs11-provider/pkcs11-provider-sig
 tests/pkcs12-decode/Makefile
 tests/pkcs12-decode/Makefile.in
 tests/pkcs12_encode
@@ -870,6 +879,7 @@ tests/tls13/compress-cert-neg
 tests/tls13/compress-cert-neg2
 tests/tls13/cookie
 tests/tls13/hello_retry_request
+tests/tls13/hello_retry_request_psk
 tests/tls13/hello_retry_request_resume
 tests/tls13/key_limits
 tests/tls13/key_share

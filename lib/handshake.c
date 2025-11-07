@@ -59,6 +59,7 @@
 #include "tls13/session_ticket.h"
 #include "locks.h"
 #include "system/ktls.h"
+#include "audit.h"
 
 static int check_if_null_comp_present(gnutls_session_t session, uint8_t *data,
 				      int datalen);
@@ -589,9 +590,28 @@ static int set_auth_types(gnutls_session_t session)
 		/* Under TLS1.3 this returns a KX which matches the negotiated
 		 * groups from the key shares; if we are resuming then the KX seen
 		 * here doesn't match the original session. */
-		if (!session->internals.resumed)
-			kx = gnutls_kx_get(session);
-		else
+		if (!session->internals.resumed) {
+			const gnutls_group_entry_st *group = get_group(session);
+
+			if (session->internals.hsk_flags & HSK_PSK_SELECTED) {
+				if (group) {
+					kx = group->pk == GNUTLS_PK_DH ?
+						     GNUTLS_KX_DHE_PSK :
+						     GNUTLS_KX_ECDHE_PSK;
+				} else {
+					kx = GNUTLS_KX_PSK;
+				}
+			} else if (group) {
+				/* Not necessarily be RSA, but just to
+				 * make _gnutls_map_kx_get_cred below
+				 * work.
+				 */
+				kx = group->pk == GNUTLS_PK_DH ?
+					     GNUTLS_KX_DHE_RSA :
+					     GNUTLS_KX_ECDHE_RSA;
+			} else
+				kx = GNUTLS_KX_UNKNOWN;
+		} else
 			kx = GNUTLS_KX_UNKNOWN;
 	} else {
 		/* TLS1.2 or earlier, kx is associated with ciphersuite */
@@ -888,6 +908,9 @@ static int read_client_hello(gnutls_session_t session, uint8_t *data,
 
 	_gnutls_handshake_log("HSK[%p]: Selected version %s\n", session,
 			      vers->name);
+
+	_gnutls_audit_data("tls::protocol_version", CRAU_WORD,
+			   vers->major << 8 | vers->minor, NULL);
 
 	/* select appropriate compression method */
 	ret = check_if_null_comp_present(session, comp_ptr, comp_size);
@@ -1983,6 +2006,9 @@ static int read_server_hello(gnutls_session_t session, uint8_t *data,
 	    0)
 		return gnutls_assert_val(GNUTLS_E_UNSUPPORTED_VERSION_PACKET);
 
+	_gnutls_audit_data("tls::protocol_version", CRAU_WORD,
+			   vers->major << 8 | vers->minor, NULL);
+
 	/* set server random - done after final version is selected */
 	ret = _gnutls_set_server_random(session, vers, srandom_pos);
 	if (ret < 0)
@@ -2866,10 +2892,22 @@ int gnutls_handshake(gnutls_session_t session)
 #endif
 	}
 
+	if (_gnutls_config_set_certificate_compression_methods(session) < 0)
+		_gnutls_audit_log(
+			session,
+			"Setting certificate compression methods failed\n");
+
 	if (session->internals.recv_state == RECV_STATE_FALSE_START) {
 		session_invalidate(session);
 		return gnutls_assert_val(GNUTLS_E_HANDSHAKE_DURING_FALSE_START);
 	}
+
+	_gnutls_audit_new_context_with_data(
+		"name", CRAU_STRING,
+		session->security_parameters.entity == GNUTLS_CLIENT ?
+			"tls::handshake_client" :
+			"tls::handshake_server",
+		NULL);
 
 	if (session->security_parameters.entity == GNUTLS_CLIENT) {
 		do {
@@ -2878,6 +2916,8 @@ int gnutls_handshake(gnutls_session_t session)
 	} else {
 		ret = handshake_server(session);
 	}
+
+	gnutls_audit_pop_context();
 
 	if (ret < 0) {
 		return _gnutls_abort_handshake(session, ret);

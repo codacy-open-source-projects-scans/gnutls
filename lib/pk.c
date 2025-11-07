@@ -532,6 +532,7 @@ void gnutls_pk_params_release(gnutls_pk_params_st *p)
 	}
 	gnutls_free(p->raw_priv.data);
 	gnutls_free(p->raw_pub.data);
+	gnutls_free(p->raw_seed.data);
 	_gnutls_x509_spki_clear(&p->spki);
 
 	p->params_nr = 0;
@@ -549,6 +550,10 @@ void gnutls_pk_params_clear(gnutls_pk_params_st *p)
 	if (p->raw_priv.data != NULL) {
 		gnutls_memset(p->raw_priv.data, 0, p->raw_priv.size);
 		p->raw_priv.size = 0;
+	}
+	if (p->raw_seed.data != NULL) {
+		gnutls_memset(p->raw_seed.data, 0, p->raw_seed.size);
+		p->raw_seed.size = 0;
 	}
 }
 
@@ -658,6 +663,7 @@ int encode_ber_digest_info(const mac_entry_st *e, const gnutls_datum_t *digest,
 	result = asn1_der_coding(dinfo, "", tmp_output, &tmp_output_size, NULL);
 	if (result != ASN1_SUCCESS) {
 		gnutls_assert();
+		gnutls_free(tmp_output);
 		asn1_delete_structure(&dinfo);
 		return _gnutls_asn2err(result);
 	}

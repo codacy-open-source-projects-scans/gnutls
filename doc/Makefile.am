@@ -21,7 +21,7 @@
 EXTRA_DIST = TODO certtool.cfg gnutls.html	\
 	doxygen/Doxyfile.in doxygen/Doxyfile.orig texinfo.css \
 	stamp_enums stamp_functions \
-	doc.mk COPYING COPYING.LESSER
+	doc.mk
 
 IMAGES = \
 	gnutls-handshake-state.png	\
@@ -182,7 +182,8 @@ gnutls_TEXINFOS = gnutls.texi fdl-1.3.texi				\
 	cha-library.texi cha-preface.texi cha-programs.texi		\
 	sec-tls-app.texi cha-errors.texi cha-support.texi		\
 	cha-shared-key.texi cha-gtls-examples.texi cha-upgrade.texi	\
-	cha-tokens.texi cha-crypto.texi cha-auth.texi cha-config.texi
+	cha-tokens.texi cha-crypto.texi cha-auth.texi cha-config.texi	\
+	cha-features.texi
 
 AUTOGENED_DOC = invoke-gnutls-cli.texi invoke-gnutls-cli-debug.texi \
 	invoke-gnutls-serv.texi invoke-certtool.texi invoke-srptool.texi \
@@ -696,6 +697,12 @@ FUNCS += functions/gnutls_anti_replay_set_ptr
 FUNCS += functions/gnutls_anti_replay_set_ptr.short
 FUNCS += functions/gnutls_anti_replay_set_window
 FUNCS += functions/gnutls_anti_replay_set_window.short
+FUNCS += functions/gnutls_audit_current_context
+FUNCS += functions/gnutls_audit_current_context.short
+FUNCS += functions/gnutls_audit_pop_context
+FUNCS += functions/gnutls_audit_pop_context.short
+FUNCS += functions/gnutls_audit_push_context
+FUNCS += functions/gnutls_audit_push_context.short
 FUNCS += functions/gnutls_auth_client_get_type
 FUNCS += functions/gnutls_auth_client_get_type.short
 FUNCS += functions/gnutls_auth_get_type
@@ -1130,6 +1137,8 @@ FUNCS += functions/gnutls_handshake_set_secret_function
 FUNCS += functions/gnutls_handshake_set_secret_function.short
 FUNCS += functions/gnutls_handshake_set_timeout
 FUNCS += functions/gnutls_handshake_set_timeout.short
+FUNCS += functions/gnutls_handshake_update_receiving_key
+FUNCS += functions/gnutls_handshake_update_receiving_key.short
 FUNCS += functions/gnutls_handshake_write
 FUNCS += functions/gnutls_handshake_write.short
 FUNCS += functions/gnutls_hash
@@ -1778,8 +1787,12 @@ FUNCS += functions/gnutls_protocol_set_enabled
 FUNCS += functions/gnutls_protocol_set_enabled.short
 FUNCS += functions/gnutls_psk_allocate_client_credentials
 FUNCS += functions/gnutls_psk_allocate_client_credentials.short
+FUNCS += functions/gnutls_psk_allocate_client_credentials2
+FUNCS += functions/gnutls_psk_allocate_client_credentials2.short
 FUNCS += functions/gnutls_psk_allocate_server_credentials
 FUNCS += functions/gnutls_psk_allocate_server_credentials.short
+FUNCS += functions/gnutls_psk_allocate_server_credentials2
+FUNCS += functions/gnutls_psk_allocate_server_credentials2.short
 FUNCS += functions/gnutls_psk_client_get_hint
 FUNCS += functions/gnutls_psk_client_get_hint.short
 FUNCS += functions/gnutls_psk_format_imported_identity
@@ -1932,6 +1945,8 @@ FUNCS += functions/gnutls_record_get_discarded
 FUNCS += functions/gnutls_record_get_discarded.short
 FUNCS += functions/gnutls_record_get_max_early_data_size
 FUNCS += functions/gnutls_record_get_max_early_data_size.short
+FUNCS += functions/gnutls_record_get_max_send_size
+FUNCS += functions/gnutls_record_get_max_send_size.short
 FUNCS += functions/gnutls_record_get_max_size
 FUNCS += functions/gnutls_record_get_max_size.short
 FUNCS += functions/gnutls_record_get_state

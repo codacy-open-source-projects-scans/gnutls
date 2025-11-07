@@ -20,25 +20,26 @@
 
 ACLOCAL_AMFLAGS = -I ../m4 -I ../gl/m4
 
-EXTRA_DIST = priority_options.gperf common.mk inih/LICENSE.txt dlwrap/README
+EXTRA_DIST = priority_options.gperf common.mk inih/LICENSE.txt dlwrap/README crau/LICENSE crau/UNLICENSE crau/README.md
 BUILT_SOURCES = pkix_asn1_tab.c gnutls_asn1_tab.c priority_options.h
 
 SUBDIRS = includes x509 auth ext algorithms extras accelerated
 
-if ENABLE_MINITASN1
-SUBDIRS += minitasn1
+if ENABLE_PKCS11
+SUBDIRS += pkcs11
 endif
 
-if ENABLE_LIBOQS
-SUBDIRS += liboqs
+if ENABLE_MINITASN1
+SUBDIRS += minitasn1
 endif
 
 localedir = $(datadir)/locale
 
 include $(top_srcdir)/lib/common.mk
 
-AM_CPPFLAGS =					\
+AM_CPPFLAGS +=					\
 	-DLOCALEDIR=\"$(localedir)\"		\
+	-DSYSTEM_PRIORITY_FILE=\"$(system_config_file)\" \
 	-I$(srcdir)/../gl			\
 	-I$(builddir)/../gl			\
 	-I$(builddir)/includes			\
@@ -88,7 +89,8 @@ COBJECTS = range.c record.c compress.c debug.c cipher.c gthreads.h handshake-tls
 	cert-session.c handshake-checks.c dtls-sw.c dh-primes.c openpgp_compat.c \
 	crypto-selftests.c crypto-selftests-pk.c secrets.c extv.c extv.h \
 	hello_ext_lib.c hello_ext_lib.h ocsp-api.c stek.c cert-cred-rawpk.c \
-	iov.c iov.h system/ktls.c system/ktls.h pathbuf.c pathbuf.h
+	iov.c iov.h system/ktls.c system/ktls.h pathbuf.c pathbuf.h \
+	audit.h audit.c crau/crau.h crau/macros.h
 
 if HAVE_ZLIB
 COBJECTS += dlwrap/zlib.c dlwrap/zlibfuncs.h dlwrap/zlib.h
@@ -127,15 +129,9 @@ thirdparty_libadd += $(LIBBROTLIDEC_LIBS)
 endif
 endif
 
-if ENABLE_LIBOQS
-COBJECTS += dlwrap/oqs.c dlwrap/oqsfuncs.h dlwrap/oqs.h
-AM_CPPFLAGS += $(LIBOQS_CFLAGS)
-
-if LIBOQS_ENABLE_DLOPEN
-AM_CPPFLAGS += -DGNUTLS_OQS_ENABLE_DLOPEN=1
-else
-thirdparty_libadd += $(LIBOQS_LIBS)
-endif
+if ENABLE_LEANCRYPTO
+AM_CPPFLAGS += $(LEANCRYPTO_CFLAGS)
+thirdparty_libadd += $(LEANCRYPTO_LIBS)
 endif
 
 if ENABLE_GOST
@@ -143,7 +139,14 @@ COBJECTS += vko.c
 endif
 
 if ENABLE_TPM2
-COBJECTS += tpm2.c tpm2.h tpm2_esys.c
+COBJECTS += tpm2/tpm2.c tpm2/tpm2.h tpm2/tpm2_esys.c
+if NEED_ESYS_CRYPTO_CALLBACKS
+COBJECTS += tpm2/callbacks/esys_crypto_callbacks.h tpm2/callbacks/esys_crypto_callbacks.c \
+			tpm2/callbacks/aes/aes_callbacks.h tpm2/callbacks/aes/aes_callbacks.c tpm2/callbacks/ecdh/ecdh_callbacks.h \
+			tpm2/callbacks/ecdh/ecdh_callbacks.c tpm2/callbacks/random/random_callbacks.h tpm2/callbacks/random/random_callbacks.c \
+			tpm2/callbacks/hmac/hmac_callbacks.h tpm2/callbacks/hmac/hmac_callbacks.c tpm2/callbacks/hash/hash_callbacks.h \
+			tpm2/callbacks/hash/hash_callbacks.c tpm2/callbacks/rsa/rsa_callbacks.h tpm2/callbacks/rsa/rsa_callbacks.c
+endif
 COBJECTS += dlwrap/tss2_esys.c dlwrap/tss2_esysfuncs.h dlwrap/tss2_esys.h
 COBJECTS += dlwrap/tss2_mu.c dlwrap/tss2_mufuncs.h dlwrap/tss2_mu.h
 COBJECTS += dlwrap/tss2_tctildr.c dlwrap/tss2_tctildrfuncs.h dlwrap/tss2_tctildr.h
@@ -204,7 +207,8 @@ HFILES = abstract_int.h debug.h compress.h cipher.h	 \
 	srp.h auth/srp_kx.h auth/srp_passwd.h	\
 	file.h supplemental.h crypto.h random.h system.h\
 	locks.h mbuffers.h ecc.h pin.h fips.h \
-	priority_options.h secrets.h stek.h cert-cred.h
+	priority_options.h secrets.h stek.h cert-cred.h \
+	audit.h audit_int.h
 
 if ENABLE_PKCS11
 HFILES += pkcs11_int.h pkcs11x.h
@@ -227,6 +231,10 @@ libgnutls_la_LIBADD = ../gl/libgnu.la x509/libgnutls_x509.la \
 	extras/libgnutls_extras.la
 thirdparty_libadd += $(LTLIBINTL) $(LIBSOCKET) $(LTLIBNSL) \
 	$(P11_KIT_LIBS) $(LIB_SELECT) $(GNUTLS_LIBS_PRIVATE)
+
+if ENABLE_PKCS11
+libgnutls_la_LIBADD += pkcs11/libgnutls_pkcs11.la
+endif
 
 if HAVE_LIBIDN2
 thirdparty_libadd += $(LIBIDN2_LIBS)
@@ -292,10 +300,6 @@ endif
 if ENABLE_NETTLE
 thirdparty_libadd += $(HOGWEED_LIBS) $(NETTLE_LIBS) $(GMP_LIBS)
 libgnutls_la_LIBADD += nettle/libcrypto.la
-endif
-
-if ENABLE_LIBOQS
-libgnutls_la_LIBADD += liboqs/libcrypto.la
 endif
 
 if HAVE_LD_OUTPUT_DEF

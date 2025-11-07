@@ -33,6 +33,8 @@
 #include <valgrind/memcheck.h>
 #endif
 
+#include "attribute.h"
+
 /* These realloc functions will return ptr if size==0, and will free
  * the ptr if the new allocation failed.
  */
@@ -52,9 +54,6 @@ unsigned _gnutls_mem_is_zero(const uint8_t *ptr, unsigned size);
 	}
 
 #define zeroize_key(x, size) gnutls_memset(x, 0, size)
-
-#define zeroize_temp_key zeroize_key
-#define zrelease_temp_mpi_key zrelease_mpi_key
 
 static inline void _gnutls_memory_mark_undefined(void *addr, size_t size)
 {
@@ -76,6 +75,13 @@ static inline void _gnutls_memory_mark_defined(void *addr, size_t size)
 	if (RUNNING_ON_VALGRIND)
 		VALGRIND_MAKE_MEM_DEFINED(addr, size);
 #endif
+}
+
+static inline ATTRIBUTE_NONNULL() void *_gnutls_steal_pointer(void **src)
+{
+	void *dst = *src;
+	*src = NULL;
+	return dst;
 }
 
 #endif /* GNUTLS_LIB_MEM_H */

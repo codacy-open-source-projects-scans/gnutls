@@ -195,8 +195,10 @@ static int wrap_x86_hmac_init(gnutls_mac_algorithm_t algo, void **_ctx)
 	ctx->algo = algo;
 
 	ret = _hmac_ctx_init(algo, ctx);
-	if (ret < 0)
+	if (ret < 0) {
+		gnutls_free(ctx);
 		return gnutls_assert_val(ret);
+	}
 
 	*_ctx = ctx;
 
@@ -258,7 +260,7 @@ static void wrap_x86_hmac_deinit(void *hd)
 {
 	struct x86_hmac_ctx *ctx = hd;
 
-	zeroize_temp_key(ctx, sizeof(*ctx));
+	zeroize_key(ctx, sizeof(*ctx));
 	gnutls_free(ctx);
 }
 
@@ -278,7 +280,7 @@ static int wrap_x86_hmac_fast(gnutls_mac_algorithm_t algo, const void *nonce,
 	ctx.update(&ctx, text_size, text);
 	ctx.digest(&ctx, ctx.length, digest);
 
-	zeroize_temp_key(&ctx, sizeof(ctx));
+	zeroize_key(&ctx, sizeof(ctx));
 
 	return 0;
 }
