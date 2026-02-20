@@ -101,19 +101,20 @@ static void test(const char *provider)
 		fail("gnutls_pkcs11_token_init: %s\n", gnutls_strerror(ret));
 	}
 
+	char *url = NULL;
 	for (i = 0;; i++) {
-		char *url = NULL;
-
 		ret = gnutls_pkcs11_token_get_url(i, 0, &url);
 		if (ret < 0)
 			break;
 		if (strstr(url,
 			   "token=this%20is%20a%20very%20long%20label%20whose"))
 			break;
+		gnutls_free(url);
 	}
 	if (ret < 0)
 		fail("gnutls_pkcs11_token_get_url: %s\n", gnutls_strerror(ret));
 
+	gnutls_free(url);
 	gnutls_pkcs11_deinit();
 }
 
