@@ -239,6 +239,10 @@ int _pkcs11_privkey_get_pubkey(gnutls_pkcs11_privkey_t pkey,
 int _gnutls_pubkey_parse_ecc_eddsa_params(const gnutls_datum_t *parameters,
 					  gnutls_ecc_curve_t *outcurve);
 
+int _gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
+				    const gnutls_datum_t *parameters,
+				    const gnutls_datum_t *ecpoint);
+
 static inline int pk_to_mech(gnutls_pk_algorithm_t pk)
 {
 	if (pk == GNUTLS_PK_DSA)

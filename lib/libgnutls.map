@@ -1574,4 +1574,6 @@ GNUTLS_PRIVATE_3_4 {
 	_gnutls_pathbuf_append;
 	_gnutls_pathbuf_truncate;
 	_gnutls_pathbuf_deinit;
+	# needed by tests/pkcs11/eddsa-ecpoint-encodings
+	_gnutls_pubkey_import_ecc_eddsa;
 } GNUTLS_3_4;

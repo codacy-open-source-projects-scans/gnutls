@@ -155,7 +155,7 @@ unsigned gnutls_x509_crt_check_hostname2(gnutls_x509_crt_t cert,
 	int ret = 0;
 	int i = 0;
 	struct in_addr ipv4;
-	char *p = NULL;
+	const char *p = NULL;
 	char *a_hostname;
 	unsigned have_other_addresses = 0;
 	gnutls_datum_t out;

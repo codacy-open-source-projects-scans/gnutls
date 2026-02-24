@@ -478,14 +478,15 @@ cleanup:
 	return ret;
 }
 
-static int gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
-					  const gnutls_datum_t *parameters,
-					  const gnutls_datum_t *ecpoint)
+int _gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
+				    const gnutls_datum_t *parameters,
+				    const gnutls_datum_t *ecpoint)
 {
-	int ret, tag_len;
+	int ret, tag_len, len_len;
+	long data_len;
 	unsigned long tag = 0;
 	unsigned char class;
-	unsigned int etype;
+	unsigned int curve_size;
 
 	gnutls_ecc_curve_t curve = GNUTLS_ECC_CURVE_INVALID;
 	gnutls_datum_t raw_point = { NULL, 0 };
@@ -501,7 +502,8 @@ static int gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
          * store EC_POINT DER encoded either as a BIT STRING or OCTET STRING.
          * We need to check all three options.
 	 */
-	if (ecpoint->size == (unsigned int)gnutls_ecc_curve_get_size(curve)) {
+	curve_size = gnutls_ecc_curve_get_size(curve);
+	if (ecpoint->size == curve_size) {
 		raw_point.data = ecpoint->data;
 		raw_point.size = ecpoint->size;
 	} else {
@@ -511,28 +513,36 @@ static int gnutls_pubkey_import_ecc_eddsa(gnutls_pubkey_t key,
 			return gnutls_assert_val(_gnutls_asn2err(ret));
 
 		switch (tag) {
-		case 0x03:
-			etype = ASN1_ETYPE_BIT_STRING;
+		case 0x03: /* BIT STRING */
+			data_len = asn1_get_length_der(ecpoint->data + tag_len,
+						       ecpoint->size - tag_len,
+						       &len_len);
+			if (data_len < 0)
+				return gnutls_assert_val(
+					GNUTLS_E_ASN1_DER_ERROR);
+
+			/* skip first byte of data (number of unused bits at the end) */
+			raw_point.data = ecpoint->data + tag_len + len_len + 1;
+			raw_point.size = data_len - 1;
 			break;
-		case 0x04:
-			etype = ASN1_ETYPE_OCTET_STRING;
+		case 0x04: /* OCTET STRING */
+			ret = asn1_decode_simple_der(
+				ASN1_ETYPE_OCTET_STRING, ecpoint->data,
+				ecpoint->size,
+				(const unsigned char **)&raw_point.data,
+				&raw_point.size);
+			if (ret != ASN1_SUCCESS)
+				return gnutls_assert_val(_gnutls_asn2err(ret));
 			break;
 		default:
 			return gnutls_assert_val(GNUTLS_E_ASN1_TAG_ERROR);
 		}
 
-		ret = _gnutls_x509_decode_string(etype, ecpoint->data,
-						 ecpoint->size, &raw_point, 0);
-		if (ret < 0)
-			return gnutls_assert_val(ret);
+		if (raw_point.size != curve_size)
+			return gnutls_assert_val(GNUTLS_E_ILLEGAL_PARAMETER);
 	}
 
-	ret = gnutls_pubkey_import_ecc_raw(key, curve, &raw_point, NULL);
-
-	if (raw_point.data != ecpoint->data)
-		gnutls_free(raw_point.data);
-
-	return ret;
+	return gnutls_pubkey_import_ecc_raw(key, curve, &raw_point, NULL);
 }
 
 /* Same as above, but for Edwards key agreement */
@@ -743,8 +753,8 @@ int gnutls_pubkey_import_pkcs11(gnutls_pubkey_t key, gnutls_pkcs11_obj_t obj,
 		break;
 	case GNUTLS_PK_EDDSA_ED25519:
 	case GNUTLS_PK_EDDSA_ED448:
-		ret = gnutls_pubkey_import_ecc_eddsa(key, &obj->pubkey[0],
-						     &obj->pubkey[1]);
+		ret = _gnutls_pubkey_import_ecc_eddsa(key, &obj->pubkey[0],
+						      &obj->pubkey[1]);
 		break;
 	case GNUTLS_PK_ECDH_X25519:
 		ret = gnutls_pubkey_import_ecc_ecdh(key, &obj->pubkey[0],

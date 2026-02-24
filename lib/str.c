@@ -718,7 +718,7 @@ static int hostname_compare_ascii(const char *certname, size_t certnamesize,
 int _gnutls_hostname_compare(const char *certname, size_t certnamesize,
 			     const char *hostname, unsigned vflags)
 {
-	char *p;
+	const char *p;
 	unsigned i;
 
 	for (i = 0; i < certnamesize; i++) {

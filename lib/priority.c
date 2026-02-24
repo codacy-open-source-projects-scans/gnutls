@@ -2514,7 +2514,7 @@ const char *gnutls_get_system_config_file(void)
 char *_gnutls_resolve_priorities(const char *priorities)
 {
 	const char *p = priorities;
-	char *additional = NULL;
+	const char *additional = NULL;
 	char *resolved = NULL;
 	const char *ss, *ss_next;
 	unsigned ss_len, ss_next_len;
