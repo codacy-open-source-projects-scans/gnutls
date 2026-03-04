@@ -55,8 +55,8 @@ static void stek_rotation_callback(const gnutls_datum_t *prev_key,
 	success("STEK was rotated!\n");
 }
 
-static int client_handshake(gnutls_session_t session,
-			    gnutls_datum_t *session_data, int resume)
+static void client_handshake(gnutls_session_t session,
+			     gnutls_datum_t *session_data, int resume)
 {
 	int ret;
 
@@ -83,6 +83,8 @@ static int client_handshake(gnutls_session_t session,
 		success("client: Success: Session was NOT resumed\n");
 
 	if (!resume) {
+		gnutls_free(session_data->data);
+		session_data->data = NULL;
 		if ((ret = gnutls_session_get_data2(session, session_data)) <
 		    0) {
 			fail("client: Could not get session data\n");
@@ -92,8 +94,6 @@ static int client_handshake(gnutls_session_t session,
 	do {
 		ret = gnutls_bye(session, GNUTLS_SHUT_RDWR);
 	} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
-
-	return 0;
 }
 
 static void client(int fd, int *resume, unsigned rounds, const char *prio)
@@ -116,8 +116,7 @@ static void client(int fd, int *resume, unsigned rounds, const char *prio)
 		gnutls_handshake_set_timeout(session, get_timeout());
 
 		/* Perform TLS handshake and obtain session ticket */
-		if (client_handshake(session, &session_data, resume[i]) < 0)
-			return;
+		client_handshake(session, &session_data, resume[i]);
 
 		if (clientx509cred) {
 			gnutls_certificate_free_credentials(clientx509cred);

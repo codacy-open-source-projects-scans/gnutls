@@ -155,6 +155,8 @@ static void client(int sds[])
 		}
 
 		if (t < 2) {
+			gnutls_free(session_data.data);
+			session_data.data = NULL;
 			/* get the session data size */
 			ret = gnutls_session_get_data2(session, &session_data);
 			if (ret < 0)

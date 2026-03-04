@@ -17,7 +17,8 @@ variables:
   FEDORA_DOC_BUILD: buildenv-doc-fedora42
   FEDORA_CROSS_BUILD: buildenv-cross-fedora42
   FEDORA_I686_BUILD: buildenv-i686-fedora42
-  MINGW_BUILD: buildenv-mingw-fedora43
+  MINGW32_BUILD: buildenv-mingw32-fedora43
+  MINGW64_BUILD: buildenv-mingw64-fedora43
   ALPINE_BASE_BUILD: buildenv-alpine-base
   COMPILER: gcc
   CPPCHECK_OPTIONS: "--enable=warning --enable=performance --enable=portability --std=c99 --suppressions-list=devel/cppcheck.suppressions --template='{id}:{file}:{line},{severity},{message}'"
@@ -104,13 +105,12 @@ default:
   variables:
     COMPILER: clang
     NETTLE_DIR: nettle
-    NETTLE_BRANCH: release-3.10-fixes
+    NETTLE_BRANCH: master
 
 .debian:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
 
 .mingw:
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   variables:
     # COMPILER: "${arch_name}-w64-mingw32-gcc"
     # CFLAGS: "-fstack-protector"
@@ -127,6 +127,7 @@ default:
   allow_failure: true
 
 .mingw32:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW32_BUILD
   extends:
     - .mingw
   variables:
@@ -134,6 +135,7 @@ default:
     arch_name: i686
 
 .mingw64:
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW64_BUILD
   extends:
     - .mingw
   variables:
@@ -422,15 +424,16 @@ fedora-legacy/test:
   needs:
     - fedora/bootstrap
   script:
+    - dnf -y remove --no-autoremove nettle-devel # keep gmp-devel
     - git clone --depth 1 --branch $NETTLE_BRANCH https://gitlab.com/gnutls/nettle.git nettle-git
     - pushd nettle-git
     - rm -rf .git               # for artifacts:untracked to work
     - ./.bootstrap
-    - ./configure --disable-documentation --prefix=${PWD}/$NETTLE_DIR $NETTLE_CONFIGURE_ARGS
+    - ./configure --disable-documentation --prefix=${PWD}/$NETTLE_DIR --libdir='${prefix}/lib' $NETTLE_CONFIGURE_ARGS
     - make -j$BUILDJOBS
     - make -j$BUILDJOBS install
     - popd
-    - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib64/pkgconfig dash ./configure --disable-gcc-warnings --disable-full-test-suite --disable-doc --with-pkcs12-iter-count=10000
+    - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib/pkgconfig LD_LIBRARY_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib dash ./configure --disable-gcc-warnings --disable-full-test-suite --disable-doc --with-pkcs12-iter-count=10000
     - make -j$BUILDJOBS
     - make -j$BUILDJOBS check TESTS=""
 
@@ -439,21 +442,21 @@ fedora-legacy/test:
     - .test
     - .fedora-nettle
 
-# fedora-nettle/build:
-#   extends:
-#     - .fedora-nettle/build
-#   variables:
-#     NETTLE_CONFIGURE_ARGS: ""
+fedora-nettle/build:
+  extends:
+    - .fedora-nettle/build
+  variables:
+    NETTLE_CONFIGURE_ARGS: ""
 
-# fedora-nettle/test:
-#   extends:
-#     - .fedora-nettle/test
-#   dependencies:
-#     - fedora-nettle/build
-#   needs:
-#     - fedora-nettle/build
-#   script:
-#     - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib64/pkgconfig LD_LIBRARY_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib64 make -j$CHECKJOBS check
+fedora-nettle/test:
+  extends:
+    - .fedora-nettle/test
+  dependencies:
+    - fedora-nettle/build
+  needs:
+    - fedora-nettle/build
+  script:
+    - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib/pkgconfig LD_LIBRARY_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib make -j$CHECKJOBS check
 
 # fedora-nettle-minigmp/build:
 #   extends:
@@ -737,7 +740,6 @@ debian/test:
   extends:
     - .build
   script:
-    - "wineserver -k || true"
     - mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
     - "[ -e /proc/sys/fs/binfmt_misc/DOSWin ] || echo ':DOSWin:M::MZ::/usr/bin/wine:' > /proc/sys/fs/binfmt_misc/register"
     - mingw${arch_bits}-configure --disable-gcc-warnings --host=${arch_name}-w64-mingw32 --target=${arch_name}-w64-mingw32 --cache-file $CCACHE_FILE --disable-nls --with-included-unistring --disable-non-suiteb-curves --disable-full-test-suite --disable-doc --with-pkcs12-iter-count=10000
@@ -748,9 +750,9 @@ debian/test:
   extends:
     - .test
   script:
-    - "wineserver -k || true"
     - mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
     - "[ -e /proc/sys/fs/binfmt_misc/DOSWin ] || echo ':DOSWin:M::MZ::/usr/bin/wine:' > /proc/sys/fs/binfmt_misc/register"
+    - timeout 630 wineboot --init
     - mingw${arch_bits}-make -j$CHECKJOBS -C tests check
   timeout: 3h
 
@@ -788,18 +790,22 @@ debian/test:
     paths:
       - win${arch_bits}-build/
 
-mingw/bootstrap:
+mingw32/bootstrap:
   extends:
     - .bootstrap
-    - .mingw
-  when: manual
+    - .mingw32
+
+mingw64/bootstrap:
+  extends:
+    - .bootstrap
+    - .mingw64
 
 mingw64/build:
   extends:
     - .mingw/build
     - .mingw64
   needs:
-    - mingw/bootstrap
+    - mingw64/bootstrap
 
 mingw64/test:
   extends:
@@ -827,7 +833,7 @@ mingw32/build:
     - .mingw/build
     - .mingw32
   needs:
-    - mingw/bootstrap
+    - mingw32/bootstrap
 
 mingw32/test:
   extends:

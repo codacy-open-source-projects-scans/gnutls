@@ -66,8 +66,8 @@ typedef void (*gnutls_stek_rotation_callback_t)(const gnutls_datum_t *prev_key,
 void _gnutls_set_session_ticket_key_rotation_callback(
 	gnutls_session_t session, gnutls_stek_rotation_callback_t cb);
 
-static int handshake(gnutls_session_t session, gnutls_datum_t *session_data,
-		     int resumption_should_succeed)
+static void handshake(gnutls_session_t session, gnutls_datum_t *session_data,
+		      int resumption_should_succeed)
 {
 	int ret;
 
@@ -103,13 +103,11 @@ static int handshake(gnutls_session_t session, gnutls_datum_t *session_data,
 	do {
 		ret = gnutls_bye(session, GNUTLS_SHUT_RDWR);
 	} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
-
-	return 0;
 }
 
-static int resume_and_close(gnutls_session_t session,
-			    gnutls_datum_t *session_data,
-			    int resumption_should_succeed)
+static void resume_and_close(gnutls_session_t session,
+			     gnutls_datum_t *session_data,
+			     int resumption_should_succeed)
 {
 	int ret;
 
@@ -145,8 +143,6 @@ static int resume_and_close(gnutls_session_t session,
 	do {
 		ret = gnutls_bye(session, GNUTLS_SHUT_RDWR);
 	} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
-
-	return 0;
 }
 
 static void client(int fd, int *resumption_should_succeed,
@@ -168,8 +164,7 @@ static void client(int fd, int *resumption_should_succeed,
 	gnutls_transport_set_int(session, fd);
 	gnutls_handshake_set_timeout(session, get_timeout());
 
-	if (handshake(session, &session_data, resumption_should_succeed[0]) < 0)
-		return;
+	handshake(session, &session_data, resumption_should_succeed[0]);
 
 	if (clientx509cred)
 		gnutls_certificate_free_credentials(clientx509cred);
@@ -189,14 +184,15 @@ static void client(int fd, int *resumption_should_succeed,
 
 		gnutls_transport_set_int(session, fd);
 
-		if (resume_and_close(session, &session_data,
-				     resumption_should_succeed[i]) < 0)
-			return;
+		resume_and_close(session, &session_data,
+				 resumption_should_succeed[i]);
 
 		if (clientx509cred)
 			gnutls_certificate_free_credentials(clientx509cred);
 		gnutls_deinit(session);
 	}
+
+	gnutls_free(session_data.data);
 }
 
 static void server(int fd, int *resumption_should_succeed,
