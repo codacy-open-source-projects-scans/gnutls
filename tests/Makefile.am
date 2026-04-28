@@ -241,9 +241,13 @@ ctests += mini-record-2 simple gnutls_hmac_fast set_pkcs12_cred cert certuniquei
 	 x509cert-dntypes id-on-xmppAddr tls13-compat-mode ciphersuite-name \
 	 x509-upnconstraint xts-key-check cipher-padding pkcs7-verify-double-free \
 	 fips-rsa-sizes tls12-rehandshake-ticket pathbuf tls-force-ems \
-	 psk-importer privkey-derive dh-compute2 ecdh-compute2 hpke-tests
+	 psk-importer privkey-derive dh-compute2 ecdh-compute2
 
 ctests += tls-channel-binding
+
+if ENABLE_HPKE
+ctests += hpke-tests
+endif
 
 if HAVE_SECCOMP_TESTS
 ctests += dtls-with-seccomp tls-with-seccomp dtls-client-with-seccomp tls-client-with-seccomp
@@ -387,9 +391,9 @@ pkcs11_obj_raw_SOURCES = pkcs11/pkcs11-obj-raw.c
 pkcs11_obj_raw_DEPENDENCIES = libpkcs11mock1.la libutils.la
 pkcs11_obj_raw_LDADD = $(LDADD) $(LIBDL)
 
-pkcs11_obj_raw_pk_algorithm_SOURCES = pkcs11/pkcs11-obj-get-pk-algorithm.c
-pkcs11_obj_raw_pk_algorithm_DEPENDENCIES = libpkcs11mock1.la libutils.la
-pkcs11_obj_raw_pk_algorithm_LDADD = $(LDADD) $(LIBDL)
+pkcs11_obj_get_pk_algorithm_SOURCES = pkcs11/pkcs11-obj-get-pk-algorithm.c
+pkcs11_obj_get_pk_algorithm_DEPENDENCIES = libpkcs11mock1.la libutils.la
+pkcs11_obj_get_pk_algorithm_LDADD = $(LDADD) $(LIBDL)
 
 pkcs11_import_url_privkey_caps_SOURCES = pkcs11/pkcs11-import-url-privkey.c
 pkcs11_import_url_privkey_caps_DEPENDENCIES = libpkcs11mock1.la libutils.la
@@ -432,7 +436,7 @@ ctests += pkcs11-cert-import-url-exts pkcs11-get-exts pkcs11-get-raw-issuer-exts
 	pkcs11/pkcs11-rsa-pss-privkey-test pkcs11/tls-neg-pkcs11-key pkcs11/pkcs11-privkey-generate \
 	pkcs11/gnutls_x509_crt_list_import_url pkcs11/gnutls_pcert_list_import_x509_file \
 	pkcs11/pkcs11-eddsa-privkey-test pkcs11/eddsa-ecpoint-encodings \
-	pkcs11/pkcs11-obj-get-pk-algorithm pkcs11-token-raw pkcs11-obj-raw
+	pkcs11-obj-get-pk-algorithm pkcs11-token-raw pkcs11-obj-raw
 
 if P11KIT_0_23_11_API
 ctests += pkcs11-import-url-privkey-caps
