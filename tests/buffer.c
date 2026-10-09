@@ -88,7 +88,7 @@ void doit(void)
 
 		_gnutls_buffer_pop_datum(&str, &output, strlen(t->output) + 1);
 
-		if (strcmp(t->output, (char *)output.data))
+		if (!streq(t->output, (char *)output.data))
 			fail("output differs [%d]: expected '%s', seen '%s'\n",
 			     it, t->output, (char *)output.data);
 

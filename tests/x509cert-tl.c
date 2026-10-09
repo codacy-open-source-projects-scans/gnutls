@@ -196,7 +196,7 @@ static void check_stored_algos(gnutls_x509_crt_t server_crt)
 		exit(1);
 	}
 
-	if (strcmp(oid, "1.2.840.113549.1.1.5") != 0) {
+	if (!streq(oid, "1.2.840.113549.1.1.5")) {
 		fail("detected wrong algorithm OID: %s\n", oid);
 		exit(1);
 	}
@@ -216,7 +216,7 @@ static void check_stored_algos(gnutls_x509_crt_t server_crt)
 		exit(1);
 	}
 
-	if (strcmp(oid, "1.2.840.113549.1.1.1") != 0) {
+	if (!streq(oid, "1.2.840.113549.1.1.1")) {
 		fail("detected wrong PK algorithm OID: %s\n", oid);
 		exit(1);
 	}

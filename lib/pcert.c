@@ -97,7 +97,7 @@ cleanup:
  * In the case %GNUTLS_X509_CRT_LIST_SORT is specified and that
  * function cannot sort the list, %GNUTLS_E_CERTIFICATE_LIST_UNSORTED
  * will be returned. Currently sorting can fail if the list size
- * exceeds an internal constraint (16).
+ * exceeds an internal constraint (101).
  *
  * Returns: On success, %GNUTLS_E_SUCCESS (0) is returned, otherwise a
  *   negative error value.

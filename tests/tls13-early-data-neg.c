@@ -250,8 +250,7 @@ static int storage_add(void *ptr, time_t expires, const gnutls_datum_t *key,
 
 	for (i = 0; i < storage->num_entries; i++) {
 		if (key->size == storage->entries[i].size &&
-		    memcmp(storage->entries[i].data, key->data, key->size) ==
-			    0) {
+		    memeq(storage->entries[i].data, key->data, key->size)) {
 			return GNUTLS_E_DB_ENTRY_EXISTS;
 		}
 	}
@@ -395,7 +394,7 @@ static void server(int sds[])
 				}
 
 				if (ret != sizeof(EARLY_MSG) ||
-				    memcmp(buffer, EARLY_MSG, ret))
+				    !memeq(buffer, EARLY_MSG, ret))
 					fail("server: early data mismatch\n");
 			} else {
 				if (gnutls_rnd_works) {

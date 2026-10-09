@@ -232,7 +232,7 @@ static void start(const char *prio)
 		gnutls_x509_crt_deinit(crt);
 
 		if (scert.size != mcert->size ||
-		    memcmp(scert.data, mcert->data, mcert->size) != 0) {
+		    !memeq(scert.data, mcert->data, mcert->size)) {
 			fail("gnutls_certificate_get_ours output doesn't match cert\n");
 			exit(1);
 		}
@@ -269,7 +269,7 @@ static void start(const char *prio)
 		gnutls_x509_crt_deinit(crt);
 
 		if (ccert.size != mcert->size ||
-		    memcmp(ccert.data, mcert->data, mcert->size) != 0) {
+		    !memeq(ccert.data, mcert->data, mcert->size)) {
 			fail("gnutls_certificate_get_ours output doesn't match cert\n");
 			exit(1);
 		}

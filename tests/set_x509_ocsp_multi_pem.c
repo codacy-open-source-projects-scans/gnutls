@@ -65,7 +65,7 @@ static void check_response(gnutls_session_t session, void *priv)
 	}
 
 	if (resp.size != exp_resp->size ||
-	    memcmp(resp.data, exp_resp->data, resp.size) != 0) {
+	    !memeq(resp.data, exp_resp->data, resp.size)) {
 		fail("did not receive the expected response\n");
 	}
 
@@ -77,8 +77,7 @@ static void check_response(gnutls_session_t session, void *priv)
 		}
 
 		if (resp.size != ocsp_subca3_unknown.size ||
-		    memcmp(resp.data, ocsp_subca3_unknown.data, resp.size) !=
-			    0) {
+		    !memeq(resp.data, ocsp_subca3_unknown.data, resp.size)) {
 			fail("did not receive the expected intermediate response\n");
 		}
 	}

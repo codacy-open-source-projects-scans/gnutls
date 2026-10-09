@@ -175,7 +175,7 @@ static gnutls_datum_t sess_id = { (void *)"\xd9\xb9\x95\xe7\xea", 5 };
 			gnutls_perror(ret);                                            \
 			exit(1);                                                       \
 		}                                                                      \
-		if (memcmp(key_material, exp, size) != 0) {                            \
+		if (!memeq(key_material, exp, size)) {                                 \
 			fprintf(stderr,                                                \
 				"gnutls_prf_rfc5705: output doesn't match for '%s'\n", \
 				label);                                                \
@@ -195,7 +195,7 @@ static gnutls_datum_t sess_id = { (void *)"\xd9\xb9\x95\xe7\xea", 5 };
 			gnutls_perror(ret);                                    \
 			exit(1);                                               \
 		}                                                              \
-		if (memcmp(key_material, exp, size) != 0) {                    \
+		if (!memeq(key_material, exp, size)) {                         \
 			fprintf(stderr,                                        \
 				"gnutls_prf: output doesn't match for '%s'\n", \
 				label);                                        \
@@ -241,7 +241,7 @@ static void check_prfs(gnutls_session_t session)
 		exit(1);
 	}
 
-	if (memcmp(key_material, key_material2, 64) != 0) {
+	if (!memeq(key_material, key_material2, 64)) {
 		fprintf(stderr,
 			"gnutls_prf: output doesn't match in cross-check\n");
 		dump("got1 ", key_material, 64);

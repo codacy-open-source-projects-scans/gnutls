@@ -534,8 +534,8 @@ static void dane_raw_check(void)
 				fail("test[%d]: %d: %s\n", j, __LINE__,
 				     dane_strerror(ret));
 
-			if (memcmp(r_data[i], data_entries[j].queries[i],
-				   r_data_len[i]) != 0)
+			if (!memeq(r_data[i], data_entries[j].queries[i],
+				   r_data_len[i]))
 				fail("test[%d]: %d: %s\n", j, __LINE__,
 				     dane_strerror(ret));
 		}

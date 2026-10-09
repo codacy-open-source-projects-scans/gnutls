@@ -121,6 +121,7 @@ static void print_name(gnutls_buffer_st *str, const char *prefix, unsigned type,
 	if ((type == GNUTLS_SAN_DNSNAME || type == GNUTLS_SAN_OTHERNAME_XMPP ||
 	     type == GNUTLS_SAN_OTHERNAME_KRB5PRINCIPAL ||
 	     type == GNUTLS_SAN_OTHERNAME_MSUSERPRINCIPAL ||
+	     type == GNUTLS_SAN_OTHERNAME_SRV ||
 	     type == GNUTLS_SAN_RFC822NAME || type == GNUTLS_SAN_URI) &&
 	    sname != NULL && strlen(sname) != name->size) {
 		adds(str, _("warning: SAN contains an embedded NUL, "
@@ -178,6 +179,11 @@ static void print_name(gnutls_buffer_st *str, const char *prefix, unsigned type,
 	case GNUTLS_SAN_OTHERNAME_MSUSERPRINCIPAL:
 		addf(str, _("%sUser Principal Name: %.*s\n"), prefix,
 		     name->size, NON_NULL(name->data));
+		break;
+
+	case GNUTLS_SAN_OTHERNAME_SRV:
+		addf(str, _("%sSRVName: %.*s\n"), prefix, name->size,
+		     NON_NULL(name->data));
 		break;
 
 	default:
@@ -324,9 +330,9 @@ static void print_proxy(gnutls_buffer_st *str, gnutls_datum_t *der)
 	if (pathlen >= 0)
 		addf(str, _("\t\t\tPath Length Constraint: %d\n"), pathlen);
 	addf(str, _("\t\t\tPolicy Language: %s"), policyLanguage);
-	if (strcmp(policyLanguage, "1.3.6.1.5.5.7.21.1") == 0)
+	if (streq(policyLanguage, "1.3.6.1.5.5.7.21.1"))
 		adds(str, " (id-ppl-inheritALL)\n");
-	else if (strcmp(policyLanguage, "1.3.6.1.5.5.7.21.2") == 0)
+	else if (streq(policyLanguage, "1.3.6.1.5.5.7.21.2"))
 		adds(str, " (id-ppl-independent)\n");
 	else
 		adds(str, "\n");
@@ -432,10 +438,10 @@ static void print_aia(gnutls_buffer_st *str, const gnutls_datum_t *der)
 			goto cleanup;
 		}
 
-		if (strcmp((char *)oid.data, GNUTLS_OID_AD_OCSP) == 0)
+		if (streq((char *)oid.data, GNUTLS_OID_AD_OCSP))
 			addf(str, _("\t\t\tAccess Method: %s (%s)\n"),
 			     GNUTLS_OID_AD_OCSP, "id-ad-ocsp");
-		else if (strcmp((char *)oid.data, GNUTLS_OID_AD_CAISSUERS) == 0)
+		else if (streq((char *)oid.data, GNUTLS_OID_AD_CAISSUERS))
 			addf(str, _("\t\t\tAccess Method: %s (%s)\n"),
 			     GNUTLS_OID_AD_CAISSUERS, "id-ad-caIssuers");
 		else {
@@ -779,23 +785,23 @@ static void print_key_purpose(gnutls_buffer_st *str, const char *prefix,
 		}
 
 		p = (void *)oid.data;
-		if (strcmp(p, GNUTLS_KP_TLS_WWW_SERVER) == 0)
+		if (streq(p, GNUTLS_KP_TLS_WWW_SERVER))
 			addf(str, _("%s\t\t\tTLS WWW Server.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_TLS_WWW_CLIENT) == 0)
+		else if (streq(p, GNUTLS_KP_TLS_WWW_CLIENT))
 			addf(str, _("%s\t\t\tTLS WWW Client.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_CODE_SIGNING) == 0)
+		else if (streq(p, GNUTLS_KP_CODE_SIGNING))
 			addf(str, _("%s\t\t\tCode signing.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_EMAIL_PROTECTION) == 0)
+		else if (streq(p, GNUTLS_KP_EMAIL_PROTECTION))
 			addf(str, _("%s\t\t\tEmail protection.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_TIME_STAMPING) == 0)
+		else if (streq(p, GNUTLS_KP_TIME_STAMPING))
 			addf(str, _("%s\t\t\tTime stamping.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_OCSP_SIGNING) == 0)
+		else if (streq(p, GNUTLS_KP_OCSP_SIGNING))
 			addf(str, _("%s\t\t\tOCSP signing.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_IPSEC_IKE) == 0)
+		else if (streq(p, GNUTLS_KP_IPSEC_IKE))
 			addf(str, _("%s\t\t\tIpsec IKE.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_MS_SMART_CARD_LOGON) == 0)
+		else if (streq(p, GNUTLS_KP_MS_SMART_CARD_LOGON))
 			addf(str, _("%s\t\t\tSmart Card Logon.\n"), prefix);
-		else if (strcmp(p, GNUTLS_KP_ANY) == 0)
+		else if (streq(p, GNUTLS_KP_ANY))
 			addf(str, _("%s\t\t\tAny purpose.\n"), prefix);
 		else
 			addf(str, "%s\t\t\t%s\n", prefix, p);
@@ -1134,7 +1140,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 	unsigned j;
 	char pfx[16];
 
-	if (strcmp(oid, "2.5.29.19") == 0) {
+	if (streq(oid, "2.5.29.19")) {
 		if (idx->basic) {
 			addf(str, "warning: more than one basic constraint\n");
 		}
@@ -1145,7 +1151,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_basic(str, prefix, der);
 		idx->basic++;
 
-	} else if (strcmp(oid, "2.5.29.14") == 0) {
+	} else if (streq(oid, "2.5.29.14")) {
 		if (idx->ski) {
 			addf(str, "warning: more than one SKI extension\n");
 		}
@@ -1156,7 +1162,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_ski(str, der);
 
 		idx->ski++;
-	} else if (strcmp(oid, "2.5.29.32") == 0) {
+	} else if (streq(oid, "2.5.29.32")) {
 		struct gnutls_x509_policy_st policy;
 		gnutls_x509_policies_t policies;
 		const char *name;
@@ -1215,7 +1221,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 			}
 		}
 		gnutls_x509_policies_deinit(policies);
-	} else if (strcmp(oid, "2.5.29.54") == 0) {
+	} else if (streq(oid, "2.5.29.54")) {
 		unsigned int skipcerts;
 
 		err = gnutls_x509_ext_import_inhibit_anypolicy(der, &skipcerts);
@@ -1230,7 +1236,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		     prefix, skipcerts,
 		     critical ? _("critical") : _("not critical"));
 
-	} else if (strcmp(oid, "2.5.29.35") == 0) {
+	} else if (streq(oid, "2.5.29.35")) {
 		if (idx->aki) {
 			addf(str, "warning: more than one AKI extension\n");
 		}
@@ -1241,7 +1247,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_aki(str, der);
 
 		idx->aki++;
-	} else if (strcmp(oid, "2.5.29.15") == 0) {
+	} else if (streq(oid, "2.5.29.15")) {
 		if (idx->keyusage) {
 			addf(str,
 			     "warning: more than one key usage extension\n");
@@ -1254,7 +1260,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_key_usage(str, pfx, der);
 
 		idx->keyusage++;
-	} else if (strcmp(oid, "2.5.29.16") == 0) {
+	} else if (streq(oid, "2.5.29.16")) {
 		if (idx->pkey_usage_period) {
 			addf(str,
 			     "warning: more than one private key usage period extension\n");
@@ -1266,7 +1272,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_private_key_usage_period(str, prefix, der);
 
 		idx->pkey_usage_period++;
-	} else if (strcmp(oid, "2.5.29.37") == 0) {
+	} else if (streq(oid, "2.5.29.37")) {
 		if (idx->keypurpose) {
 			addf(str,
 			     "warning: more than one key purpose extension\n");
@@ -1277,7 +1283,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 
 		print_key_purpose(str, prefix, der);
 		idx->keypurpose++;
-	} else if (strcmp(oid, "2.5.29.17") == 0) {
+	} else if (streq(oid, "2.5.29.17")) {
 		if (idx->san) {
 			addf(str, "warning: more than one SKI extension\n");
 		}
@@ -1286,7 +1292,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		     critical ? _("critical") : _("not critical"));
 		print_altname(str, prefix, der);
 		idx->san++;
-	} else if (strcmp(oid, "2.5.29.18") == 0) {
+	} else if (streq(oid, "2.5.29.18")) {
 		if (idx->ian) {
 			addf(str,
 			     "warning: more than one Issuer AltName extension\n");
@@ -1298,7 +1304,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_altname(str, prefix, der);
 
 		idx->ian++;
-	} else if (strcmp(oid, "2.5.29.31") == 0) {
+	} else if (streq(oid, "2.5.29.31")) {
 		if (idx->crldist) {
 			addf(str,
 			     "warning: more than one CRL distribution point\n");
@@ -1309,7 +1315,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 
 		print_crldist(str, der);
 		idx->crldist++;
-	} else if (strcmp(oid, "1.3.6.1.5.5.7.1.14") == 0) {
+	} else if (streq(oid, "1.3.6.1.5.5.7.1.14")) {
 		if (idx->proxy) {
 			addf(str, "warning: more than one proxy extension\n");
 		}
@@ -1320,19 +1326,19 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_proxy(str, der);
 
 		idx->proxy++;
-	} else if (strcmp(oid, "1.3.6.1.5.5.7.1.1") == 0) {
+	} else if (streq(oid, "1.3.6.1.5.5.7.1.1")) {
 		addf(str,
 		     _("%s\t\tAuthority Information "
 		       "Access (%s):\n"),
 		     prefix, critical ? _("critical") : _("not critical"));
 
 		print_aia(str, der);
-	} else if (strcmp(oid, GNUTLS_X509EXT_OID_CT_SCT_V1) == 0) {
+	} else if (streq(oid, GNUTLS_X509EXT_OID_CT_SCT_V1)) {
 		addf(str, _("%s\t\tCT Precertificate SCTs (%s):\n"), prefix,
 		     critical ? _("critical") : _("not critical"));
 
 		print_scts(str, der, prefix);
-	} else if (strcmp(oid, "2.5.29.30") == 0) {
+	} else if (streq(oid, "2.5.29.30")) {
 		if (idx->nc) {
 			addf(str,
 			     "warning: more than one name constraints extension\n");
@@ -1343,7 +1349,7 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		     critical ? _("critical") : _("not critical"));
 
 		print_nc(str, prefix, der);
-	} else if (strcmp(oid, GNUTLS_X509EXT_OID_TLSFEATURES) == 0) {
+	} else if (streq(oid, GNUTLS_X509EXT_OID_TLSFEATURES)) {
 		if (idx->tlsfeatures) {
 			addf(str,
 			     "warning: more than one tlsfeatures extension\n");
@@ -1355,17 +1361,17 @@ static void print_extension(gnutls_buffer_st *str, const char *prefix,
 		print_tlsfeatures(str, prefix, der);
 
 		idx->tlsfeatures++;
-	} else if (strcmp(oid, "1.2.643.100.111") == 0) {
+	} else if (streq(oid, "1.2.643.100.111")) {
 		addf(str, _("%s\t\tSubject Signing Tool(%s):\n"), prefix,
 		     critical ? _("critical") : _("not critical"));
 
 		print_subject_sign_tool(str, prefix, der);
-	} else if (strcmp(oid, "1.2.643.100.112") == 0) {
+	} else if (streq(oid, "1.2.643.100.112")) {
 		addf(str, _("%s\t\tIssuer Signing Tool(%s):\n"), prefix,
 		     critical ? _("critical") : _("not critical"));
 
 		print_issuer_sign_tool(str, prefix, der);
-	} else if (strcmp(oid, "2.5.4.3") == 0) {
+	} else if (streq(oid, "2.5.4.3")) {
 		int ret;
 		gnutls_datum_t tmp = { NULL, 0 };
 
@@ -2182,10 +2188,9 @@ static void print_oneline(gnutls_buffer_st *str, gnutls_x509_crt_t cert)
 						&policyLanguage, NULL, NULL);
 		if (err == 0) {
 			addf(str, "proxy certificate (policy=");
-			if (strcmp(policyLanguage, "1.3.6.1.5.5.7.21.1") == 0)
+			if (streq(policyLanguage, "1.3.6.1.5.5.7.21.1"))
 				addf(str, "id-ppl-inheritALL");
-			else if (strcmp(policyLanguage, "1.3.6.1.5.5.7.21.2") ==
-				 0)
+			else if (streq(policyLanguage, "1.3.6.1.5.5.7.21.2"))
 				addf(str, "id-ppl-independent");
 			else
 				addf(str, "%s", policyLanguage);
@@ -2369,7 +2374,7 @@ static void print_crl(gnutls_buffer_st *str, gnutls_x509_crl_t crl,
 			if (i == 0)
 				adds(str, _("\tExtensions:\n"));
 
-			if (strcmp(oid, "2.5.29.20") == 0) {
+			if (streq(oid, "2.5.29.20")) {
 				char nr[128];
 				size_t nr_size = sizeof(nr);
 
@@ -2395,7 +2400,7 @@ static void print_crl(gnutls_buffer_st *str, gnutls_x509_crl_t crl,
 				}
 
 				crl_nr++;
-			} else if (strcmp(oid, "2.5.29.35") == 0) {
+			} else if (streq(oid, "2.5.29.35")) {
 				gnutls_datum_t der;
 
 				if (aki_idx) {
@@ -2719,7 +2724,7 @@ static void print_crq(gnutls_buffer_st *str, gnutls_x509_crq_t cert,
 			if (i == 0)
 				adds(str, _("\tAttributes:\n"));
 
-			if (strcmp(oid, "1.2.840.113549.1.9.14") == 0) {
+			if (streq(oid, "1.2.840.113549.1.9.14")) {
 				cert_type_t ccert;
 
 				if (extensions) {
@@ -2731,7 +2736,7 @@ static void print_crq(gnutls_buffer_st *str, gnutls_x509_crq_t cert,
 				print_extensions(str, "\t", TYPE_CRQ, ccert);
 
 				extensions++;
-			} else if (strcmp(oid, "1.2.840.113549.1.9.7") == 0) {
+			} else if (streq(oid, "1.2.840.113549.1.9.7")) {
 				char *pass;
 				size_t size;
 

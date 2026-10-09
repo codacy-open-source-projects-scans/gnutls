@@ -63,9 +63,9 @@ static bool dh_params_equal(const gnutls_dh_params_t a,
 	assert(ret >= 0);
 
 	ok = prime1.size == prime2.size &&
-	     !memcmp(prime1.data, prime2.data, prime1.size) &&
+	     memeq(prime1.data, prime2.data, prime1.size) &&
 	     generator1.size == generator2.size &&
-	     !memcmp(generator1.data, generator2.data, generator1.size) &&
+	     memeq(generator1.data, generator2.data, generator1.size) &&
 	     bits1 == bits2;
 
 	gnutls_free(prime1.data);
@@ -193,7 +193,7 @@ static void compute_key(const char *name, const gnutls_dh_params_t dh_params,
 
 	if (result) {
 		ok = Z.size == result->size &&
-		     memcmp(Z.data, result->data, Z.size) == 0;
+		     memeq(Z.data, result->data, Z.size);
 		if (!ok) {
 			success("priv_key\n");
 			hexprint(priv_key->data, priv_key->size);

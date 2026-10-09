@@ -85,7 +85,7 @@ static void compute_key(const char *name, const gnutls_dh_params_t dh_params,
 
 	if (result) {
 		ok = Z.size == result->size &&
-		     memcmp(Z.data, result->data, Z.size) == 0;
+		     memeq(Z.data, result->data, Z.size);
 		if (!ok) {
 			success("priv_key\n");
 			hexprint(priv_key->data, priv_key->size);

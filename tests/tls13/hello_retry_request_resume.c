@@ -251,7 +251,7 @@ retry:
 		 * it's turned off, both session IDs should be empty. */
 		if (session_id.size == 0 ||
 		    session_id.size != retry_session_id.size ||
-		    memcmp(session_id.data, retry_session_id.data,
+		    !memeq(session_id.data, retry_session_id.data,
 			   session_id.size)) {
 			fail("session ids are different after resumption: %u, %u\n",
 			     session_id.size, retry_session_id.size);

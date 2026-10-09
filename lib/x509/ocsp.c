@@ -318,8 +318,8 @@ int gnutls_ocsp_resp_import2(gnutls_ocsp_resp_t resp,
 #define OCSP_BASIC "1.3.6.1.5.5.7.48.1.1"
 
 	if (resp->response_type_oid.size == sizeof(OCSP_BASIC) - 1 &&
-	    memcmp(resp->response_type_oid.data, OCSP_BASIC,
-		   resp->response_type_oid.size) == 0) {
+	    memeq(resp->response_type_oid.data, OCSP_BASIC,
+		  resp->response_type_oid.size)) {
 		ret = _gnutls_x509_read_value(
 			resp->resp, "responseBytes.response", &resp->der);
 		if (ret < 0) {
@@ -1366,7 +1366,7 @@ int gnutls_ocsp_resp_check_crt(gnutls_ocsp_resp_const_t resp, unsigned int indx,
 	cserial.size = t;
 
 	if (rserial.size != cserial.size ||
-	    memcmp(cserial.data, rserial.data, rserial.size) != 0) {
+	    !memeq(cserial.data, rserial.data, rserial.size)) {
 		ret = GNUTLS_E_OCSP_RESPONSE_ERROR;
 		gnutls_assert();
 		goto cleanup;
@@ -1384,7 +1384,7 @@ int gnutls_ocsp_resp_check_crt(gnutls_ocsp_resp_const_t resp, unsigned int indx,
 		goto cleanup;
 	}
 
-	if (memcmp(cdn_hash, rdn_hash.data, hash_len) != 0) {
+	if (!memeq(cdn_hash, rdn_hash.data, hash_len)) {
 		ret = GNUTLS_E_OCSP_RESPONSE_ERROR;
 		gnutls_assert();
 		goto cleanup;
@@ -1527,11 +1527,11 @@ int gnutls_ocsp_resp_get_single(gnutls_ocsp_resp_const_t resp, unsigned indx,
 			goto fail;
 		}
 
-		if (len == 5 && memcmp(oidtmp, "good", len) == 0)
+		if (len == 5 && memeq(oidtmp, "good", len))
 			*cert_status = GNUTLS_OCSP_CERT_GOOD;
-		else if (len == 8 && memcmp(oidtmp, "revoked", len) == 0)
+		else if (len == 8 && memeq(oidtmp, "revoked", len))
 			*cert_status = GNUTLS_OCSP_CERT_REVOKED;
-		else if (len == 8 && memcmp(oidtmp, "unknown", len) == 0)
+		else if (len == 8 && memeq(oidtmp, "unknown", len))
 			*cert_status = GNUTLS_OCSP_CERT_UNKNOWN;
 		else {
 			gnutls_assert();
@@ -1944,7 +1944,7 @@ static gnutls_x509_crt_t find_signercert(gnutls_ocsp_resp_const_t resp)
 			rc = gnutls_x509_crt_get_subject_key_id(
 				certs[i], digest, &digest_size, NULL);
 			if (rc >= 0 && digest_size == keyid.size &&
-			    memcmp(keyid.data, digest, digest_size) == 0) {
+			    memeq(keyid.data, digest, digest_size)) {
 				signercert = certs[i];
 				goto quit;
 			}
@@ -1995,7 +1995,7 @@ static gnutls_x509_crt_t find_signercert(gnutls_ocsp_resp_const_t resp)
 			}
 
 			if ((20 == keyid.size) &&
-			    memcmp(keyid.data, digest, 20) == 0) {
+			    memeq(keyid.data, digest, 20)) {
 				signercert = certs[i];
 				goto quit;
 			}
@@ -2005,8 +2005,8 @@ static gnutls_x509_crt_t find_signercert(gnutls_ocsp_resp_const_t resp)
 
 			assert(riddn.data != NULL);
 			if ((certs[i]->raw_dn.size == riddn.size) &&
-			    memcmp(riddn.data, certs[i]->raw_dn.data,
-				   riddn.size) == 0) {
+			    memeq(riddn.data, certs[i]->raw_dn.data,
+				  riddn.size)) {
 				signercert = certs[i];
 				goto quit;
 			}
@@ -2132,7 +2132,8 @@ static int check_ocsp_purpose(gnutls_x509_crt_t signercert)
 			return gnutls_assert_val(rc);
 		}
 
-		if (memcmp(oidtmp, GNUTLS_KP_OCSP_SIGNING, oidsize) != 0) {
+		if (oidsize != sizeof(GNUTLS_KP_OCSP_SIGNING) - 1 ||
+		    !memeq(oidtmp, GNUTLS_KP_OCSP_SIGNING, oidsize)) {
 			gnutls_assert();
 			continue;
 		}

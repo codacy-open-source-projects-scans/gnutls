@@ -35,6 +35,7 @@
 #include "utils.h"
 #define RANDOMIZE
 #include "eagain-common.h"
+#include "virt-time.h"
 
 const char *side = "";
 
@@ -144,6 +145,7 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 	/* General init. */
 	global_init();
+	virt_time_init();
 	gnutls_global_set_log_function(tls_log_func);
 	if (debug)
 		gnutls_global_set_log_level(9);
@@ -207,7 +209,9 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 		success("%s: updating client's key\n", name);
 		do {
 			ret = gnutls_session_key_update(client, 0);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
+		if (ret < 0)
+			fail("error in key update: %s\n", gnutls_strerror(ret));
 
 		CHECK_KTLS_ENABLED(client);
 		CHECK_KTLS_ENABLED(server);
@@ -219,14 +223,14 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 		if (test != 0)
 			break;
-		sec_sleep(2);
+		virt_sec_sleep(2);
 		FALLTHROUGH;
 	case 2:
 		success("%s: updating server's key\n", name);
 
 		do {
 			ret = gnutls_session_key_update(server, 0);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("error in key update: %s\n", gnutls_strerror(ret));
 
@@ -240,13 +244,13 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 		if (test != 0)
 			break;
-		sec_sleep(2);
+		virt_sec_sleep(2);
 		FALLTHROUGH;
 	case 3:
 		success("%s: updating client's key and asking server\n", name);
 		do {
 			ret = gnutls_session_key_update(client, GNUTLS_KU_PEER);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("error in key update: %s\n", gnutls_strerror(ret));
 
@@ -260,13 +264,13 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 		if (test != 0)
 			break;
-		sec_sleep(2);
+		virt_sec_sleep(2);
 		FALLTHROUGH;
 	case 4:
 		success("%s: updating server's key and asking client\n", name);
 		do {
 			ret = gnutls_session_key_update(server, GNUTLS_KU_PEER);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("error in key update: %s\n", gnutls_strerror(ret));
 
@@ -277,8 +281,10 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 		TRANSFER(server, client, MSG, strlen(MSG), buffer, MAX_BUF);
 		EMPTY_BUF(server, client, buffer, MAX_BUF);
 
-		sec_sleep(2);
-		break;
+		if (test != 0)
+			break;
+		virt_sec_sleep(2);
+		FALLTHROUGH;
 	case 5:
 		success("%s: client cork\n", name);
 		gnutls_record_cork(client);
@@ -286,14 +292,14 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 		/* server sends key update */
 		do {
 			ret = gnutls_session_key_update(server, GNUTLS_KU_PEER);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("error in key update: %s\n", gnutls_strerror(ret));
 
 		/* client has data in the corked buffer */
 		do {
 			ret = gnutls_record_send(client, MSG, strlen(MSG));
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("cannot send: %s\n", gnutls_strerror(ret));
 
@@ -306,7 +312,7 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 		/* client uncorks and sends key update */
 		do {
 			ret = gnutls_record_uncork(client, GNUTLS_RECORD_WAIT);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("cannot send: %s\n", gnutls_strerror(ret));
 
@@ -315,8 +321,10 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 		EMPTY_BUF(server, client, buffer, MAX_BUF);
 
-		sec_sleep(2);
-		break;
+		if (test != 0)
+			break;
+		virt_sec_sleep(2);
+		FALLTHROUGH;
 	case 6:
 		key_update_msg_inc = 0;
 		key_update_msg_out = 0;
@@ -330,7 +338,7 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 
 		do {
 			ret = gnutls_session_key_update(client, GNUTLS_KU_PEER);
-		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
+		} while (ret < 0 && !gnutls_error_is_fatal(ret));
 		if (ret < 0)
 			fail("error in key update: %s\n", gnutls_strerror(ret));
 
@@ -347,8 +355,17 @@ static void run(const char *name, unsigned test, int cfd, int sfd)
 		break;
 	}
 
-	gnutls_bye(client, GNUTLS_SHUT_WR);
-	gnutls_bye(server, GNUTLS_SHUT_WR);
+	do {
+		cret = gnutls_bye(client, GNUTLS_SHUT_WR);
+	} while (cret < 0 && !gnutls_error_is_fatal(cret));
+	if (cret < 0)
+		fail("error in client bye: %s\n", gnutls_strerror(cret));
+
+	do {
+		sret = gnutls_bye(server, GNUTLS_SHUT_WR);
+	} while (sret < 0 && !gnutls_error_is_fatal(sret));
+	if (sret < 0)
+		fail("error in server bye: %s\n", gnutls_strerror(sret));
 
 	gnutls_deinit(client);
 	gnutls_deinit(server);

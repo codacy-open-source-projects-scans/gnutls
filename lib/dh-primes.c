@@ -1253,11 +1253,11 @@ unsigned _gnutls_dh_prime_match_fips_approved(const uint8_t *prime,
 
 	for (i = 0; i < sizeof(primes) / sizeof(primes[0]); i++) {
 		if (primes[i].prime->size == prime_size &&
-		    memcmp(primes[i].prime->data, prime,
-			   primes[i].prime->size) == 0 &&
+		    memeq(primes[i].prime->data, prime,
+			  primes[i].prime->size) &&
 		    primes[i].generator->size == generator_size &&
-		    memcmp(primes[i].generator->data, generator,
-			   primes[i].generator->size) == 0) {
+		    memeq(primes[i].generator->data, generator,
+			  primes[i].generator->size)) {
 			if (q) {
 				*q = primes[i].q->data;
 				*q_size = primes[i].q->size;

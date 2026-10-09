@@ -33,7 +33,7 @@
 int _gnutls_parse_hello_extensions(gnutls_session_t session,
 				   gnutls_ext_flags_t msg,
 				   gnutls_ext_parse_type_t parse_type,
-				   const uint8_t *data, int data_size);
+				   const uint8_t *data, size_t data_size);
 int _gnutls_gen_hello_extensions(gnutls_session_t session,
 				 gnutls_buffer_st *extdata,
 				 gnutls_ext_flags_t msg,
@@ -117,6 +117,9 @@ inline static const char *ext_msg_validity_to_str(gnutls_ext_flags_t msg)
 	}
 }
 
+typedef int (*gnutls_ext_parse_func)(gnutls_session_t session,
+				     gnutls_buffer_st *extdata);
+
 typedef struct hello_ext_entry_st {
 	const char *name; /* const overridden when free_struct is set */
 	unsigned free_struct;
@@ -128,31 +131,49 @@ typedef struct hello_ext_entry_st {
 	gnutls_ext_parse_type_t server_parse_point;
 	unsigned validity; /* multiple items of gnutls_ext_flags_t */
 
-	/* this function must return 0 when Not Applicable
-	 * size of extension data if ok
-	 * < 0 on other error.
+	/* On success, this function returns 0; a negative error code
+	 * otherwise.
+	 *
+	 * If set, parse_func takes precedence over recv_func.
+	 */
+	gnutls_ext_parse_func parse_func;
+
+	/* On success, this function returns 0; a negative error code
+	 * otherwise.
 	 */
 	gnutls_ext_recv_func recv_func;
 
-	/* this function must return 0 when Not Applicable
-	 * size of extension data if ok
-	 * GNUTLS_E_INT_RET_0 if extension data size is zero
-	 * < 0 on other error.
+	/* On success, this function returns the number of bytes to be
+	 * sent. If it is 0, the extension will not be sent. The
+	 * function may return a special return value
+	 * GNUTLS_E_INT_RET_0, which indicates an empty extension is
+	 * still sent.
+	 *
+	 * Upon error, other negative error code will be returned.
 	 */
 	gnutls_ext_send_func send_func;
 
-	gnutls_ext_deinit_data_func
-		deinit_func; /* this will be called to deinitialize
-							 * internal data
-							 */
-	gnutls_ext_pack_func
-		pack_func; /* packs internal data to machine independent format */
-	gnutls_ext_unpack_func unpack_func; /* unpacks internal data */
+	/* This function will be called to deinitialize internal data.
+	 */
+	gnutls_ext_deinit_data_func deinit_func;
 
-	/* non-zero if that extension cannot be overridden by the applications.
-	 * That should be set to extensions which allocate data early, e.g., on
-	 * gnutls_init(), or modify the TLS protocol in a way that the application
-	 * cannot control. */
+	/* This function encodes internal data for session resumption.
+	 */
+	gnutls_ext_pack_func pack_func;
+
+	/* When resuming a session, this function is used to decode
+	 * internal data encoded with pack_func.
+	 */
+	gnutls_ext_unpack_func unpack_func;
+
+	/* Non-zero if this extension cannot be overridden by the
+	 * applications, using gnutls_ext_register() or
+	 * gnutls_session_ext_register().
+	 *
+	 * This is typically set when extensions allocate data early,
+	 * e.g., on gnutls_init(), or modify the TLS protocol in a way
+	 * that the application cannot control.
+	 */
 	unsigned cannot_be_overriden;
 } hello_ext_entry_st;
 

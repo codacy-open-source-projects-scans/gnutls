@@ -115,7 +115,7 @@ int gnutls_register_custom_url(const gnutls_custom_url_st *st)
 
 	for (i = 0; i < _gnutls_custom_urls_size; i++) {
 		if (_gnutls_custom_urls[i].name_size == st->name_size &&
-		    strcmp(_gnutls_custom_urls[i].name, st->name) == 0) {
+		    streq(_gnutls_custom_urls[i].name, st->name)) {
 			return gnutls_assert_val(GNUTLS_E_INVALID_REQUEST);
 		}
 	}

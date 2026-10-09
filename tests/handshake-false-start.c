@@ -191,7 +191,7 @@ static void try(const char *name, unsigned testno, unsigned fs,
 			myfail("error in received data size\n");
 		}
 
-		if (memcmp(buffer, TESTDATA, ret) != 0) {
+		if (!memeq(buffer, TESTDATA, ret)) {
 			myfail("error in received data\n");
 		}
 
@@ -235,7 +235,7 @@ static void try(const char *name, unsigned testno, unsigned fs,
 			myfail("error in received data size\n");
 		}
 
-		if (memcmp(buffer, TESTDATA, ret) != 0) {
+		if (!memeq(buffer, TESTDATA, ret)) {
 			myfail("error in received data\n");
 		}
 	} else if (testno == TEST_HANDSHAKE_CALL) {

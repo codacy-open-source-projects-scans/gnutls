@@ -125,8 +125,6 @@ static gnutls_certificate_credentials_t xcred;
 static void check_server_cmd(socket_st *socket, int ret);
 static void init_global_tls_stuff(void);
 static int cert_verify_ocsp(gnutls_session_t session);
-static const char *host_from_url(const char *url, unsigned int *port,
-				 const char **path);
 static size_t get_data(void *buf, size_t size, size_t nmemb, void *userp);
 static int getissuer_callback(const gnutls_x509_trust_list_t tlist,
 			      const gnutls_x509_crt_t cert,
@@ -2212,36 +2210,6 @@ cleanup:
 	return ok >= 1 ? (int)ok : -1;
 }
 #endif
-
-/* returns the host part of a URL */
-static const char *host_from_url(const char *url, unsigned int *port,
-				 const char **path)
-{
-	static char buffer[512];
-	char *p;
-
-	*port = 0;
-	*path = "";
-
-	if ((p = strstr(url, "http://")) != NULL) {
-		snprintf(buffer, sizeof(buffer), "%s", p + 7);
-		p = strchr(buffer, '/');
-		if (p != NULL) {
-			*p = 0;
-			*path = p + 1;
-		}
-
-		p = strchr(buffer, ':');
-		if (p != NULL) {
-			*p = 0;
-			*port = atoi(p + 1);
-		}
-
-		return buffer;
-	} else {
-		return url;
-	}
-}
 
 static size_t get_data(void *buf, size_t size, size_t nmemb, void *userp)
 {

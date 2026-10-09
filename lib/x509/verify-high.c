@@ -779,12 +779,11 @@ int gnutls_x509_trust_list_add_crls(gnutls_x509_trust_list_t list,
 					    list->node[hash]
 						    .crls[x]
 						    ->raw_issuer_dn.size &&
-				    memcmp(crl_list[i]->raw_issuer_dn.data,
-					   list->node[hash]
-						   .crls[x]
-						   ->raw_issuer_dn.data,
-					   crl_list[i]->raw_issuer_dn.size) ==
-					    0) {
+				    memeq(crl_list[i]->raw_issuer_dn.data,
+					  list->node[hash]
+						  .crls[x]
+						  ->raw_issuer_dn.data,
+					  crl_list[i]->raw_issuer_dn.size)) {
 					if (gnutls_x509_crl_get_this_update(
 						    crl_list[i]) >=
 					    gnutls_x509_crl_get_this_update(
@@ -1008,8 +1007,7 @@ static int trust_list_get_issuer_by_dn(gnutls_x509_trust_list_t list,
 					if (ret < 0)
 						continue;
 					if (spki->size != tmp_size ||
-					    memcmp(spki->data, tmp,
-						   spki->size) != 0)
+					    !memeq(spki->data, tmp, spki->size))
 						continue;
 				}
 				*issuer = crt_cpy(
@@ -1030,7 +1028,7 @@ static int trust_list_get_issuer_by_dn(gnutls_x509_trust_list_t list,
 					continue;
 
 				if (spki->size != tmp_size ||
-				    memcmp(spki->data, tmp, spki->size) != 0)
+				    !memeq(spki->data, tmp, spki->size))
 					continue;
 
 				*issuer = crt_cpy(list->node[i].trusted_cas[j]);
@@ -1558,7 +1556,7 @@ int gnutls_x509_trust_list_verify_crt2(
 
 	if (SIGNER_OLD_OR_UNKNOWN(*voutput) &&
 	    (LAST_DN.size != LAST_IDN.size ||
-	     memcmp(LAST_DN.data, LAST_IDN.data, LAST_IDN.size) != 0)) {
+	     !memeq(LAST_DN.data, LAST_IDN.data, LAST_IDN.size))) {
 		/* if we couldn't find the issuer, try to see if the last
 		 * certificate is in the trusted list and try to verify against
 		 * (if it is not self signed) */
@@ -1745,8 +1743,8 @@ int gnutls_x509_trust_list_verify_named_crt(gnutls_x509_trust_list_t list,
 		    0) { /* check if name matches */
 			if (list->node[hash].named_certs[i].name_size ==
 				    name_size &&
-			    memcmp(list->node[hash].named_certs[i].name, name,
-				   name_size) == 0) {
+			    memeq(list->node[hash].named_certs[i].name, name,
+				  name_size)) {
 				*voutput = 0;
 				break;
 			}

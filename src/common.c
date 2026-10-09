@@ -37,6 +37,7 @@
 #include <time.h>
 #include "common.h"
 #include <unistd.h>
+#include "minmax.h"
 
 #ifndef _WIN32
 #include <signal.h>
@@ -1169,7 +1170,6 @@ void getenv_copy(char *str, size_t max_str_size, const char *envvar)
 	return;
 }
 
-#define MIN(x, y) ((x) < (y)) ? (x) : (y)
 #define MAX_CACHE_TRIES 5
 int pin_callback(void *user, int attempt, const char *token_url,
 		 const char *token_label, unsigned int flags, char *pin,
@@ -1213,7 +1213,7 @@ int pin_callback(void *user, int attempt, const char *token_url,
 	}
 
 	if (cache > 0 && cached_url != NULL) {
-		if (token_url != NULL && strcmp(cached_url, token_url) == 0) {
+		if (token_url != NULL && streq(cached_url, token_url)) {
 			if (strlen(cached_pin) >= pin_max) {
 				fprintf(stderr, "Too long PIN given\n");
 				exit(1);
@@ -1413,3 +1413,35 @@ error:
 }
 
 #pragma GCC diagnostic pop
+
+/* returns the host part of a URL */
+const char *host_from_url(const char *url, unsigned int *port,
+			  const char **path)
+{
+	static char hostname[512];
+	const char *scheme;
+
+	*port = 0;
+	*path = "";
+
+	if ((scheme = strstr(url, "http://")) != NULL) {
+		char *p;
+
+		snprintf(hostname, sizeof(hostname), "%s", scheme + 7);
+		p = strchr(hostname, '/');
+		if (p != NULL) {
+			*p = 0;
+			*path = p + 1;
+		}
+
+		p = strchr(hostname, ':');
+		if (p != NULL) {
+			*p = 0;
+			*port = atoi(p + 1);
+		}
+
+		return hostname;
+	} else {
+		return url;
+	}
+}

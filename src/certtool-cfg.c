@@ -252,24 +252,24 @@ void cfg_init(void)
 	cfg.skip_certs = -1;
 }
 
-#define READ_MULTI_LINE(k_name, s_name)                                    \
-	val = cfg_next(pov, k_name);                                       \
-	if (val != NULL) {                                                 \
-		if (s_name == NULL) {                                      \
-			i = 0;                                             \
-			s_name = calloc(MAX_ENTRIES + 1, sizeof(char *));  \
-			CHECK_MALLOC(s_name);                              \
-			do {                                               \
-				if (val && strcmp(val->name, k_name) != 0) \
-					continue;                          \
-				s_name[i] = strdup(val->value);            \
-				i++;                                       \
-				if (i >= MAX_ENTRIES)                      \
-					break;                             \
-			} while ((val = cfg_next(val + 1, val->name)) !=   \
-				 NULL);                                    \
-			s_name[i] = NULL;                                  \
-		}                                                          \
+#define READ_MULTI_LINE(k_name, s_name)                                   \
+	val = cfg_next(pov, k_name);                                      \
+	if (val != NULL) {                                                \
+		if (s_name == NULL) {                                     \
+			i = 0;                                            \
+			s_name = calloc(MAX_ENTRIES + 1, sizeof(char *)); \
+			CHECK_MALLOC(s_name);                             \
+			do {                                              \
+				if (val && !streq(val->name, k_name))     \
+					continue;                         \
+				s_name[i] = strdup(val->value);           \
+				i++;                                      \
+				if (i >= MAX_ENTRIES)                     \
+					break;                            \
+			} while ((val = cfg_next(val + 1, val->name)) !=  \
+				 NULL);                                   \
+			s_name[i] = NULL;                                 \
+		}                                                         \
 	}
 
 #define READ_MULTI_LINE_TOKENIZED(k_name, s_name)                             \
@@ -282,7 +282,7 @@ void cfg_init(void)
 			s_name = calloc(MAX_ENTRIES + 1, sizeof(char *));     \
 			CHECK_MALLOC(s_name);                                 \
 			do {                                                  \
-				if (val && strcmp(val->name, k_name) != 0)    \
+				if (val && !streq(val->name, k_name))         \
 					continue;                             \
 				str = strdup(val->value);                     \
 				CHECK_MALLOC(str);                            \
@@ -855,8 +855,7 @@ const char *get_confirmed_pass(bool empty_ok)
 			copy = strdup(pass);
 			CHECK_MALLOC(copy);
 			pass = getpass("Confirm password: ");
-		} while (strcmp(pass, copy) != 0 &&
-			 !(empty_ok && *pass == '\0'));
+		} while (!streq(pass, copy) && !(empty_ok && *pass == '\0'));
 
 		free(copy);
 
@@ -2641,8 +2640,8 @@ const char *get_proxy_policy(char **policy, size_t *policylen)
 	*policy = NULL;
 	*policylen = 0;
 
-	if (strcmp(ret, "1.3.6.1.5.5.7.21.1") != 0 &&
-	    strcmp(ret, "1.3.6.1.5.5.7.21.2") != 0) {
+	if (!streq(ret, "1.3.6.1.5.5.7.21.1") &&
+	    !streq(ret, "1.3.6.1.5.5.7.21.2")) {
 		fprintf(stderr,
 			"Reading non-standard proxy policy not supported.\n");
 	}

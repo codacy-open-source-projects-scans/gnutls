@@ -35,6 +35,7 @@
 #include "x509_int.h"
 #include "x509_ext_int.h"
 #include <libtasn1.h>
+#include "c-strcase.h"
 
 #include "ip.h"
 #include "ip-in-cidr.h"
@@ -49,23 +50,20 @@
 
 #define MAX_NC_CHECKS (1 << 20)
 
-#define SAN_MIN GNUTLS_SAN_DNSNAME
-
-/* For historical reasons, these are not in the range
- * SAN_MIN..GNUTLS_SAN_MAX. They should probably deserve a separate
- * enum type.
- */
-#define SAN_OTHERNAME_MIN GNUTLS_SAN_OTHERNAME_XMPP
-#define SAN_OTHERNAME_MAX GNUTLS_SAN_OTHERNAME_MSUSERPRINCIPAL
-
 typedef unsigned long san_flags_t;
 
-#define SAN_BIT(san)                                 \
-	((san) <= GNUTLS_SAN_MAX ? (san) - SAN_MIN : \
-				   GNUTLS_SAN_MAX + (san) - SAN_OTHERNAME_MIN)
+/* Compress sparse SAN type range GNUTLS_SAN_MIN..GNUTLS_SAN_OTHERNAME_MAX
+ * (with a hole in between GNUTLS_SAN_MAX and GNUTLS_SAN_OTHERNAME_MIN)
+ * into a contiguous bit indices range.
+ */
+#define SAN_BIT(san)                      \
+	((san) <= GNUTLS_SAN_MAX ?        \
+		 (san) - GNUTLS_SAN_MIN : \
+		 GNUTLS_SAN_MAX + (san) - GNUTLS_SAN_OTHERNAME_MIN)
 
-static_assert(SAN_BIT(SAN_OTHERNAME_MIN) > SAN_BIT(GNUTLS_SAN_MAX));
-static_assert(SAN_BIT(SAN_OTHERNAME_MAX) < CHAR_BIT * sizeof(san_flags_t));
+static_assert(SAN_BIT(GNUTLS_SAN_OTHERNAME_MIN) > SAN_BIT(GNUTLS_SAN_MAX));
+static_assert(SAN_BIT(GNUTLS_SAN_OTHERNAME_MAX) <
+	      CHAR_BIT * sizeof(san_flags_t));
 
 #define SAN_FLAG(san) (1UL << SAN_BIT(san))
 
@@ -100,11 +98,27 @@ enum name_constraint_relation {
 	NC_SORTS_AFTER = 2 /* unrelated constraints */
 };
 
-/* A helper to compare just a pair of strings with this rich comparison */
+/* Helpers to compare just a pair of strings with this rich comparison */
 static enum name_constraint_relation
 compare_strings(const void *n1, size_t n1_len, const void *n2, size_t n2_len)
 {
 	int r = memcmp(n1, n2, MIN(n1_len, n2_len));
+	if (r < 0)
+		return NC_SORTS_BEFORE;
+	if (r > 0)
+		return NC_SORTS_AFTER;
+	if (n1_len < n2_len)
+		return NC_SORTS_BEFORE;
+	if (n1_len > n2_len)
+		return NC_SORTS_AFTER;
+	return NC_EQUAL;
+}
+
+static enum name_constraint_relation
+compare_strings_case_insensitive(const void *n1, size_t n1_len, const void *n2,
+				 size_t n2_len)
+{
+	int r = c_strncasecmp(n1, n2, MIN(n1_len, n2_len));
 	if (r < 0)
 		return NC_SORTS_BEFORE;
 	if (r > 0)
@@ -141,8 +155,8 @@ static enum name_constraint_relation compare_dns_names(const gnutls_datum_t *n1,
 		while (j && n2->data[j - 1] != '.')
 			j--;
 
-		rel = compare_strings(&n1->data[i], i_end - i, &n2->data[j],
-				      j_end - j);
+		rel = compare_strings_case_insensitive(&n1->data[i], i_end - i,
+						       &n2->data[j], j_end - j);
 		if (rel == NC_SORTS_BEFORE) /* x.a BEFORE y.a */
 			return NC_SORTS_BEFORE;
 		if (rel == NC_SORTS_AFTER) /* y.a AFTER x.a */
@@ -280,9 +294,9 @@ static enum name_constraint_relation compare_ip_ncs(const gnutls_datum_t *n1,
 	}
 
 	r = memcmp(mask1, mask2, len);
-	if (r < 0 && !memcmp(masked11, masked21, len)) /* prefix1 < prefix2 */
+	if (r < 0 && memeq(masked11, masked21, len)) /* prefix1 < prefix2 */
 		return NC_INCLUDES; /* ip1 & mask1 == ip2 & mask1 */
-	if (r > 0 && !memcmp(masked12, masked22, len)) /* prefix1 > prefix2 */
+	if (r > 0 && memeq(masked12, masked22, len)) /* prefix1 > prefix2 */
 		return NC_INCLUDED_BY; /* ip1 & mask2 == ip2 & mask2 */
 
 	r = memcmp(masked11, masked22, len);
@@ -527,7 +541,8 @@ static int validate_name_constraints_node(gnutls_x509_subject_alt_name_t type,
 	if (type != GNUTLS_SAN_DNSNAME && type != GNUTLS_SAN_RFC822NAME &&
 	    type != GNUTLS_SAN_DN && type != GNUTLS_SAN_URI &&
 	    type != GNUTLS_SAN_IPADDRESS &&
-	    type != GNUTLS_SAN_OTHERNAME_MSUSERPRINCIPAL) {
+	    type != GNUTLS_SAN_OTHERNAME_MSUSERPRINCIPAL &&
+	    type != GNUTLS_SAN_OTHERNAME_SRV) {
 		return gnutls_assert_val(GNUTLS_E_X509_UNKNOWN_SAN);
 	}
 
@@ -783,10 +798,6 @@ static int name_constraints_node_list_intersect(
 	san_flags_t types_in_p1 = 0, types_in_p2 = 0;
 	static const unsigned char universal_ip[32] = { 0 };
 
-	if (gl_list_size(permitted1->items) == 0 ||
-	    gl_list_size(permitted2->items) == 0)
-		return GNUTLS_E_SUCCESS;
-
 	/* First partition PERMITTED1 into supported and unsupported lists */
 	ret = name_constraints_node_list_init(&supported1);
 	if (ret < 0) {
@@ -935,7 +946,7 @@ out:
 
 	/* finishing touch: add universal excluded constraints for types where
 	 * both lists had constraints, but all intersections ended up empty */
-	for (gnutls_x509_subject_alt_name_t type = SAN_MIN;
+	for (gnutls_x509_subject_alt_name_t type = GNUTLS_SAN_MIN;
 	     type <= GNUTLS_SAN_MAX; type++) {
 		if (!(universal_exclude_needed & SAN_FLAG(type)))
 			continue;

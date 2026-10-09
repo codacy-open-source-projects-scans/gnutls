@@ -134,7 +134,7 @@ static void client(int fd, const char *prio, int proto, int cipher, int kx,
 	if (desc == NULL)
 		fail("client: gnutls_session_get_desc: NULL\n");
 
-	if (strcmp(desc, exp_desc) != 0)
+	if (!streq(desc, exp_desc))
 		fail("client: gnutls_session_get_desc: found null str: %s\n",
 		     desc);
 

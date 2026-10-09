@@ -278,13 +278,12 @@ algo_to_pbes2_cipher_schema(unsigned cipher)
  * schema_id or returns a negative value */
 int _gnutls_check_pkcs_cipher_schema(const char *oid)
 {
-	if (strcmp(oid, PBES2_OID) == 0)
+	if (streq(oid, PBES2_OID))
 		return PBES2_GENERIC; /* PBES2 ciphers are under an umbrella OID */
 
-	PBES2_SCHEMA_LOOP(
-		if (_p->pbes2 == 0 && strcmp(oid, _p->write_oid) == 0) {
-			return _p->schema;
-		});
+	PBES2_SCHEMA_LOOP(if (_p->pbes2 == 0 && streq(oid, _p->write_oid)) {
+		return _p->schema;
+	});
 	_gnutls_debug_log(
 		"PKCS #12 encryption schema OID '%s' is unsupported.\n", oid);
 
@@ -305,11 +304,10 @@ static int pbes2_cipher_oid_to_algo(const char *oid,
 				    gnutls_cipher_algorithm_t *algo)
 {
 	*algo = 0;
-	PBES2_SCHEMA_LOOP(
-		if (_p->pbes2 != 0 && strcmp(_p->cipher_oid, oid) == 0) {
-			*algo = _p->cipher;
-			return 0;
-		});
+	PBES2_SCHEMA_LOOP(if (_p->pbes2 != 0 && streq(_p->cipher_oid, oid)) {
+		*algo = _p->cipher;
+		return 0;
+	});
 
 	_gnutls_debug_log("PKCS #8 encryption OID '%s' is unsupported.\n", oid);
 	return GNUTLS_E_UNKNOWN_CIPHER_TYPE;
@@ -645,7 +643,7 @@ int _gnutls_read_pbkdf2_params(asn1_node pasn, const gnutls_datum_t *der,
 	}
 	_gnutls_hard_log("keyDerivationFunc.algorithm: %s\n", oid);
 
-	if (strcmp(oid, PBKDF2_OID) != 0) {
+	if (!streq(oid, PBKDF2_OID)) {
 		gnutls_assert();
 		_gnutls_debug_log(
 			"PKCS #8 key derivation OID '%s' is unsupported.\n",
@@ -889,7 +887,7 @@ static int read_pbes2_enc_params(asn1_node pasn, const gnutls_datum_t *der,
 	params_len = params_end - params_start + 1;
 
 	/* For GOST we have to read params to determine actual cipher */
-	if (!strcmp(params->pbes2_oid, GOST28147_89_OID)) {
+	if (streq(params->pbes2_oid, GOST28147_89_OID)) {
 		len = sizeof(params->pbes2_oid);
 		result = read_pbes2_gost_oid(&der->data[params_start],
 					     params_len, params->pbes2_oid,

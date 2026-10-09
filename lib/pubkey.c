@@ -413,9 +413,9 @@ int _gnutls_pubkey_parse_ecc_eddsa_params(const gnutls_datum_t *parameters,
 	str[str_size] = 0;
 
 	/* Convert the choice to enum type */
-	if (strcmp(str, "oId") == 0) {
+	if (streq(str, "oId")) {
 		etype = ASN1_ETYPE_OBJECT_ID;
-	} else if (strcmp(str, "curveName") == 0) {
+	} else if (streq(str, "curveName")) {
 		etype = ASN1_ETYPE_PRINTABLE_STRING;
 	}
 
@@ -583,9 +583,9 @@ static int gnutls_pubkey_parse_ecc_ecdh_params(const gnutls_datum_t *parameters,
 	str[str_size] = 0;
 
 	/* Convert the choice to enum type */
-	if (strcmp(str, "oId") == 0) {
+	if (streq(str, "oId")) {
 		etype = ASN1_ETYPE_OBJECT_ID;
-	} else if (strcmp(str, "curveName") == 0) {
+	} else if (streq(str, "curveName")) {
 		etype = ASN1_ETYPE_PRINTABLE_STRING;
 	}
 

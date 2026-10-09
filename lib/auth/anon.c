@@ -93,14 +93,13 @@ static int gen_anon_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 }
 
 static int proc_anon_client_kx(gnutls_session_t session, uint8_t *data,
-			       size_t _data_size)
+			       size_t data_size)
 {
-	return _gnutls_proc_dh_common_client_kx(session, data, _data_size,
-						NULL);
+	return _gnutls_proc_dh_common_client_kx(session, data, data_size, NULL);
 }
 
 int proc_anon_server_kx(gnutls_session_t session, uint8_t *data,
-			size_t _data_size)
+			size_t data_size)
 {
 	int ret;
 
@@ -111,7 +110,7 @@ int proc_anon_server_kx(gnutls_session_t session, uint8_t *data,
 		return ret;
 	}
 
-	ret = _gnutls_proc_dh_common_server_kx(session, data, _data_size);
+	ret = _gnutls_proc_dh_common_server_kx(session, data, data_size);
 	if (ret < 0) {
 		gnutls_assert();
 		return ret;

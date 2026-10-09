@@ -198,7 +198,7 @@ int _gnutls_load_tpm2_key(gnutls_privkey_t pkey, const gnutls_datum_t *fdata)
 
 	value_buflen = sizeof(value_buf);
 	if (!asn1_read_value(tpmkey, "emptyAuth", value_buf, &value_buflen) &&
-	    !strcmp(value_buf, "TRUE")) {
+	    streq(value_buf, "TRUE")) {
 		emptyauth = 1;
 	}
 

@@ -129,7 +129,7 @@ void doit(void)
 			rc = gnutls_hex_decode(&data, tmp, &size);
 			if (rc < 0)
 				fail("gnutls_hex_decode failed: %d\n", rc);
-			if (size != sizeof(key) || memcmp(key, tmp, size) != 0)
+			if (size != sizeof(key) || !memeq(key, tmp, size))
 				fail("_gnutls_pkcs12_string_to_key failed[1]\n");
 
 			if (debug)
@@ -155,7 +155,7 @@ void doit(void)
 		rc = gnutls_hex_decode(&data, tmp, &size);
 		if (rc < 0)
 			fail("gnutls_hex_encode failed: %d\n", rc);
-		if (size != tv[i].keylen || memcmp(key, tmp, size) != 0)
+		if (size != tv[i].keylen || !memeq(key, tmp, size))
 			fail("_gnutls_pkcs12_string_to_key failed[3]\n");
 
 		if (debug)

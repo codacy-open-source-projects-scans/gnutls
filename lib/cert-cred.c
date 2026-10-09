@@ -414,7 +414,6 @@ int gnutls_certificate_allocate_credentials(
 		gnutls_free(*res);
 		return GNUTLS_E_MEMORY_ERROR;
 	}
-	(*res)->verify_bits = DEFAULT_MAX_VERIFY_BITS;
 	(*res)->verify_depth = DEFAULT_MAX_VERIFY_DEPTH;
 
 	return 0;

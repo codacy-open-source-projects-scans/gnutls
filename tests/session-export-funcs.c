@@ -130,11 +130,11 @@ static void start(const char *prio)
 	HANDSHAKE(client, server);
 
 	gnutls_session_get_random(client, &v1, &v2);
-	if (v1.size != 32 || memcmp(v1.data, client_random, 32) != 0) {
+	if (v1.size != 32 || !memeq(v1.data, client_random, 32)) {
 		fail("error in client's random view 1\n");
 	}
 
-	if (v2.size != 32 || memcmp(v2.data, server_random, 32) != 0) {
+	if (v2.size != 32 || !memeq(v2.data, server_random, 32)) {
 		fail("error in client's random view 2\n");
 	}
 
@@ -142,11 +142,11 @@ static void start(const char *prio)
 	memset(&v2, 0, sizeof(v2));
 
 	gnutls_session_get_random(server, &v1, &v2);
-	if (v1.size != 32 || memcmp(v1.data, client_random, 32) != 0) {
+	if (v1.size != 32 || !memeq(v1.data, client_random, 32)) {
 		fail("error in server's random view 1\n");
 	}
 
-	if (v2.size != 32 || memcmp(v2.data, server_random, 32) != 0) {
+	if (v2.size != 32 || !memeq(v2.data, server_random, 32)) {
 		fail("error in server's random view 2\n");
 	}
 
@@ -165,8 +165,7 @@ static void start(const char *prio)
 			fail("error in client's master secret\n");
 		}
 
-		if (v1.size != v2.size ||
-		    memcmp(v1.data, v2.data, v1.size) != 0) {
+		if (v1.size != v2.size || !memeq(v1.data, v2.data, v1.size)) {
 			fail("master secret don't match!\n");
 		}
 	}

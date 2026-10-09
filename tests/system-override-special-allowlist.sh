@@ -22,6 +22,7 @@
 : ${srcdir=.}
 : ${CLI=../src/gnutls-cli${EXEEXT}}
 : ${GREP=grep}
+: ${FGREP=fgrep}
 : ${DIFF=diff}
 : ${SED=sed}
 
@@ -29,11 +30,15 @@ if ! test -x "${CLI}"; then
 	exit 77
 fi
 
-TMPCFGFILE=cfg.$$.tmp
-TMPREFFILE=ref.$$.tmp
-TMPCMPFILE=cmp.$$.tmp
-TMPOUTFILE=out.$$.tmp
-TMPSPECIAL=spc.$$.tmp
+. ${srcdir}/scripts/common.sh
+
+testdir=`create_testdir system-override-special-allowlist`
+TMPCFGFILE="$testdir/cfg.tmp"
+TMPREFFILE="$testdir/ref.tmp"
+TMPCMPFILE="$testdir/cmp.tmp"
+TMPOUTFILE="$testdir/out.tmp"
+TMPERRFILE="$testdir/err.tmp"
+TMPSPECIAL="$testdir/spc.tmp"
 
 # extract the list of %SPECIALs from the sources
 
@@ -41,7 +46,7 @@ TMPSPECIAL=spc.$$.tmp
 	${SED} -ne '/\([A-Z_0-9]\{1,\}\), .*/p' | \
 	${SED} -e 's/\([A-Z_0-9]\{1,\}\), .*/\1/' > "${TMPSPECIAL}"
 
-if ! ${GREP} -Fqx STATELESS_COMPRESSION "${TMPSPECIAL}"; then
+if ! ${GREP} '^STATELESS_COMPRESSION$' "${TMPSPECIAL}" > /dev/null; then
 	cat "${TMPSPECIAL}"
 	echo 'source-extracted list of %SPECIALs has no %STATELESS_COMPRESSION'
 	exit 1
@@ -70,33 +75,38 @@ export GNUTLS_SYSTEM_PRIORITY_FAIL_ON_INVALID=1
 
 # Smoke --list, @SYSTEM
 
-${CLI} --list -d 4 --priority @SYSTEM > "${TMPOUTFILE}" 2>&1
+${CLI} --list --priority @SYSTEM > "${TMPOUTFILE}"
 if test $? != 0; then
 	cat "${TMPOUTFILE}"
 	echo 'fails with just @SYSTEM'
 	exit 1
 fi
-if ! ${GREP} -Fqx 'Protocols: VERS-TLS1.3, VERS-TLS1.2' \
-		"${TMPOUTFILE}"; then
+if ! ${GREP} '^Protocols: VERS-TLS1.3, VERS-TLS1.2$' \
+		"${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'unexpected protocol list with @SYSTEM'
 	exit 1
 fi
-if ! ${GREP} -Fq TLS_AES_128_GCM_SHA256 "${TMPOUTFILE}"; then
+if ! ${FGREP} TLS_AES_128_GCM_SHA256 "${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'no TLS_AES_128_GCM_SHA256 with just @SYSTEM'
 	exit 1
 fi
-if ! ${GREP} -q TLS_RSA_AES_128_GCM_SHA256 "${TMPOUTFILE}"; then
+if ! ${FGREP} TLS_RSA_AES_128_GCM_SHA256 "${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'no TLS_RSA_AES_128_GCM_SHA256 with just @SYSTEM'
+	exit 1
+fi
+if ! ${FGREP} Ciphers: "${TMPOUTFILE}" > /dev/null; then
+	cat "${TMPOUTFILE}"
+	echo 'no Ciphers: section with just @SYSTEM'
 	exit 1
 fi
 ${SED} 's/for @SYSTEM/for ---PRIORITY---/' "${TMPOUTFILE}" > "${TMPREFFILE}"
 
 # Smoke-test a no-op %STATELESS_COMPRESSION, expect --list to stay the same
 
-${CLI} --list -d 4 --priority @SYSTEM:%STATELESS_COMPRESSION > "${TMPOUTFILE}" 2>&1
+${CLI} --list --priority @SYSTEM:%STATELESS_COMPRESSION > "${TMPOUTFILE}"
 if test $? != 0; then
 	cat "${TMPOUTFILE}"
 	echo 'fails with %STATELESS_COMPRESSION'
@@ -111,15 +121,17 @@ fi
 
 # Smoke-test %NONEXISTING_OPTION, expect a syntax error
 
-${CLI} --list -d 4 --priority @SYSTEM:%NONEXISTING_OPTION > "${TMPOUTFILE}" 2>&1
+${CLI} --list --priority @SYSTEM:%NONEXISTING_OPTION \
+	> /dev/null 2> "${TMPERRFILE}"
 if test $? = 0; then
-	cat "${TMPOUTFILE}"
+	cat "${TMPERRFILE}"
 	echo 'unknown option was not caught'
 	exit 1
 fi
-if ! ${GREP} -Fq 'Syntax error at: @SYSTEM:%NONEXISTING_OPTION' "${TMPOUTFILE}"
+if ! ${FGREP} 'Syntax error at: @SYSTEM:%NONEXISTING_OPTION' "${TMPERRFILE}" \
+	> /dev/null
 then
-	cat "${TMPOUTFILE}"
+	cat "${TMPERRFILE}"
 	echo 'unknown option was not errored upon'
 	exit 1
 fi
@@ -131,7 +143,7 @@ while read special; do
 		continue  # see below
 	fi
 	prio="@SYSTEM:%$special"
-	${CLI} --list -d 4 --priority "$prio" > "${TMPOUTFILE}" 2>&1
+	${CLI} --list --priority "$prio" > "${TMPOUTFILE}"
 	if test $? != 0; then
 		cat "${TMPOUTFILE}"
 		echo "fails with $prio"
@@ -147,30 +159,29 @@ done < "${TMPSPECIAL}"
 
 # Check that %NO_EXTENSIONS changes the output, capping it to TLS 1.2
 
-${CLI} --list -d 4 --priority @SYSTEM:%NO_EXTENSIONS > "${TMPOUTFILE}" 2>&1
+${CLI} --list --priority @SYSTEM:%NO_EXTENSIONS > "${TMPOUTFILE}"
 if test $? != 0; then
 	cat "${TMPOUTFILE}"
 	echo 'fails with just @SYSTEM'
 	exit 1
 fi
-if ! ${GREP} -Fqx 'Protocols: VERS-TLS1.2' \
-		"${TMPOUTFILE}"; then
+if ! ${GREP} '^Protocols: VERS-TLS1.2$' \
+		"${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'unexpected protocol list with @SYSTEM:%NO_EXTENSIONS'
 	exit 1
 fi
-if ${GREP} -Fq TLS_AES_128_GCM_SHA256 "${TMPOUTFILE}"; then
+if ${FGREP} TLS_AES_128_GCM_SHA256 "${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'TLS_AES_128_GCM_SHA256 present with @SYSTEM:%NO_EXTENSIONS'
 	exit 1
 fi
-if ! ${GREP} -q TLS_RSA_AES_128_GCM_SHA256 "${TMPOUTFILE}"; then
+if ! ${FGREP} TLS_RSA_AES_128_GCM_SHA256 "${TMPOUTFILE}" > /dev/null; then
 	cat "${TMPOUTFILE}"
 	echo 'no TLS_RSA_AES_128_GCM_SHA256 with @SYSTEM:%NO_EXTENSIONS'
 	exit 1
 fi
 
-rm "${TMPCFGFILE}" "${TMPREFFILE}" "${TMPCMPFILE}" "${TMPOUTFILE}"
-rm "${TMPSPECIAL}"
+rm -rf "$testdir"
 
 exit 0

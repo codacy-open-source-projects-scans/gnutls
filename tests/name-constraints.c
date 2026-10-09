@@ -156,8 +156,7 @@ void doit(void)
 								 &name);
 
 		if (ret >= 0 && i == 2) {
-			if (name.size != 3 ||
-			    memcmp(name.data, ".eu", 3) != 0) {
+			if (name.size != 3 || !memeq(name.data, ".eu", 3)) {
 				fail("error reading 2nd constraint\n");
 			}
 		}
@@ -242,7 +241,7 @@ void doit(void)
 
 		if (ret >= 0 && i == 1) {
 			if (name.size != name1.size ||
-			    memcmp(name.data, name1.data, name1.size) != 0) {
+			    !memeq(name.data, name1.data, name1.size)) {
 				fail("%d: error reading 1st constraint\n",
 				     __LINE__);
 			}
@@ -261,14 +260,14 @@ void doit(void)
 
 		if (ret >= 0 && i == 1) {
 			if (name.size != name2.size ||
-			    memcmp(name.data, name2.data, name2.size) != 0) {
+			    !memeq(name.data, name2.data, name2.size)) {
 				fail("%d: error reading 1st excluded constraint\n",
 				     __LINE__);
 			}
 		}
 		if (ret >= 0 && i == 2) {
 			if (name.size != name3.size ||
-			    memcmp(name.data, name3.data, name3.size) != 0) {
+			    !memeq(name.data, name3.data, name3.size)) {
 				fail("%d: error reading 1st excluded constraint\n",
 				     __LINE__);
 			}
@@ -361,6 +360,58 @@ void doit(void)
 	check_for_error(ret);
 
 	set_name("example.net", &name);
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_DNSNAME, &name);
+	check_test_result(ret, NAME_REJECTED, &name);
+
+	gnutls_x509_name_constraints_deinit(nc);
+
+	/* 4b: case insensitivity */
+
+	ret = gnutls_x509_name_constraints_init(&nc);
+	check_for_error(ret);
+
+	set_name("example.net", &name);
+	ret = gnutls_x509_name_constraints_add_excluded(nc, GNUTLS_SAN_DNSNAME,
+							&name);
+	check_for_error(ret);
+	set_name("email@example.net", &name);
+	ret = gnutls_x509_name_constraints_add_excluded(
+		nc, GNUTLS_SAN_RFC822NAME, &name);
+	check_for_error(ret);
+
+	set_name("example.org", &name); /* unrelated: accepted */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_DNSNAME, &name);
+	check_test_result(ret, NAME_ACCEPTED, &name);
+
+	set_name("example.net", &name); /* exact match: rejected */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_DNSNAME, &name);
+	check_test_result(ret, NAME_REJECTED, &name);
+
+	set_name("eXample.net", &name); /* case *insensitive*: rejected */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_DNSNAME, &name);
+	check_test_result(ret, NAME_REJECTED, &name);
+
+	set_name("mail@example.net", &name); /* unrelated: accepted */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_RFC822NAME,
+						 &name);
+	check_test_result(ret, NAME_ACCEPTED, &name);
+
+	set_name("email@example.net", &name); /* exact match: rejected */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_RFC822NAME,
+						 &name);
+	check_test_result(ret, NAME_REJECTED, &name);
+
+	set_name("eMail@example.net", &name); /* case *sensitive*: accepted */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_RFC822NAME,
+						 &name);
+	check_test_result(ret, NAME_ACCEPTED, &name);
+
+	set_name("email@EXAMPLE.NET", &name); /* case *insensitive*: rejected */
+	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_RFC822NAME,
+						 &name);
+	check_test_result(ret, NAME_REJECTED, &name);
+
+	set_name("www.ExAmPlE.NeT", &name); /* case *insensitive*: inexact */
 	ret = gnutls_x509_name_constraints_check(nc, GNUTLS_SAN_DNSNAME, &name);
 	check_test_result(ret, NAME_REJECTED, &name);
 

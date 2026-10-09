@@ -29,10 +29,6 @@ AM_CPPFLAGS += \
 	-I$(builddir)/../../gl          \
 	-I$(srcdir)/..
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 noinst_LTLIBRARIES = libgnutls_hpke.la
 
 libgnutls_hpke_la_SOURCES = hpke-api.c
@@ -41,7 +37,11 @@ if ENABLE_HPKE
 libgnutls_hpke_la_SOURCES += \
 	hpke.c \
 	hpke-builders.c \
+	hpke-builders.h \
 	hpke-hkdf.c \
+	hpke-hkdf.h \
 	hpke-key-management.c \
-	hpke-params.c
+	hpke-key-management.h \
+	hpke-params.c \
+	hpke-params.h
 endif

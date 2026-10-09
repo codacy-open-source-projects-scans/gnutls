@@ -354,7 +354,7 @@ int gnutls_x509_crt_set_crq_extension_by_oid(gnutls_x509_crt_t crt,
 			return result;
 		}
 
-		if (oid && strcmp(local_oid, oid) != 0)
+		if (oid && !streq(local_oid, oid))
 			continue;
 
 		extensions_size = 0;

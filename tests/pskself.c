@@ -113,7 +113,7 @@ static void client(int sd, const char *prio, unsigned exp_hint)
 	/* check the hint */
 	if (exp_hint) {
 		hint = gnutls_psk_client_get_hint(session);
-		if (hint == NULL || strcmp(hint, "hint") != 0) {
+		if (hint == NULL || !streq(hint, "hint")) {
 			fail("client: hint is not the expected: %s\n",
 			     gnutls_psk_client_get_hint(session));
 			goto end;

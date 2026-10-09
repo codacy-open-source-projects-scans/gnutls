@@ -67,7 +67,7 @@ static int test_encrypt_decrypt(gnutls_pubkey_t *pubkey,
 		return -1;
 	}
 
-	if (memcmp(out2.data, hash_data.data, hash_data.size) != 0) {
+	if (!memeq(out2.data, hash_data.data, hash_data.size)) {
 		fprintf(stderr, "Decrypted data don't match original (2)\n");
 		return -1;
 	}
@@ -82,7 +82,7 @@ static int test_encrypt_decrypt(gnutls_pubkey_t *pubkey,
 		return ret;
 	}
 
-	if (memcmp(out2.data, hash_data.data, hash_data.size) != 0) {
+	if (!memeq(out2.data, hash_data.data, hash_data.size)) {
 		fprintf(stderr, "Decrypted data don't match original (2b)\n");
 		return -1;
 	}
@@ -109,7 +109,7 @@ static int test_encrypt_decrypt(gnutls_pubkey_t *pubkey,
 		return -1;
 	}
 
-	if (memcmp(out2.data, raw_data.data, raw_data.size) != 0) {
+	if (!memeq(out2.data, raw_data.data, raw_data.size)) {
 		fprintf(stderr, "Decrypted data don't match original (4)\n");
 		return -1;
 	}
@@ -124,7 +124,7 @@ static int test_encrypt_decrypt(gnutls_pubkey_t *pubkey,
 		return ret;
 	}
 
-	if (memcmp(out2.data, raw_data.data, raw_data.size) != 0) {
+	if (!memeq(out2.data, raw_data.data, raw_data.size)) {
 		fprintf(stderr, "Decrypted data don't match original (4b)\n");
 		return -1;
 	}

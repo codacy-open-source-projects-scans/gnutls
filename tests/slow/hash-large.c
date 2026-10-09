@@ -101,7 +101,7 @@ void doit(void)
 	else {
 #define SHA256_HASH \
 	"\x80\x92\xd9\xbe\x54\xa0\xe9\xd7\x7c\xb8\xe4\x2d\xd3\x7c\x19\xfe\x4e\x68\x84\x33\x71\xef\x1c\x81\xd6\x44\x36\x52\x06\xd8\x4b\x8a"
-		if (memcmp(digest, SHA256_HASH, 32) == 0) {
+		if (memeq(digest, SHA256_HASH, 32)) {
 			if (debug)
 				success("gnutls_hash_fast(SHA256) %lu OK\n",
 					(unsigned long)size);
@@ -127,7 +127,7 @@ void doit(void)
 
 	gnutls_hash_output(td, digest);
 	gnutls_hash_deinit(td, NULL);
-	if (memcmp(digest, SHA256_HASH, 32) == 0) {
+	if (memeq(digest, SHA256_HASH, 32)) {
 		if (debug)
 			success("gnutls_hash_fast(SHA256) %lu OK\n",
 				(unsigned long)size);
@@ -144,7 +144,7 @@ void doit(void)
 	else {
 #define SHA1_HASH \
 	"\x75\xd2\x67\x3f\xec\x73\xe4\x57\xb8\x40\xb3\xb5\xf1\xc7\xa8\x1a\x2d\x11\x7e\xd9"
-		if (memcmp(digest, SHA1_HASH, 20) == 0) {
+		if (memeq(digest, SHA1_HASH, 20)) {
 			if (debug)
 				success("gnutls_hash_fast(SHA1) OK\n");
 		} else {
@@ -160,7 +160,7 @@ void doit(void)
 	else {
 #define SHA1_MAC \
 	"\xe2\xe9\x84\x48\x53\xe3\x0b\xfe\x45\x04\xf6\x6b\x5b\x6d\x4d\x2c\xa3\x0f\xcf\x23"
-		if (memcmp(digest, SHA1_MAC, 20) == 0) {
+		if (memeq(digest, SHA1_MAC, 20)) {
 			if (debug)
 				success("gnutls_hmac_fast(SHA1) OK\n");
 		} else {

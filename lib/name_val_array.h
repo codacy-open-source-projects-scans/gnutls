@@ -58,7 +58,7 @@ inline static const char *_name_val_array_value(name_val_array_t head,
 
 	while (array != NULL) {
 		if (array->name_size == name_size &&
-		    memcmp(array->name, name, name_size) == 0) {
+		    memeq(array->name, name, name_size)) {
 			return array->val;
 		}
 		array = array->next;

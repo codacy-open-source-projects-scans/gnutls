@@ -94,12 +94,12 @@ void doit(void)
 
 		// TODO: print out / check results
 		if (GNUTLS_SAN_URI == ret) {
-			if (strcmp(data, "http://ca.su.se") != 0) {
+			if (!streq(data, "http://ca.su.se")) {
 				fail("unexpected issuer GNUTLS_SAN_URI: %s\n",
 				     data);
 			}
 		} else if (GNUTLS_SAN_RFC822NAME == ret) {
-			if (strcmp(data, "ca@su.se") != 0) {
+			if (!streq(data, "ca@su.se")) {
 				fail("unexpected issuer GNUTLS_SAN_RFC822NAME: %s\n",
 				     data);
 			}

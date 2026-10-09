@@ -44,7 +44,8 @@ int _tls13_init_secret(gnutls_session_t session, const uint8_t *psk,
 int _tls13_init_secret2(const mac_entry_st *prf, const uint8_t *psk,
 			size_t psk_size, void *out)
 {
-	char buf[128];
+	uint8_t buf[128] = { 0 };
+	uint8_t salt[MAX_HASH_SIZE] = { 0 };
 
 	if (unlikely(prf == NULL))
 		return gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
@@ -54,12 +55,13 @@ int _tls13_init_secret2(const mac_entry_st *prf, const uint8_t *psk,
 		psk_size = prf->output_size;
 		if (unlikely(psk_size >= sizeof(buf)))
 			return gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
-
-		memset(buf, 0, psk_size);
 		psk = (uint8_t *)buf;
 	}
 
-	return gnutls_hmac_fast(prf->id, "", 0, psk, psk_size, out);
+	/* passing an empty salt trips FIPS indicator, so pass real zeroes */
+	memset(salt, 0, prf->output_size);
+	return gnutls_hmac_fast(prf->id, salt, prf->output_size, psk, psk_size,
+				out);
 }
 
 /* HKDF-Extract(Prev-Secret, key) */
@@ -140,20 +142,20 @@ int _tls13_expand_secret2(const mac_entry_st *prf, const char *label,
 
 	_gnutls_buffer_init(&str);
 
-	ret = _gnutls_buffer_append_prefix(&str, 16, out_size);
+	ret = _gnutls_buffer_append_uint16(&str, out_size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
 
 	memcpy(&tmp[6], label, label_size);
-	ret = _gnutls_buffer_append_data_prefix(&str, 8, tmp, label_size + 6);
+	ret = _gnutls_buffer_append_data_prefix8(&str, tmp, label_size + 6);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(&str, 8, msg, msg_size);
+	ret = _gnutls_buffer_append_data_prefix8(&str, msg, msg_size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;

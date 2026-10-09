@@ -139,7 +139,7 @@ retry:
 	if (srandom.size != 32)
 		fail("unexpected random size\n");
 
-	if (memcmp(&srandom.data[32 - 8], RND.data, 8) != 0) {
+	if (!memeq(&srandom.data[32 - 8], RND.data, 8)) {
 		unsigned i;
 		printf("expected: ");
 		for (i = 0; i < 8; i++)

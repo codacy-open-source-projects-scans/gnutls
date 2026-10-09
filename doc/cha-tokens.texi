@@ -395,6 +395,12 @@ using functions below.
 
 @showfuncE{gnutls_certificate_set_pin_function,gnutls_pubkey_set_pin_function,gnutls_privkey_set_pin_function,gnutls_pkcs11_obj_set_pin_function,gnutls_x509_crt_set_pin_function}
 
+@cindex GNUTLS_PIN
+@cindex GNUTLS_SO_PIN
+For command-line tools such as @code{gnutls-cli}, the PIN can be provided via
+the @code{GNUTLS_PIN} environment variable for user PIN, or @code{GNUTLS_SO_PIN}
+for security officer PIN.
+
 @node Reading objects
 @subsection Reading objects
 

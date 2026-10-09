@@ -189,7 +189,7 @@ static void client(int fd)
 		exit(1);
 	}
 
-	if (memcmp(wseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8) != 0) {
+	if (!memeq(wseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8)) {
 		dump("wseq:", wseq_number, 8);
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
@@ -203,14 +203,13 @@ static void client(int fd)
 		exit(1);
 	}
 
-	if (memcmp(rseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8) != 0) {
+	if (!memeq(rseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8)) {
 		dump("rseq:", rseq_number, 8);
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
 	}
 
-	if (hash_size != mac_key.size ||
-	    memcmp(p, mac_key.data, hash_size) != 0) {
+	if (hash_size != mac_key.size || !memeq(p, mac_key.data, hash_size)) {
 		dump("MAC:", mac_key.data, mac_key.size);
 		dump("Block:", key_material, block_size);
 		fprintf(stderr, "error in %d\n", __LINE__);
@@ -219,7 +218,7 @@ static void client(int fd)
 	p += hash_size;
 
 	if (hash_size != read_mac_key.size ||
-	    memcmp(p, read_mac_key.data, hash_size) != 0) {
+	    !memeq(p, read_mac_key.data, hash_size)) {
 		dump("MAC:", read_mac_key.data, read_mac_key.size);
 		dump("Block:", key_material, block_size);
 		fprintf(stderr, "error in %d\n", __LINE__);
@@ -228,26 +227,26 @@ static void client(int fd)
 	p += hash_size;
 
 	if (key_size != cipher_key.size ||
-	    memcmp(p, cipher_key.data, key_size) != 0) {
+	    !memeq(p, cipher_key.data, key_size)) {
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
 	}
 	p += key_size;
 
 	if (key_size != read_cipher_key.size ||
-	    memcmp(p, read_cipher_key.data, key_size) != 0) {
+	    !memeq(p, read_cipher_key.data, key_size)) {
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
 	}
 	p += key_size;
 
-	if (iv_size != iv.size || memcmp(p, iv.data, iv_size) != 0) {
+	if (iv_size != iv.size || !memeq(p, iv.data, iv_size)) {
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
 	}
 	p += iv_size;
 
-	if (iv_size != read_iv.size || memcmp(p, read_iv.data, iv_size) != 0) {
+	if (iv_size != read_iv.size || !memeq(p, read_iv.data, iv_size)) {
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
 	}
@@ -268,7 +267,7 @@ static void client(int fd)
 		exit(1);
 	}
 
-	if (memcmp(wseq_number, "\x00\x00\x00\x00\x00\x00\x00\x06", 8) != 0) {
+	if (!memeq(wseq_number, "\x00\x00\x00\x00\x00\x00\x00\x06", 8)) {
 		dump("wseq:", wseq_number, 8);
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);
@@ -282,7 +281,7 @@ static void client(int fd)
 		exit(1);
 	}
 
-	if (memcmp(rseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8) != 0) {
+	if (!memeq(rseq_number, "\x00\x00\x00\x00\x00\x00\x00\x01", 8)) {
 		dump("wseq:", wseq_number, 8);
 		fprintf(stderr, "error in %d\n", __LINE__);
 		exit(1);

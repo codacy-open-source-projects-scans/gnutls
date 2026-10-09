@@ -90,7 +90,7 @@ static int server_pskfunc(gnutls_session_t session,
 	}
 
 	if (imported_identity.size != sizeof(expected_imported_identity) ||
-	    memcmp(imported_identity.data, expected_imported_identity,
+	    !memeq(imported_identity.data, expected_imported_identity,
 		   imported_identity.size)) {
 		gnutls_free(imported_identity.data);
 		printf("Unexpected imported identity\n");
@@ -190,7 +190,7 @@ static void run_test(const char *prio)
 			fail("server: Could not get PSK username\n");
 
 		if (psk_username.size != sizeof(expected_imported_identity) ||
-		    memcmp(psk_username.data, expected_imported_identity,
+		    !memeq(psk_username.data, expected_imported_identity,
 			   sizeof(expected_imported_identity)))
 			fail("server: Unexpected PSK username\n");
 

@@ -34,13 +34,13 @@ int _gnutls_gen_ecdh_common_client_kx_int(gnutls_session_t session,
 					  gnutls_datum_t *psk_key);
 
 int _gnutls_proc_ecdh_common_client_kx(
-	gnutls_session_t session, uint8_t *data, size_t _data_size,
+	gnutls_session_t session, uint8_t *data, size_t data_size,
 	const struct gnutls_group_entry_st *group, gnutls_datum_t *psk_key);
 
 int _gnutls_ecdh_common_print_server_kx(
 	gnutls_session_t, gnutls_buffer_st *data,
 	const struct gnutls_group_entry_st *group);
 int _gnutls_proc_ecdh_common_server_kx(gnutls_session_t session, uint8_t *data,
-				       size_t _data_size);
+				       size_t data_size);
 
 #endif /* GNUTLS_LIB_AUTH_ECDHE_H */

@@ -62,7 +62,7 @@ static void PRINT(const char *str, unsigned char *val, unsigned int size)
 		int ret = _gnutls_utf8_to_ucs2(utf8, strlen(utf8), &out, 1); \
 		assert_int_equal(ret, 0);                                    \
 		if (out.size != sizeof(utf16) - 1 ||                         \
-		    memcmp(utf16, out.data, out.size) != 0) {                \
+		    !memeq(utf16, out.data, out.size)) {                     \
 			PRINT("got:      ", out.data, out.size);             \
 			PRINT("expected: ", (unsigned char *)utf16,          \
 			      sizeof(utf16) - 1);                            \
@@ -80,7 +80,7 @@ static void PRINT(const char *str, unsigned char *val, unsigned int size)
 					       1);                             \
 		assert_int_equal(ret, 0);                                      \
 		if (out.size != strlen(utf8) ||                                \
-		    memcmp(utf8, out.data, out.size) != 0) {                   \
+		    !memeq(utf8, out.data, out.size)) {                        \
 			PRINT("got:      ", out.data, out.size);               \
 			PRINT("expected: ", (unsigned char *)utf8,             \
 			      strlen(utf8));                                   \

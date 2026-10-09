@@ -151,7 +151,7 @@ static int _gnutls_record_size_limit_send_params(gnutls_session_t session,
 		send_size += vers->tls13_sem;
 	}
 
-	ret = _gnutls_buffer_append_prefix(extdata, 16, send_size);
+	ret = _gnutls_buffer_append_uint16(extdata, send_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 

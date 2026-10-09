@@ -163,7 +163,7 @@ static void client(int sd, const char *prio, const gnutls_datum_t *user,
 	/* check the hint */
 	if (expect_hint) {
 		hint = gnutls_psk_client_get_hint(session);
-		if (hint == NULL || strcmp(hint, "hint") != 0) {
+		if (hint == NULL || !streq(hint, "hint")) {
 			fail("client: hint is not the expected: %s\n",
 			     gnutls_psk_client_get_hint(session));
 			goto end;
@@ -341,8 +341,7 @@ static void server(int sd, const char *prio, const gnutls_datum_t *user,
 							    &pskid_binary))
 				fail("server: Could not get binary pskid\n");
 
-			if (memcmp(pskid_binary.data, user->data, user->size) !=
-			    0) {
+			if (!memeq(pskid_binary.data, user->data, user->size)) {
 				hex_encode(user->data, user->size, userdata_bin,
 					   sizeof(userdata_bin));
 				hex_encode(pskid_binary.data, pskid_binary.size,
@@ -353,7 +352,7 @@ static void server(int sd, const char *prio, const gnutls_datum_t *user,
 		} else {
 			pskid = gnutls_psk_server_get_username(session);
 			if (pskid == NULL ||
-			    strcmp(pskid, (const char *)user->data) != 0) {
+			    !streq(pskid, (const char *)user->data)) {
 				fail("server: username (%s), does not match expected (%s)\n",
 				     pskid, (const char *)user->data);
 			}

@@ -112,8 +112,8 @@ int _gnutls_ext_sr_verify(gnutls_session_t session)
 	if (priv && priv->safe_renegotiation_received) {
 		if ((priv->ri_extension_data_len <
 		     priv->client_verify_data_len) ||
-		    (memcmp(priv->ri_extension_data, priv->client_verify_data,
-			    priv->client_verify_data_len))) {
+		    !memeq(priv->ri_extension_data, priv->client_verify_data,
+			   priv->client_verify_data_len)) {
 			gnutls_assert();
 			_gnutls_handshake_log(
 				"HSK[%p]: Safe renegotiation failed [1]\n",
@@ -125,10 +125,10 @@ int _gnutls_ext_sr_verify(gnutls_session_t session)
 			if ((priv->ri_extension_data_len !=
 			     priv->client_verify_data_len +
 				     priv->server_verify_data_len) ||
-			    memcmp(priv->ri_extension_data +
+			    !memeq(priv->ri_extension_data +
 					   priv->client_verify_data_len,
 				   priv->server_verify_data,
-				   priv->server_verify_data_len) != 0) {
+				   priv->server_verify_data_len)) {
 				gnutls_assert();
 				_gnutls_handshake_log(
 					"HSK[%p]: Safe renegotiation failed [2]\n",
@@ -366,7 +366,7 @@ static int _gnutls_sr_send_params(gnutls_session_t session,
 		if (session->security_parameters.entity == GNUTLS_SERVER)
 			len += priv->server_verify_data_len;
 
-		ret = _gnutls_buffer_append_prefix(extdata, 8, len);
+		ret = _gnutls_buffer_append_uint8(extdata, len);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 

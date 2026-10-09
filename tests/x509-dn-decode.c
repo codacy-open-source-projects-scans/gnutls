@@ -61,7 +61,7 @@ static void decode(const char *test_name, const gnutls_datum_t *raw,
 			(int)out.size, (int)strlen(expected));
 	}
 
-	if (memcmp(out.data, expected, out.size) != 0) {
+	if (!memeq(out.data, expected, out.size)) {
 		test_fail(
 			"The string output (%s) doesn't match the expected (%s)\n",
 			(char *)out.data, expected);
@@ -85,7 +85,7 @@ static void decode(const char *test_name, const gnutls_datum_t *raw,
 			(int)out.size, (int)strlen(expected_compat));
 	}
 
-	if (memcmp(out.data, expected_compat, out.size) != 0) {
+	if (!memeq(out.data, expected_compat, out.size)) {
 		test_fail(
 			"The string output (%s) doesn't match the expected (%s)\n",
 			(char *)out.data, expected_compat);
@@ -150,7 +150,7 @@ static void encode(const char *test_name, const gnutls_datum_t *raw,
 			(int)out.size, (int)raw->size);
 	}
 
-	if (memcmp(out.data, raw->data, out.size) != 0) {
+	if (!memeq(out.data, raw->data, out.size)) {
 		{
 			unsigned i;
 			fprintf(stderr, "got:\n");

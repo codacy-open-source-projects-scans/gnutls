@@ -148,7 +148,7 @@ static void start(const char *name, const char *prio, unsigned exp_update)
 		} while (cret == GNUTLS_E_AGAIN ||
 			 cret == GNUTLS_E_INTERRUPTED);
 
-		if (memcmp(seq, "\x00\x00\x00\x00\x00\x00\x00\x01", 8) == 0) {
+		if (memeq(seq, "\x00\x00\x00\x00\x00\x00\x00\x01", 8)) {
 			update_happened = 1;
 		}
 	}

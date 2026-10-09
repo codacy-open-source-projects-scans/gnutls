@@ -132,7 +132,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (memcmp(b1, buffer, MAX_BUF) != 0) {
+	if (!memeq(b1, buffer, MAX_BUF)) {
 		fprintf(stderr, "Buffers do not match!\n");
 		exit(1);
 	}

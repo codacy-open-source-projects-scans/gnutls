@@ -152,12 +152,13 @@ cleanup2:
 }
 
 static int proc_rsa_client_kx(gnutls_session_t session, uint8_t *data,
-			      size_t _data_size)
+			      size_t data_size)
 {
 	gnutls_datum_t ciphertext;
-	int ret, dsize;
-	ssize_t data_size = _data_size;
+	int ret;
 	volatile uint8_t ver_maj, ver_min;
+	unsigned int key_bits;
+	size_t dsize;
 
 #ifdef ENABLE_SSL3
 	if (get_num_version(session) == GNUTLS_SSL3) {
@@ -180,6 +181,10 @@ static int proc_rsa_client_kx(gnutls_session_t session, uint8_t *data,
 		}
 		ciphertext.size = dsize;
 	}
+	gnutls_privkey_get_pk_algorithm(session->internals.selected_key,
+					&key_bits);
+	if (ciphertext.size != (key_bits + 7) / 8)
+		return gnutls_assert_val(GNUTLS_E_DECRYPTION_FAILED);
 
 	ver_maj = _gnutls_get_adv_version_major(session);
 	ver_min = _gnutls_get_adv_version_minor(session);
@@ -297,8 +302,8 @@ int _gnutls_gen_rsa_client_kx(gnutls_session_t session, gnutls_buffer_st *data)
 	} else
 #endif
 	{ /* TLS 1.x */
-		ret = _gnutls_buffer_append_data_prefix(data, 16, sdata.data,
-							sdata.size);
+		ret = _gnutls_buffer_append_data_prefix16(data, sdata.data,
+							  sdata.size);
 
 		_gnutls_free_datum(&sdata);
 		return ret;

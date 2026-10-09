@@ -238,8 +238,7 @@ static void server(const char *test_name, const char *prio, int fd,
 				buffer, (int)buffer_size, (int)strlen(buffer));
 			exit(1);
 		}
-		if (name_len != buffer_size ||
-		    memcmp(name, buffer, name_len) != 0) {
+		if (name_len != buffer_size || !memeq(name, buffer, name_len)) {
 			test_fail("received name '%s/%d', expected '%s/%d'\n",
 				  buffer, (int)buffer_size, name,
 				  (int)name_len);

@@ -96,7 +96,7 @@ static void compute_key(const char *name, gnutls_ecc_curve_t curve,
 
 	if (result) {
 		ok = Z.size == result->size &&
-		     memcmp(Z.data, result->data, Z.size) == 0;
+		     memeq(Z.data, result->data, Z.size);
 		if (!ok) {
 			hexprint(Z.data, Z.size);
 			fail("error\n");

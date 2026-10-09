@@ -334,10 +334,10 @@ int _gnutls_server_restore_session(gnutls_session_t session,
 		if (session_id_size ==
 			    session->internals.resumed_security_parameters
 				    .session_id_size &&
-		    memcmp(session_id,
-			   session->internals.resumed_security_parameters
-				   .session_id,
-			   session_id_size) == 0)
+		    memeq(session_id,
+			  session->internals.resumed_security_parameters
+				  .session_id,
+			  session_id_size))
 			return 0;
 	}
 

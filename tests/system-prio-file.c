@@ -52,7 +52,7 @@ static void try_prio(const char *prio, const char *expected_str)
 
 	assert(strstr(gnutls_get_system_config_file(), "system.prio") != NULL);
 
-	if (p == NULL || expected_str == NULL || strcmp(p, expected_str) != 0) {
+	if (p == NULL || expected_str == NULL || !streq(p, expected_str)) {
 		fail("test: %s: error; got: %s, expected: %s\n", prio, p,
 		     expected_str);
 		exit(1);

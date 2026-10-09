@@ -1007,7 +1007,7 @@ static void find_same_pubkey_with_id(const char *url, gnutls_x509_crt_t crt,
 		}
 
 		if (praw2.size == praw.size &&
-		    memcmp(praw2.data, praw.data, praw.size) == 0) {
+		    memeq(praw2.data, praw.data, praw.size)) {
 			/* found - now extract the CKA_ID */
 
 			size = sizeof(buf);
@@ -1149,7 +1149,7 @@ static void find_same_privkey_with_id(const char *url, gnutls_x509_crt_t crt,
 		}
 
 		if (praw2.size == praw.size &&
-		    memcmp(praw2.data, praw.data, praw.size) == 0) {
+		    memeq(praw2.data, praw.data, praw.size)) {
 			/* found - now extract the CKA_ID */
 
 			size = sizeof(buf);

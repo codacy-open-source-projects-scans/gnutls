@@ -289,8 +289,8 @@ static int write_certificate_authorities(void *ctx, gnutls_buffer_st *buf)
 	if (cred->tlist->x509_rdn_sequence.size == 0)
 		return 0;
 
-	return _gnutls_buffer_append_data_prefix(
-		buf, 16, cred->tlist->x509_rdn_sequence.data,
+	return _gnutls_buffer_append_data_prefix16(
+		buf, cred->tlist->x509_rdn_sequence.data,
 		cred->tlist->x509_rdn_sequence.size);
 }
 
@@ -345,14 +345,14 @@ int _gnutls13_send_certificate_request(gnutls_session_t session, unsigned again)
 				goto cleanup;
 			}
 
-			ret = _gnutls_buffer_append_data_prefix(
-				&buf, 8,
+			ret = _gnutls_buffer_append_data_prefix8(
+				&buf,
 				session->internals.post_handshake_cr_context
 					.data,
 				session->internals.post_handshake_cr_context
 					.size);
 		} else {
-			ret = _gnutls_buffer_append_prefix(&buf, 8, 0);
+			ret = _gnutls_buffer_append_uint8(&buf, 0);
 		}
 
 		if (ret < 0) {

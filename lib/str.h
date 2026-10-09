@@ -41,10 +41,6 @@
 #define N_(String) String
 #endif
 
-int gnutls_utf8_password_normalize(const uint8_t *password,
-				   unsigned password_len, gnutls_datum_t *out,
-				   unsigned flags);
-
 #define _gnutls_utf8_password_normalize(p, plen, out, ignore_errs) \
 	gnutls_utf8_password_normalize(                            \
 		(unsigned char *)p, plen, out,                     \
@@ -121,43 +117,40 @@ int _gnutls_buffer_append_str(gnutls_buffer_st *, const char *str);
 
 #include "num.h"
 
-int _gnutls_buffer_append_prefix(gnutls_buffer_st *buf, int pfx_size,
-				 size_t data_size);
-
-int _gnutls_buffer_append_mpi(gnutls_buffer_st *buf, int pfx_size, bigint_t,
-			      int lz);
+int _gnutls_buffer_append_mpi_prefix16(gnutls_buffer_st *buf, bigint_t mpi);
 
 int _gnutls_buffer_append_fixed_mpi(gnutls_buffer_st *buf, bigint_t mpi,
 				    unsigned size);
 
-int _gnutls_buffer_append_data_prefix(gnutls_buffer_st *buf, int pfx_size,
-				      const void *data, size_t data_size);
+int _gnutls_buffer_append_data_prefix32(gnutls_buffer_st *buf, const void *data,
+					size_t data_size);
+int _gnutls_buffer_append_data_prefix24(gnutls_buffer_st *buf, const void *data,
+					size_t data_size);
+int _gnutls_buffer_append_data_prefix16(gnutls_buffer_st *buf, const void *data,
+					size_t data_size);
+int _gnutls_buffer_append_data_prefix8(gnutls_buffer_st *buf, const void *data,
+				       size_t data_size);
+
 int _gnutls_buffer_pop_data(gnutls_buffer_st *, void *, size_t size);
 void _gnutls_buffer_pop_datum(gnutls_buffer_st *, gnutls_datum_t *,
 			      size_t max_size);
 
-/* 32-bit prefix */
-int _gnutls_buffer_pop_prefix32(gnutls_buffer_st *buf, size_t *data_size,
-				int check);
-int _gnutls_buffer_pop_prefix24(gnutls_buffer_st *buf, size_t *data_size,
-				int check);
-int _gnutls_buffer_pop_prefix16(gnutls_buffer_st *buf, size_t *data_size,
-				int check);
-int _gnutls_buffer_pop_prefix8(gnutls_buffer_st *, uint8_t *, int check);
+int _gnutls_buffer_pop_uint32(gnutls_buffer_st *buf, uint32_t *data);
+int _gnutls_buffer_pop_uint24(gnutls_buffer_st *buf, uint32_t *data);
+int _gnutls_buffer_pop_uint16(gnutls_buffer_st *buf, uint16_t *data);
+int _gnutls_buffer_pop_uint8(gnutls_buffer_st *buf, uint8_t *data);
 
-/* 32-bit prefix */
+int _gnutls_buffer_append_uint32(gnutls_buffer_st *buf, size_t data);
+int _gnutls_buffer_append_uint24(gnutls_buffer_st *buf, size_t data);
+int _gnutls_buffer_append_uint16(gnutls_buffer_st *buf, size_t data);
+int _gnutls_buffer_append_uint8(gnutls_buffer_st *buf, size_t data);
+
 int _gnutls_buffer_pop_datum_prefix32(gnutls_buffer_st *buf,
 				      gnutls_datum_t *data);
-
-/* 24-bit prefix */
 int _gnutls_buffer_pop_datum_prefix24(gnutls_buffer_st *buf,
 				      gnutls_datum_t *data);
-
-/* 16-bit prefix */
 int _gnutls_buffer_pop_datum_prefix16(gnutls_buffer_st *buf,
 				      gnutls_datum_t *data);
-
-/* 8-bit prefix */
 int _gnutls_buffer_pop_datum_prefix8(gnutls_buffer_st *buf,
 				     gnutls_datum_t *data);
 
@@ -207,7 +200,6 @@ int _gnutls_hostname_compare(const char *certname, size_t certnamesize,
 			     const char *hostname, unsigned vflags);
 
 #define MAX_CN 256
-#define MAX_DN 1024
 
 #define BUFFER_APPEND(b, x, s)                             \
 	{                                                  \
@@ -218,67 +210,65 @@ int _gnutls_hostname_compare(const char *certname, size_t certnamesize,
 		}                                          \
 	}
 
-/* append data prefixed with 4-bytes length field*/
-#define BUFFER_APPEND_PFX4(b, x, s)                                   \
-	{                                                             \
-		ret = _gnutls_buffer_append_data_prefix(b, 32, x, s); \
-		if (ret < 0) {                                        \
-			gnutls_assert();                              \
-			return ret;                                   \
-		}                                                     \
+#define BUFFER_APPEND_PFX4(b, x, s)                                 \
+	{                                                           \
+		ret = _gnutls_buffer_append_data_prefix32(b, x, s); \
+		if (ret < 0) {                                      \
+			gnutls_assert();                            \
+			return ret;                                 \
+		}                                                   \
 	}
 
-#define BUFFER_APPEND_PFX3(b, x, s)                                   \
-	{                                                             \
-		ret = _gnutls_buffer_append_data_prefix(b, 24, x, s); \
-		if (ret < 0) {                                        \
-			gnutls_assert();                              \
-			return ret;                                   \
-		}                                                     \
+#define BUFFER_APPEND_PFX3(b, x, s)                                 \
+	{                                                           \
+		ret = _gnutls_buffer_append_data_prefix24(b, x, s); \
+		if (ret < 0) {                                      \
+			gnutls_assert();                            \
+			return ret;                                 \
+		}                                                   \
 	}
 
-#define BUFFER_APPEND_PFX2(b, x, s)                                   \
-	{                                                             \
-		ret = _gnutls_buffer_append_data_prefix(b, 16, x, s); \
-		if (ret < 0) {                                        \
-			gnutls_assert();                              \
-			return ret;                                   \
-		}                                                     \
+#define BUFFER_APPEND_PFX2(b, x, s)                                 \
+	{                                                           \
+		ret = _gnutls_buffer_append_data_prefix16(b, x, s); \
+		if (ret < 0) {                                      \
+			gnutls_assert();                            \
+			return ret;                                 \
+		}                                                   \
 	}
 
-#define BUFFER_APPEND_PFX1(b, x, s)                                  \
-	{                                                            \
-		ret = _gnutls_buffer_append_data_prefix(b, 8, x, s); \
-		if (ret < 0) {                                       \
-			gnutls_assert();                             \
-			return ret;                                  \
-		}                                                    \
+#define BUFFER_APPEND_PFX1(b, x, s)                                \
+	{                                                          \
+		ret = _gnutls_buffer_append_data_prefix8(b, x, s); \
+		if (ret < 0) {                                     \
+			gnutls_assert();                           \
+			return ret;                                \
+		}                                                  \
 	}
 
-#define BUFFER_APPEND_NUM(b, s)                               \
-	{                                                     \
-		ret = _gnutls_buffer_append_prefix(b, 32, s); \
-		if (ret < 0) {                                \
-			gnutls_assert();                      \
-			return ret;                           \
-		}                                             \
+#define BUFFER_APPEND_NUM(b, s)                           \
+	{                                                 \
+		ret = _gnutls_buffer_append_uint32(b, s); \
+		if (ret < 0) {                            \
+			gnutls_assert();                  \
+			return ret;                       \
+		}                                         \
 	}
 
 #define BUFFER_APPEND_TS(b, s)                                                \
 	{                                                                     \
-		ret = _gnutls_buffer_append_prefix(b, 32,                     \
+		ret = _gnutls_buffer_append_uint32(b,                         \
 						   (uint64_t)s.tv_sec >> 32); \
 		if (ret < 0) {                                                \
 			gnutls_assert();                                      \
 			return ret;                                           \
 		}                                                             \
-		ret = _gnutls_buffer_append_prefix(b, 32,                     \
-						   s.tv_sec & 0xFFFFFFFF);    \
+		ret = _gnutls_buffer_append_uint32(b, s.tv_sec & 0xFFFFFFFF); \
 		if (ret < 0) {                                                \
 			gnutls_assert();                                      \
 			return ret;                                           \
 		}                                                             \
-		ret = _gnutls_buffer_append_prefix(b, 32, s.tv_nsec);         \
+		ret = _gnutls_buffer_append_uint32(b, s.tv_nsec);             \
 		if (ret < 0) {                                                \
 			gnutls_assert();                                      \
 			return ret;                                           \
@@ -307,51 +297,51 @@ int _gnutls_hostname_compare(const char *certname, size_t certnamesize,
 		}                                                   \
 	}
 
-#define BUFFER_POP_NUM(b, o)                                 \
-	{                                                    \
-		size_t s;                                    \
-		ret = _gnutls_buffer_pop_prefix32(b, &s, 0); \
-		if (ret < 0) {                               \
-			gnutls_assert();                     \
-			goto error;                          \
-		}                                            \
-		o = s;                                       \
+#define BUFFER_POP_NUM(b, o)                            \
+	{                                               \
+		uint32_t s;                             \
+		ret = _gnutls_buffer_pop_uint32(b, &s); \
+		if (ret < 0) {                          \
+			gnutls_assert();                \
+			goto error;                     \
+		}                                       \
+		o = s;                                  \
 	}
 
-#define BUFFER_POP_CAST_NUM(b, o)                            \
-	{                                                    \
-		size_t s;                                    \
-		ret = _gnutls_buffer_pop_prefix32(b, &s, 0); \
-		if (ret < 0) {                               \
-			gnutls_assert();                     \
-			goto error;                          \
-		}                                            \
-		o = (void *)(intptr_t)(s);                   \
+#define BUFFER_POP_CAST_NUM(b, o)                       \
+	{                                               \
+		uint32_t s;                             \
+		ret = _gnutls_buffer_pop_uint32(b, &s); \
+		if (ret < 0) {                          \
+			gnutls_assert();                \
+			goto error;                     \
+		}                                       \
+		o = (void *)(intptr_t)(s);              \
 	}
 
-#define BUFFER_POP_TS(b, o)                                  \
-	{                                                    \
-		size_t s;                                    \
-		uint64_t v;                                  \
-		ret = _gnutls_buffer_pop_prefix32(b, &s, 0); \
-		if (ret < 0) {                               \
-			gnutls_assert();                     \
-			goto error;                          \
-		}                                            \
-		v = s;                                       \
-		ret = _gnutls_buffer_pop_prefix32(b, &s, 0); \
-		if (ret < 0) {                               \
-			gnutls_assert();                     \
-			goto error;                          \
-		}                                            \
-		v = (v << 32) | s;                           \
-		ret = _gnutls_buffer_pop_prefix32(b, &s, 0); \
-		if (ret < 0) {                               \
-			gnutls_assert();                     \
-			goto error;                          \
-		}                                            \
-		o.tv_sec = v;                                \
-		o.tv_nsec = s;                               \
+#define BUFFER_POP_TS(b, o)                             \
+	{                                               \
+		uint32_t s;                             \
+		uint64_t v;                             \
+		ret = _gnutls_buffer_pop_uint32(b, &s); \
+		if (ret < 0) {                          \
+			gnutls_assert();                \
+			goto error;                     \
+		}                                       \
+		v = s;                                  \
+		ret = _gnutls_buffer_pop_uint32(b, &s); \
+		if (ret < 0) {                          \
+			gnutls_assert();                \
+			goto error;                     \
+		}                                       \
+		v = (v << 32) | s;                      \
+		ret = _gnutls_buffer_pop_uint32(b, &s); \
+		if (ret < 0) {                          \
+			gnutls_assert();                \
+			goto error;                     \
+		}                                       \
+		o.tv_sec = v;                           \
+		o.tv_nsec = s;                          \
 	}
 
 #endif /* GNUTLS_LIB_STR_H */

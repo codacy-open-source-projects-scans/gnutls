@@ -331,7 +331,7 @@ static int _verify_response(gnutls_datum_t *data, gnutls_datum_t *nonce,
 		}
 
 		if (rnonce.size != nonce->size ||
-		    memcmp(nonce->data, rnonce.data, nonce->size) != 0) {
+		    !memeq(nonce->data, rnonce.data, nonce->size)) {
 			fprintf(stderr,
 				"nonce in the response doesn't match\n");
 			app_exit(1);

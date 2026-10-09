@@ -69,8 +69,7 @@ int _gnutls_get_extension(asn1_node asn, const char *root,
 
 		/* Handle Extension 
 		 */
-		if (strcmp(extnID, extension_id) == 0 &&
-		    indx == indx_counter++) {
+		if (streq(extnID, extension_id) && indx == indx_counter++) {
 			/* extension was found 
 			 */
 
@@ -441,7 +440,7 @@ int _gnutls_set_extension(asn1_node asn, const char *root, const char *ext_id,
 
 			/* Handle Extension 
 			 */
-			if (strcmp(extnID, ext_id) == 0) {
+			if (streq(extnID, ext_id)) {
 				/* extension was found 
 				 */
 				return overwrite_extension(asn, root, k,

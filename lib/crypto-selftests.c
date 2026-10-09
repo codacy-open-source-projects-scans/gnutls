@@ -1391,8 +1391,8 @@ static int test_cipher(gnutls_cipher_algorithm_t cipher,
 		if (ret < 0)
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 
-		if (memcmp(tmp, vectors[i].ciphertext,
-			   vectors[i].plaintext_size) != 0) {
+		if (!memeq(tmp, vectors[i].ciphertext,
+			   vectors[i].plaintext_size)) {
 			_gnutls_debug_log("%s test vector %d failed!\n",
 					  gnutls_cipher_get_name(cipher), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -1417,8 +1417,8 @@ static int test_cipher(gnutls_cipher_algorithm_t cipher,
 				return gnutls_assert_val(
 					GNUTLS_E_SELF_TEST_ERROR);
 
-			if (memcmp(tmp, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s vector %d in-place encryption failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1434,7 +1434,7 @@ static int test_cipher(gnutls_cipher_algorithm_t cipher,
 				return gnutls_assert_val(
 					GNUTLS_E_SELF_TEST_ERROR);
 
-			if (memcmp(tmp, vectors[i].internal_iv, ret) != 0) {
+			if (!memeq(tmp, vectors[i].internal_iv, ret)) {
 				_gnutls_debug_log(
 					"%s vector %d internal IV check failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1468,8 +1468,8 @@ static int test_cipher(gnutls_cipher_algorithm_t cipher,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 		}
 
-		if (memcmp(tmp, vectors[i].plaintext,
-			   vectors[i].plaintext_size) != 0) {
+		if (!memeq(tmp, vectors[i].plaintext,
+			   vectors[i].plaintext_size)) {
 			_gnutls_debug_log("%s test vector %d failed!\n",
 					  gnutls_cipher_get_name(cipher), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -1494,8 +1494,8 @@ static int test_cipher(gnutls_cipher_algorithm_t cipher,
 				return gnutls_assert_val(
 					GNUTLS_E_SELF_TEST_ERROR);
 
-			if (memcmp(tmp, vectors[i].plaintext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, vectors[i].plaintext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s vector %d in-place decryption failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1558,8 +1558,8 @@ static int test_cipher_all_block_sizes(gnutls_cipher_algorithm_t cipher,
 						GNUTLS_E_SELF_TEST_ERROR);
 			}
 
-			if (memcmp(tmp, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s encryption of test vector %d failed with block size %d/%d!\n",
 					gnutls_cipher_get_name(cipher), i,
@@ -1599,8 +1599,8 @@ static int test_cipher_all_block_sizes(gnutls_cipher_algorithm_t cipher,
 						GNUTLS_E_SELF_TEST_ERROR);
 			}
 
-			if (memcmp(tmp, vectors[i].plaintext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, vectors[i].plaintext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s decryption of test vector %d failed with block size %d!\n",
 					gnutls_cipher_get_name(cipher), i,
@@ -1687,8 +1687,8 @@ static int test_cipher_aead_compat(gnutls_cipher_algorithm_t cipher,
 		if (ret < 0)
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 
-		if (memcmp(tmp + vectors[i].plaintext_size, vectors[i].tag,
-			   tag_size) != 0) {
+		if (!memeq(tmp + vectors[i].plaintext_size, vectors[i].tag,
+			   tag_size)) {
 			_gnutls_debug_log(
 				"compat: %s test vector %d failed (tag)!\n",
 				gnutls_cipher_get_name(cipher), i);
@@ -1696,8 +1696,8 @@ static int test_cipher_aead_compat(gnutls_cipher_algorithm_t cipher,
 		}
 
 		if (vectors[i].plaintext_size > 0) {
-			if (memcmp(tmp, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"compat: %s test vector %d failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1720,7 +1720,7 @@ static int test_cipher_aead_compat(gnutls_cipher_algorithm_t cipher,
 				return gnutls_assert_val(
 					GNUTLS_E_SELF_TEST_ERROR);
 
-			if (memcmp(tmp, tmp2, vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp, tmp2, vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"compat: %s vector %d in-place encryption failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1748,8 +1748,8 @@ static int test_cipher_aead_compat(gnutls_cipher_algorithm_t cipher,
 				return gnutls_assert_val(
 					GNUTLS_E_SELF_TEST_ERROR);
 
-			if (memcmp(tmp2, vectors[i].plaintext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(tmp2, vectors[i].plaintext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"compat: %s test vector %d failed (decryption)!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1778,8 +1778,8 @@ static int test_cipher_aead_compat(gnutls_cipher_algorithm_t cipher,
 					return gnutls_assert_val(
 						GNUTLS_E_SELF_TEST_ERROR);
 
-				if (memcmp(tmp2, vectors[i].plaintext,
-					   vectors[i].plaintext_size) != 0) {
+				if (!memeq(tmp2, vectors[i].plaintext,
+					   vectors[i].plaintext_size)) {
 					_gnutls_debug_log(
 						"compat: %s vector %d in-place decryption failed!\n",
 						gnutls_cipher_get_name(cipher),
@@ -1870,7 +1870,7 @@ test_cipher_aead_scatter(gnutls_cipher_algorithm_t cipher,
 		else
 			tag = tmp + vectors[i].plaintext_size;
 
-		if (memcmp(tag, vectors[i].tag, tag_size) != 0) {
+		if (!memeq(tag, vectors[i].tag, tag_size)) {
 			_gnutls_debug_log("%s test vector %d failed (tag)!\n",
 					  gnutls_cipher_get_name(cipher), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -1882,8 +1882,8 @@ test_cipher_aead_scatter(gnutls_cipher_algorithm_t cipher,
 			ciphertext = tmp;
 
 		if (vectors[i].plaintext_size > 0) {
-			if (memcmp(ciphertext, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(ciphertext, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s test vector %d failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -1956,7 +1956,7 @@ test_cipher_aead_scatter(gnutls_cipher_algorithm_t cipher,
 		else
 			tag = tmp + vectors[i].plaintext_size;
 
-		if (memcmp(tag, vectors[i].tag, tag_size) != 0) {
+		if (!memeq(tag, vectors[i].tag, tag_size)) {
 			_gnutls_debug_log("%s test vector %d failed (tag)!\n",
 					  gnutls_cipher_get_name(cipher), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -1968,8 +1968,8 @@ test_cipher_aead_scatter(gnutls_cipher_algorithm_t cipher,
 			ciphertext = tmp;
 
 		if (vectors[i].plaintext_size > 0) {
-			if (memcmp(ciphertext, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(ciphertext, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s test vector %d failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -2052,7 +2052,7 @@ static int test_cipher_aead(gnutls_cipher_algorithm_t cipher,
 		else
 			tag = tmp + vectors[i].plaintext_size;
 
-		if (memcmp(tag, vectors[i].tag, tag_size) != 0) {
+		if (!memeq(tag, vectors[i].tag, tag_size)) {
 			_gnutls_debug_log("%s test vector %d failed (tag)!\n",
 					  gnutls_cipher_get_name(cipher), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -2064,8 +2064,8 @@ static int test_cipher_aead(gnutls_cipher_algorithm_t cipher,
 			ciphertext = tmp;
 
 		if (vectors[i].plaintext_size > 0) {
-			if (memcmp(ciphertext, vectors[i].ciphertext,
-				   vectors[i].plaintext_size) != 0) {
+			if (!memeq(ciphertext, vectors[i].ciphertext,
+				   vectors[i].plaintext_size)) {
 				_gnutls_debug_log(
 					"%s test vector %d failed!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -2089,8 +2089,8 @@ static int test_cipher_aead(gnutls_cipher_algorithm_t cipher,
 
 			if (s2 != vectors[i].plaintext_size ||
 			    (vectors[i].plaintext_size > 0 &&
-			     memcmp(tmp2, vectors[i].plaintext,
-				    vectors[i].plaintext_size) != 0)) {
+			     !memeq(tmp2, vectors[i].plaintext,
+				    vectors[i].plaintext_size))) {
 				_gnutls_debug_log(
 					"%s test vector %d failed (decryption)!\n",
 					gnutls_cipher_get_name(cipher), i);
@@ -2370,8 +2370,7 @@ static int test_digest(gnutls_digest_algorithm_t dig,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 
 		if (data_size != vectors[i].output_size ||
-		    memcmp(data, vectors[i].output, vectors[i].output_size) !=
-			    0) {
+		    !memeq(data, vectors[i].output, vectors[i].output_size)) {
 			_gnutls_debug_log("%s test vector %d failed!\n",
 					  gnutls_digest_get_name(dig), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -2387,8 +2386,8 @@ static int test_digest(gnutls_digest_algorithm_t dig,
 			memset(data, 0xaa, data_size);
 			gnutls_hash_deinit(copy, data);
 
-			if (memcmp(data, vectors[i].output,
-				   vectors[i].output_size) != 0) {
+			if (!memeq(data, vectors[i].output,
+				   vectors[i].output_size)) {
 				_gnutls_debug_log(
 					"%s copy test vector %d failed!\n",
 					gnutls_digest_get_name(dig), i);
@@ -2427,8 +2426,8 @@ static int test_digest(gnutls_digest_algorithm_t dig,
 			memset(data, 0xbb, data_size);
 			gnutls_hash_deinit(hd, data);
 
-			if (memcmp(data, vectors[i].output,
-				   vectors[i].output_size) != 0) {
+			if (!memeq(data, vectors[i].output,
+				   vectors[i].output_size)) {
 				_gnutls_debug_log(
 					"%s reset test vector %d failed!\n",
 					gnutls_digest_get_name(dig), i);
@@ -2493,8 +2492,7 @@ static int test_xof(gnutls_digest_algorithm_t dig,
 
 		gnutls_hash_deinit(hd, NULL);
 
-		if (memcmp(data, vectors[i].output, vectors[i].output_size) !=
-		    0) {
+		if (!memeq(data, vectors[i].output, vectors[i].output_size)) {
 			_gnutls_debug_log("%s test vector %d failed!\n",
 					  gnutls_digest_get_name(dig), i);
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
@@ -2780,8 +2778,7 @@ static int test_mac(gnutls_mac_algorithm_t mac,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 
 		if (data_size != vectors[i].output_size ||
-		    memcmp(data, vectors[i].output, vectors[i].output_size) !=
-			    0) {
+		    !memeq(data, vectors[i].output, vectors[i].output_size)) {
 			_gnutls_debug_log("MAC-%s test vector %d failed!\n",
 					  gnutls_mac_get_name(mac), i);
 
@@ -2798,8 +2795,8 @@ static int test_mac(gnutls_mac_algorithm_t mac,
 			memset(data, 0xaa, data_size);
 			gnutls_hmac_deinit(copy, data);
 
-			if (memcmp(data, vectors[i].output,
-				   vectors[i].output_size) != 0) {
+			if (!memeq(data, vectors[i].output,
+				   vectors[i].output_size)) {
 				_gnutls_debug_log(
 					"MAC-%s copy test vector %d failed!\n",
 					gnutls_mac_get_name(mac), i);
@@ -3205,7 +3202,7 @@ static int test_hkdf(gnutls_mac_algorithm_t mac,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 		}
 
-		if (memcmp(output, vectors[i].prk, vectors[i].prk_size) != 0) {
+		if (!memeq(output, vectors[i].prk, vectors[i].prk_size)) {
 			_gnutls_debug_log(
 				"HKDF extract: MAC-%s test vector failed!\n",
 				gnutls_mac_get_name(mac));
@@ -3226,7 +3223,7 @@ static int test_hkdf(gnutls_mac_algorithm_t mac,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 		}
 
-		if (memcmp(output, vectors[i].okm, vectors[i].okm_size) != 0) {
+		if (!memeq(output, vectors[i].okm, vectors[i].okm_size)) {
 			_gnutls_debug_log(
 				"HKDF expand: MAC-%s test vector failed!\n",
 				gnutls_mac_get_name(mac));
@@ -3356,8 +3353,7 @@ static int test_pbkdf2(gnutls_mac_algorithm_t mac,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 		}
 
-		if (memcmp(output, vectors[i].output, vectors[i].output_size) !=
-		    0) {
+		if (!memeq(output, vectors[i].output, vectors[i].output_size)) {
 			_gnutls_debug_log(
 				"PBKDF2: MAC-%s test vector failed!\n",
 				gnutls_mac_get_name(mac));
@@ -3542,8 +3538,7 @@ static int test_tlsprf(gnutls_mac_algorithm_t mac,
 			return gnutls_assert_val(GNUTLS_E_SELF_TEST_ERROR);
 		}
 
-		if (memcmp(output, vectors[i].output, vectors[i].output_size) !=
-		    0) {
+		if (!memeq(output, vectors[i].output, vectors[i].output_size)) {
 			_gnutls_debug_log(
 				"TLS-PRF: MAC-%s test vector failed!\n",
 				gnutls_mac_get_name(mac));

@@ -65,7 +65,7 @@ static void server_log_func(int level, const char *str)
 static int url_import_key(gnutls_privkey_t pkey, const char *url,
 			  unsigned flags)
 {
-	if (strcmp(url, "system:key") != 0) {
+	if (!streq(url, "system:key")) {
 		fail("unexpected key url: %s\n", url);
 		return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;
 	}
@@ -77,7 +77,7 @@ static int url_import_key(gnutls_privkey_t pkey, const char *url,
 static int url_import_crt(gnutls_x509_crt_t crt, const char *url,
 			  unsigned flags)
 {
-	if (strcmp(url, "system:cert") != 0) {
+	if (!streq(url, "system:cert")) {
 		abort();
 		fail("unexpected cert url: %s\n", url);
 		return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;

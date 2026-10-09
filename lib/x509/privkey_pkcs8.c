@@ -657,7 +657,7 @@ int gnutls_pkcs8_info(const gnutls_datum_t *data, gnutls_x509_crt_fmt_t format,
 					     data->size, &_data);
 
 		if (ret < 0) { /* Try the encrypted header 
-				 */
+				*/
 			ret = _gnutls_fbase64_decode(PEM_PKCS8, data->data,
 						     data->size, &_data);
 
@@ -800,9 +800,9 @@ int gnutls_x509_privkey_export2_pkcs8(gnutls_x509_privkey_t key,
 }
 
 /* We've gotten this far. In the real world it's almost certain
-	 * that we're dealing with a good file, but wrong password.
-	 * Sadly like 90% of random data is somehow valid DER for the
-	 * a first small number of bytes, so no easy way to guarantee. */
+ * that we're dealing with a good file, but wrong password.
+ * Sadly like 90% of random data is somehow valid DER for the
+ * a first small number of bytes, so no easy way to guarantee. */
 #define CHECK_ERR_FOR_ENCRYPTED(result)                     \
 	if (result == GNUTLS_E_ASN1_ELEMENT_NOT_FOUND ||    \
 	    result == GNUTLS_E_ASN1_IDENTIFIER_NOT_FOUND || \
@@ -1632,7 +1632,7 @@ static int decode_ml_dsa_inner_private_key(const gnutls_datum_t *raw_key,
 		}
 
 		choice_name[choice_name_size] = '\0';
-		if (strcmp(choice_name, "expandedKey") == 0) {
+		if (streq(choice_name, "expandedKey")) {
 			_gnutls_free_key_datum(&pkey->params.raw_priv);
 			ret = _gnutls_x509_read_value(inner_asn, choice_name,
 						      &pkey->params.raw_priv);
@@ -1658,7 +1658,7 @@ static int decode_ml_dsa_inner_private_key(const gnutls_datum_t *raw_key,
 				}
 				pkey->params.raw_priv.size = raw_priv_size;
 			}
-		} else if (strcmp(choice_name, "both") == 0) {
+		} else if (streq(choice_name, "both")) {
 			_gnutls_free_key_datum(&pkey->params.raw_seed);
 			ret = _gnutls_x509_read_value(inner_asn, "both.seed",
 						      &pkey->params.raw_seed);
@@ -1980,7 +1980,7 @@ int gnutls_x509_privkey_import_pkcs8(gnutls_x509_privkey_t key,
 						data->data, data->size, &_data);
 
 		if (result < 0) { /* Try the encrypted header 
-					 */
+				   */
 			result = _gnutls_fbase64_decode(PEM_PKCS8, data->data,
 							data->size, &_data);
 

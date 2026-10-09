@@ -122,7 +122,7 @@ static void do_fork_stuff(gnutls_session_t session)
 		/* the server should reflect our messages */
 		ret = gnutls_record_recv(session, buf, sizeof(buf));
 		if (ret != sizeof(MSG) - 1 ||
-		    memcmp(buf, MSG, sizeof(MSG) - 1) != 0) {
+		    !memeq(buf, MSG, sizeof(MSG) - 1)) {
 			fail("client: recv failed: %s\n", gnutls_strerror(ret));
 			exit(1);
 		}
@@ -133,7 +133,7 @@ static void do_fork_stuff(gnutls_session_t session)
 
 		ret = gnutls_record_recv(session, buf, sizeof(buf));
 		if (ret != sizeof(MSG2) - 1 ||
-		    memcmp(buf, MSG2, sizeof(MSG2) - 1) != 0) {
+		    !memeq(buf, MSG2, sizeof(MSG2) - 1)) {
 			fail("client: recv2 failed: %s\n",
 			     gnutls_strerror(ret));
 			exit(1);

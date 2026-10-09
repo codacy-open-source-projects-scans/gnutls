@@ -82,7 +82,7 @@ typedef struct {
 
 static void deinit_ticket(struct ticket_st *ticket)
 {
-	free(ticket->encrypted_state);
+	gnutls_free(ticket->encrypted_state);
 }
 
 static int unpack_ticket(const gnutls_datum_t *ticket_data,
@@ -204,7 +204,7 @@ int _gnutls_decrypt_session_ticket(gnutls_session_t session,
 
 	/* If the key name of the ticket does not match the one that is currently active,
 	   issue a new ticket. */
-	if (memcmp(ticket.key_name, stek_key_name.data, stek_key_name.size)) {
+	if (!memeq(ticket.key_name, stek_key_name.data, stek_key_name.size)) {
 		ret = GNUTLS_E_DECRYPTION_FAILED;
 		goto cleanup;
 	}
@@ -216,7 +216,7 @@ int _gnutls_decrypt_session_ticket(gnutls_session_t session,
 		goto cleanup;
 	}
 
-	if (memcmp(ticket.mac, cmac, TICKET_MAC_SIZE)) {
+	if (!memeq(ticket.mac, cmac, TICKET_MAC_SIZE)) {
 		ret = gnutls_assert_val(GNUTLS_E_DECRYPTION_FAILED);
 		goto cleanup;
 	}

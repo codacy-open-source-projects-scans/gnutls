@@ -29,8 +29,8 @@
 #include "hello_ext_lib.h"
 #include "ext/cookie.h"
 
-static int cookie_recv_params(gnutls_session_t session, const uint8_t *data,
-			      size_t data_size);
+static int cookie_parse_params(gnutls_session_t session,
+			       gnutls_buffer_st *extdata);
 static int cookie_send_params(gnutls_session_t session,
 			      gnutls_buffer_st *extdata);
 
@@ -44,7 +44,8 @@ const hello_ext_entry_st ext_mod_cookie = {
 		GNUTLS_EXT_MANDATORY, /* force parsing prior to EXT_TLS extensions */
 	.server_parse_point =
 		GNUTLS_EXT_MANDATORY, /* force parsing prior to EXT_TLS extensions */
-	.recv_func = cookie_recv_params,
+	.parse_func = cookie_parse_params,
+	.recv_func = NULL,
 	.send_func = cookie_send_params,
 	.pack_func = NULL,
 	.unpack_func = NULL,
@@ -53,34 +54,24 @@ const hello_ext_entry_st ext_mod_cookie = {
 };
 
 /* Only client sends this extension. */
-static int cookie_recv_params(gnutls_session_t session, const uint8_t *data,
-			      size_t data_size)
+static int cookie_parse_params(gnutls_session_t session,
+			       gnutls_buffer_st *extdata)
 {
-	size_t csize;
-	int ret;
-	gnutls_datum_t tmp;
-
 	if (session->security_parameters.entity == GNUTLS_SERVER) {
 		/* we don't support it */
 		return 0;
 	} else { /* client */
 		if (_gnutls_ext_get_msg(session) == GNUTLS_EXT_FLAG_HRR) {
-			DECR_LEN(data_size, 2);
+			gnutls_datum_t cookie;
+			int ret;
 
-			csize = _gnutls_read_uint16(data);
-			data += 2;
-
-			DECR_LEN(data_size, csize);
-
-			if (data_size != 0)
-				return gnutls_assert_val(
-					GNUTLS_E_UNEXPECTED_PACKET_LENGTH);
-
-			tmp.data = (void *)data;
-			tmp.size = csize;
+			ret = _gnutls_buffer_pop_datum_prefix16(extdata,
+								&cookie);
+			if (ret < 0)
+				return gnutls_assert_val(ret);
 
 			ret = _gnutls_hello_ext_set_datum(
-				session, GNUTLS_EXTENSION_COOKIE, &tmp);
+				session, GNUTLS_EXTENSION_COOKIE, &cookie);
 			if (ret < 0)
 				return gnutls_assert_val(ret);
 
@@ -108,8 +99,8 @@ static int cookie_send_params(gnutls_session_t session,
 		if (ret < 0)
 			return 0;
 
-		ret = _gnutls_buffer_append_data_prefix(extdata, 16, tmp.data,
-							tmp.size);
+		ret = _gnutls_buffer_append_data_prefix16(extdata, tmp.data,
+							  tmp.size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 

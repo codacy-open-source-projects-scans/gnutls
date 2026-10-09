@@ -147,7 +147,7 @@ void doit(void)
 		fail("gnutls_x509_privkey_export2");
 
 	if (get_datum.size != server_ca3_key.size ||
-	    memcmp(get_datum.data, server_ca3_key.data, get_datum.size) != 0) {
+	    !memeq(get_datum.data, server_ca3_key.data, get_datum.size)) {
 		fail("exported key %u vs. %u\n\n%s\n\nvs.\n\n%s",
 		     get_datum.size, server_ca3_key.size, get_datum.data,
 		     server_ca3_key.data);
@@ -167,7 +167,7 @@ void doit(void)
 		fail("gnutls_x509_privkey_export");
 
 	if (buf_size != get_datum.size || buf_size != strlen(buf) ||
-	    memcmp(buf, server_ca3_key.data, buf_size) != 0) {
+	    !memeq(buf, server_ca3_key.data, buf_size)) {
 		fail("exported key %u vs. %u\n\n%s\n\nvs.\n\n%s", (int)buf_size,
 		     server_ca3_key.size, buf, server_ca3_key.data);
 	}
@@ -186,8 +186,8 @@ void doit(void)
 			fail("gnutls_x509_crt_export2");
 
 		if (get_datum.size != chain_datum[i].size ||
-		    memcmp(get_datum.data, chain_datum[i].data,
-			   get_datum.size) != 0) {
+		    !memeq(get_datum.data, chain_datum[i].data,
+			   get_datum.size)) {
 			fail("exported certificate %u vs. %u\n\n%s\n\nvs.\n\n%s",
 			     get_datum.size, chain_datum[i].size,
 			     get_datum.data, chain_datum[i].data);
@@ -209,8 +209,7 @@ void doit(void)
 			fail("gnutls_x509_crt_export2");
 
 		if (get_datum.size != ca3_cert.size ||
-		    memcmp(get_datum.data, ca3_cert.data, get_datum.size) !=
-			    0) {
+		    !memeq(get_datum.data, ca3_cert.data, get_datum.size)) {
 			fail("exported CA certificate %u vs. %u\n\n%s\n\nvs.\n\n%s",
 			     get_datum.size, ca3_cert.size, get_datum.data,
 			     ca3_cert.data);
@@ -265,7 +264,7 @@ void doit(void)
 		fail("gnutls_x509_crt_export2\n");
 	}
 	if (get_datum.size != ca3_cert.size ||
-	    memcmp(get_datum.data, ca3_cert.data, get_datum.size) != 0) {
+	    !memeq(get_datum.data, ca3_cert.data, get_datum.size)) {
 		fail("exported CA certificate %u vs. %u\n\n%s\n\nvs.\n\n%s\n",
 		     get_datum.size, ca3_cert.size, get_datum.data,
 		     ca3_cert.data);

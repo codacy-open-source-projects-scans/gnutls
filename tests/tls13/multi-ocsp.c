@@ -100,7 +100,7 @@ static void check_response(gnutls_session_t session, void *priv)
 			       i);
 		}
 
-		if (memcmp(resp.data, test->ocsp[i].data, resp.size) != 0) {
+		if (!memeq(resp.data, test->ocsp[i].data, resp.size)) {
 			myfail("did not receive the expected response for %d\n",
 			       i);
 		}

@@ -384,7 +384,7 @@ static void verify_alpn(gnutls_session_t session, struct params_res *params,
 	}
 
 	if (strlen(str) != selected.size ||
-	    memcmp(str, selected.data, selected.size) != 0) {
+	    !memeq(str, selected.data, selected.size)) {
 		fail("expected protocol %s, got %.*s\n", str, selected.size,
 		     selected.data);
 		exit(1);
@@ -421,7 +421,7 @@ static void verify_server_params(gnutls_session_t session, unsigned counter,
 		if (username == NULL)
 			fail("no username was returned on server side resumption\n");
 
-		if (strcmp(username, "test") != 0)
+		if (!streq(username, "test"))
 			fail("wrong username was returned on server side resumption\n");
 	}
 #endif
@@ -480,7 +480,7 @@ static void verify_server_params(gnutls_session_t session, unsigned counter,
 
 		assert(gnutls_session_get_id(session, id2, &id2_size) >= 0);
 
-		if (id_size != id2_size || memcmp(id, id2, id_size) != 0) {
+		if (id_size != id2_size || !memeq(id, id2, id_size)) {
 			hexprint(id, id_size);
 			printf("\n");
 			hexprint(id2, id2_size);
@@ -1168,7 +1168,7 @@ static gnutls_datum_t wrap_db_fetch(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < TLS_SESSION_CACHE; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0) {
+		    memeq(key.data, cache_db[i].session_id, key.size)) {
 			if (debug)
 				success("resume db fetch... return info\n");
 
@@ -1210,7 +1210,7 @@ static int wrap_db_delete(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < TLS_SESSION_CACHE; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0) {
+		    memeq(key.data, cache_db[i].session_id, key.size)) {
 			cache_db[i].session_id_size = 0;
 			cache_db[i].session_data_size = 0;
 

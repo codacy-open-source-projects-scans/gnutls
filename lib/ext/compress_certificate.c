@@ -255,7 +255,7 @@ int _gnutls_compress_certificate_send_params(gnutls_session_t session,
 		_gnutls_write_uint16(num, bytes + i + i);
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(data, 8, bytes, bytes_len);
+	ret = _gnutls_buffer_append_data_prefix8(data, bytes, bytes_len);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 

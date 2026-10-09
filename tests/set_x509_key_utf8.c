@@ -76,7 +76,7 @@ static void compare(const gnutls_datum_t *der, const void *ipem)
 	}
 
 	if (der->size != new_der.size ||
-	    memcmp(der->data, new_der.data, der->size) != 0) {
+	    !memeq(der->data, new_der.data, der->size)) {
 		fail("error in %d: %s\n", __LINE__, "cert don't match");
 		exit(1);
 	}

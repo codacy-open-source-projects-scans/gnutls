@@ -206,14 +206,14 @@ static void check_scts(const gnutls_datum_t *ext)
 			fail("gnutls_x509_ct_sct_v1_get");
 		if (logid.size != EXPECTED_LOGID_SIZE)
 			fail("Log ID sizes do not match for SCT %d", i);
-		if (memcmp(logid.data, expected_data[i].logid,
-			   EXPECTED_LOGID_SIZE) != 0)
+		if (!memeq(logid.data, expected_data[i].logid,
+			   EXPECTED_LOGID_SIZE))
 			fail("Log IDs do not match for SCT %d", i);
 		if (sigalg != expected_data[i].sigalg)
 			fail("Signature algorithms for SCT %d do not match", i);
 		if (sig.size != expected_data[i].sig.size)
 			fail("Signature sizes for SCT %d do not match", i);
-		if (memcmp(sig.data, expected_data[i].sig.data, sig.size) != 0)
+		if (!memeq(sig.data, expected_data[i].sig.data, sig.size))
 			fail("Signatures for SCT %d do not match", i);
 
 		gnutls_free(logid.data);
@@ -234,7 +234,7 @@ static void check_scts(const gnutls_datum_t *ext)
 	xder.data = ct_extension_der;
 	xder.size = sizeof(ct_extension_der);
 	if (ext_out.size != xder.size ||
-	    memcmp(ext_out.data, xder.data, xder.size) != 0)
+	    !memeq(ext_out.data, xder.data, xder.size))
 		fail("DERs do not match");
 
 	gnutls_free(ext_out.data);
@@ -271,7 +271,7 @@ void doit(void)
 		if (ret < 0)
 			fail("gnutls_x509_crt_get_extension_oid");
 
-		if (strcmp(oid, GNUTLS_X509EXT_OID_CT_SCT_V1) == 0) {
+		if (streq(oid, GNUTLS_X509EXT_OID_CT_SCT_V1)) {
 			ret = gnutls_x509_crt_get_extension_data2(cert, i,
 								  &ext);
 			if (ret < 0)

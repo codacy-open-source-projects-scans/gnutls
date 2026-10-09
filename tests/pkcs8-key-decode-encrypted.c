@@ -19,13 +19,11 @@
  * along with GnuTLS.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "utils.h"
+
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-
-#include "utils.h"
 
 #define PRIVATE_KEY                                                          \
 	"-----BEGIN ENCRYPTED PRIVATE KEY-----\n"                            \

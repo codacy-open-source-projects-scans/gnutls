@@ -18,6 +18,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h>
 
 typedef struct test_case_st {
@@ -97,7 +101,7 @@ static int serv_srp_func(gnutls_session_t session, const char *username,
 	if (ret < 0)
 		fail("error in gnutls_srp_base64_decode2 -prime\n");
 
-	if (strcmp(username, "test1") == 0) {
+	if (streq(username, "test1")) {
 		ret = gnutls_srp_base64_decode2(&test1_verif, verifier);
 		if (ret < 0)
 			fail("error in gnutls_srp_base64_decode2 -verif\n");

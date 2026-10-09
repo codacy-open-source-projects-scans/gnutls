@@ -59,7 +59,7 @@ inline static int _gnutls_str_array_match(gnutls_str_array_t head,
 	gnutls_str_array_t array = head;
 
 	while (array != NULL) {
-		if (strcmp(array->str, str) == 0)
+		if (streq(array->str, str))
 			return 1;
 		array = array->next;
 	}

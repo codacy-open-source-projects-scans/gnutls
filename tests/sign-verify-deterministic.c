@@ -190,8 +190,7 @@ void doit(void)
 		}
 
 		if (signature.size != tests[i].sig.size ||
-		    memcmp(signature.data, tests[i].sig.data, signature.size) !=
-			    0)
+		    !memeq(signature.data, tests[i].sig.data, signature.size))
 			testfail("signature does not match");
 
 		ret = gnutls_pubkey_import_privkey(pubkey, privkey, 0, 0);

@@ -330,7 +330,7 @@ static int tpm_pin(struct pin_info_st *pin_info, const TSS_UUID *uuid,
 		flags |= GNUTLS_PIN_WRONG;
 
 	if (uuid) {
-		if (memcmp(uuid, &srk_uuid, sizeof(TSS_UUID)) == 0) {
+		if (memeq(uuid, &srk_uuid, sizeof(TSS_UUID))) {
 			label = "SRK";
 
 			ret = encode_tpmkey_url(&url, uuid, storage);

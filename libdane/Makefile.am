@@ -29,8 +29,8 @@ AM_CPPFLAGS += \
 	-I$(srcdir)/../lib/includes	\
 	-I$(srcdir)/includes		\
 	-I$(builddir)/includes		\
-	-I$(srcdir)/../lib/minitasn1	\
-	-I$(srcdir)/../lib
+	-I$(srcdir)/../lib		\
+	$(LIBTASN1_CFLAGS)
 
 SUBDIRS = includes
 

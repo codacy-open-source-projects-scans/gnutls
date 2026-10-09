@@ -29,10 +29,6 @@ AM_CPPFLAGS += -I$(srcdir)/../../../gl		\
 	-I$(srcdir)/../../ \
 	-I$(srcdir)/../
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../../minitasn1
-endif
-
 EXTRA_DIST = README license.txt files.mk
 
 noinst_LTLIBRARIES = libx86.la

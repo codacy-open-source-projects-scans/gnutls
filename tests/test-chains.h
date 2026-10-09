@@ -4383,7 +4383,6 @@ static const char *cross_signed_ca[] = {
 	NULL
 };
 
-/* This assumes DEFAULT_MAX_VERIFY_DEPTH to be 16 */
 static const char *many_icas[] = {
 	/* Server */
 	"-----BEGIN CERTIFICATE-----\n"

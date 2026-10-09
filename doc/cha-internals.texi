@@ -367,7 +367,7 @@ the handshake process to send and receive supplemental data, as shown below.
 @example
 int
 _gnutls_foobar_recv_params (gnutls_session_t session, const opaque * data,
-                                 size_t _data_size)
+                                 size_t data_size)
 @{
    ...
    gnutls_supplemental_recv(session, 1);
@@ -400,33 +400,32 @@ The following example code shows how to send a
 
 @example
 int
-_foobar_supp_recv_params(gnutls_session_t session, const opaque *data, size_t _data_size)
+_foobar_supp_recv_params(gnutls_session_t session, const opaque *data, size_t data_size)
 @{
-   uint8_t len = _data_size;
    unsigned char *msg;
 
-   msg = gnutls_malloc(len);
+   msg = gnutls_malloc(data_size);
    if (msg == NULL) return GNUTLS_E_MEMORY_ERROR;
 
-   memcpy(msg, data, len);
-   msg[len]='\0';
+   memcpy(msg, data, data_size);
+   msg[data_size] = '\0';
 
    /* do something with msg */
    gnutls_free(msg);
 
-   return len;
+   return 0;
 @}
 
 int
 _foobar_supp_send_params(gnutls_session_t session, gnutls_buffer_t buf)
 @{
    unsigned char *msg = "hello world";
-   int len = strlen(msg);
+   size_t len = strlen(msg);
 
    if (gnutls_buffer_append_data(buf, msg, len) < 0)
        abort();
 
-   return len;
+   return 0;
 @}
 @end example
 

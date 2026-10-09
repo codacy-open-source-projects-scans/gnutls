@@ -52,12 +52,11 @@ void _gnutls_free_dh_info(dh_info_st *dh)
 }
 
 int _gnutls_proc_dh_common_client_kx(gnutls_session_t session, uint8_t *data,
-				     size_t _data_size, gnutls_datum_t *psk_key)
+				     size_t data_size, gnutls_datum_t *psk_key)
 {
 	uint16_t n_Y;
 	size_t _n_Y;
 	int ret;
-	ssize_t data_size = _data_size;
 	gnutls_datum_t tmp_dh_key = { NULL, 0 };
 	gnutls_pk_params_st peer_pub;
 
@@ -140,8 +139,8 @@ int _gnutls_gen_dh_common_client_kx_int(gnutls_session_t session,
 		_gnutls_mpi_get_nbits(
 			session->key.proto.tls12.dh.params.params[DH_X]));
 
-	ret = _gnutls_buffer_append_mpi(
-		data, 16, session->key.proto.tls12.dh.params.params[DH_Y], 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(
+		data, session->key.proto.tls12.dh.params.params[DH_Y]);
 	if (ret < 0) {
 		gnutls_assert();
 		goto error;
@@ -180,7 +179,7 @@ error:
 
 /* Returns the bytes parsed */
 int _gnutls_proc_dh_common_server_kx(gnutls_session_t session, uint8_t *data,
-				     size_t _data_size)
+				     size_t data_size)
 {
 	uint16_t n_Y, n_g, n_p;
 	size_t _n_Y, _n_g, _n_p, _n_q;
@@ -190,7 +189,6 @@ int _gnutls_proc_dh_common_server_kx(gnutls_session_t session, uint8_t *data,
 	uint8_t *data_q = NULL;
 	int i, bits, ret, p_bits;
 	unsigned j;
-	ssize_t data_size = _data_size;
 
 	/* just in case we are resuming a session */
 	gnutls_pk_params_release(&session->key.proto.tls12.dh.params);
@@ -244,14 +242,14 @@ int _gnutls_proc_dh_common_server_kx(gnutls_session_t session, uint8_t *data,
 					    ->generator->size == n_g &&
 			    session->internals.priorities->groups.entry[j]
 					    ->prime->size == n_p &&
-			    memcmp(session->internals.priorities->groups
-					   .entry[j]
-					   ->generator->data,
-				   data_g, n_g) == 0 &&
-			    memcmp(session->internals.priorities->groups
-					   .entry[j]
-					   ->prime->data,
-				   data_p, n_p) == 0) {
+			    memeq(session->internals.priorities->groups
+					  .entry[j]
+					  ->generator->data,
+				  data_g, n_g) &&
+			    memeq(session->internals.priorities->groups
+					  .entry[j]
+					  ->prime->data,
+				  data_p, n_p)) {
 				session->internals.hsk_flags |= HSK_USED_FFDHE;
 				_gnutls_session_group_set(
 					session, session->internals.priorities
@@ -384,22 +382,22 @@ int _gnutls_dh_common_print_server_kx(gnutls_session_t session,
 		_gnutls_mpi_get_nbits(
 			session->key.proto.tls12.dh.params.params[DH_X]));
 
-	ret = _gnutls_buffer_append_mpi(
-		data, 16, session->key.proto.tls12.dh.params.params[DH_P], 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(
+		data, session->key.proto.tls12.dh.params.params[DH_P]);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
 
-	ret = _gnutls_buffer_append_mpi(
-		data, 16, session->key.proto.tls12.dh.params.params[DH_G], 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(
+		data, session->key.proto.tls12.dh.params.params[DH_G]);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
 
-	ret = _gnutls_buffer_append_mpi(
-		data, 16, session->key.proto.tls12.dh.params.params[DH_Y], 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(
+		data, session->key.proto.tls12.dh.params.params[DH_Y]);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;

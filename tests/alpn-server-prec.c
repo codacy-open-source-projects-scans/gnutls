@@ -240,7 +240,7 @@ static void server(int fd, const char *protocol1, const char *protocol2,
 	}
 
 	if (selected.size != strlen(expected) ||
-	    memcmp(selected.data, expected, selected.size) != 0) {
+	    !memeq(selected.data, expected, selected.size)) {
 		fail("did not select the expected protocol (selected %.*s, expected %s)\n",
 		     selected.size, selected.data, expected);
 		exit(1);

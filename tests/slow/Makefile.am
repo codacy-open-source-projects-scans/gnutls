@@ -24,10 +24,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib/includes		\
 	-I$(top_builddir)/gl \
 	-I$(top_srcdir)/gl
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(top_builddir)/lib/minitasn1
-endif
-
 AM_LDFLAGS = -no-install
 LDADD = ../libutils.la \
 	../../gl/libgnu.la \

@@ -239,13 +239,13 @@ static int client_gen_key_share(gnutls_session_t session,
 	_gnutls_handshake_log("EXT[%p]: sending key share for %s\n", session,
 			      group->name);
 
-	ret = _gnutls_buffer_append_prefix(extdata, 16, group->tls_id);
+	ret = _gnutls_buffer_append_uint16(extdata, group->tls_id);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
 	/* save the position of length field */
 	length_pos = extdata->length;
-	ret = _gnutls_buffer_append_prefix(extdata, 16, 0);
+	ret = _gnutls_buffer_append_uint16(extdata, 0);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
@@ -366,13 +366,13 @@ static int server_gen_key_share(gnutls_session_t session,
 	_gnutls_handshake_log("EXT[%p]: sending key share for %s\n", session,
 			      group->name);
 
-	ret = _gnutls_buffer_append_prefix(extdata, 16, group->tls_id);
+	ret = _gnutls_buffer_append_uint16(extdata, group->tls_id);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
 	/* save the position of length field */
 	length_pos = extdata->length;
-	ret = _gnutls_buffer_append_prefix(extdata, 16, 0);
+	ret = _gnutls_buffer_append_uint16(extdata, 0);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
@@ -462,7 +462,7 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -506,7 +506,7 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -588,7 +588,7 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		/* server's public key is unused, but the raw_pub field
-		* is used to store ciphertext */
+		 * is used to store ciphertext */
 		gnutls_free(session->key.kshare.kem_params.raw_pub.data);
 
 		if (group->pubkey_size > buffer->length)
@@ -603,7 +603,7 @@ static int server_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(GNUTLS_E_ILLEGAL_PARAMETER);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -700,7 +700,7 @@ static int client_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -739,7 +739,7 @@ static int client_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -776,7 +776,7 @@ static int client_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(ret);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -797,7 +797,7 @@ static int client_use_key_share_single(gnutls_session_t session,
 			return gnutls_assert_val(GNUTLS_E_ILLEGAL_PARAMETER);
 
 		ret = append_key_datum(&session->key.key, &key);
-		_gnutls_free_datum(&key);
+		_gnutls_free_key_datum(&key);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -958,8 +958,7 @@ static int key_share_recv_params(gnutls_session_t session, const uint8_t *data,
 				group->name);
 
 			/* check if we support it */
-			if (!_gnutls_session_supports_group(session,
-							    group->id)) {
+			if (!_gnutls_session_supports_group(session, group)) {
 				_gnutls_handshake_log(
 					"EXT[%p]: received share for %s which is disabled\n",
 					session, group->name);
@@ -991,7 +990,7 @@ static int key_share_recv_params(gnutls_session_t session, const uint8_t *data,
 				GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 
 		/* check if we support it */
-		if (!_gnutls_session_supports_group(session, group->id)) {
+		if (!_gnutls_session_supports_group(session, group)) {
 			_gnutls_handshake_log(
 				"EXT[%p]: received share for %s which is disabled\n",
 				session, group->name);
@@ -1074,7 +1073,7 @@ static int key_share_send_params(gnutls_session_t session,
 
 		length_pos = extdata->length;
 
-		ret = _gnutls_buffer_append_prefix(extdata, 16, 0);
+		ret = _gnutls_buffer_append_uint16(extdata, 0);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -1165,7 +1164,7 @@ static int key_share_send_params(gnutls_session_t session,
 			_gnutls_handshake_log(
 				"EXT[%p]: requesting retry with group %s\n",
 				session, group->name);
-			ret = _gnutls_buffer_append_prefix(extdata, 16,
+			ret = _gnutls_buffer_append_uint16(extdata,
 							   group->tls_id);
 			if (ret < 0)
 				return gnutls_assert_val(ret);

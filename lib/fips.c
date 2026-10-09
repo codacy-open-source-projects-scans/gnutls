@@ -226,9 +226,9 @@ static int get_hmac(uint8_t *dest, const char *value)
 static int lib_handler(struct hmac_entry *entry, const char *section,
 		       const char *name, const char *value)
 {
-	if (!strcmp(name, "path")) {
+	if (streq(name, "path")) {
 		snprintf(entry->path, GNUTLS_PATH_MAX, "%s", value);
-	} else if (!strcmp(name, "hmac")) {
+	} else if (streq(name, "hmac")) {
 		if (get_hmac(entry->hmac, value) < 0)
 			return 0;
 	} else {
@@ -242,24 +242,24 @@ static int handler(void *user, const char *section, const char *name,
 {
 	struct hmac_file *p = (struct hmac_file *)user;
 
-	if (!strcmp(section, "global")) {
-		if (!strcmp(name, "format-version")) {
+	if (streq(section, "global")) {
+		if (streq(name, "format-version")) {
 			p->version = strtol(value, NULL, 10);
 		} else {
 			return 0;
 		}
-	} else if (!strcmp(section, GNUTLS_LIBRARY_SONAME)) {
+	} else if (streq(section, GNUTLS_LIBRARY_SONAME)) {
 		return lib_handler(&p->gnutls, section, name, value);
 #ifdef NETTLE_LIBRARY_SONAME
-	} else if (!strcmp(section, NETTLE_LIBRARY_SONAME)) {
+	} else if (streq(section, NETTLE_LIBRARY_SONAME)) {
 		return lib_handler(&p->nettle, section, name, value);
 #endif
 #ifdef HOGWEED_LIBRARY_SONAME
-	} else if (!strcmp(section, HOGWEED_LIBRARY_SONAME)) {
+	} else if (streq(section, HOGWEED_LIBRARY_SONAME)) {
 		return lib_handler(&p->hogweed, section, name, value);
 #endif
 #ifdef GMP_LIBRARY_SONAME
-	} else if (!strcmp(section, GMP_LIBRARY_SONAME)) {
+	} else if (streq(section, GMP_LIBRARY_SONAME)) {
 		return lib_handler(&p->gmp, section, name, value);
 #endif
 	} else {
@@ -282,7 +282,7 @@ static int get_hmac_path(char *mac_file, size_t mac_file_size,
 			 const char *gnutls_path)
 {
 	int ret;
-	char *p;
+	const char *p;
 
 	p = strrchr(gnutls_path, '/');
 
@@ -405,18 +405,18 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
 	const char *soname = last_component(path);
 	struct lib_paths *paths = (struct lib_paths *)data;
 
-	if (!strcmp(soname, GNUTLS_LIBRARY_SONAME))
+	if (streq(soname, GNUTLS_LIBRARY_SONAME))
 		_gnutls_str_cpy(paths->gnutls, GNUTLS_PATH_MAX, path);
 #ifdef NETTLE_LIBRARY_SONAME
-	else if (!strcmp(soname, NETTLE_LIBRARY_SONAME))
+	else if (streq(soname, NETTLE_LIBRARY_SONAME))
 		_gnutls_str_cpy(paths->nettle, GNUTLS_PATH_MAX, path);
 #endif
 #ifdef HOGWEED_LIBRARY_SONAME
-	else if (!strcmp(soname, HOGWEED_LIBRARY_SONAME))
+	else if (streq(soname, HOGWEED_LIBRARY_SONAME))
 		_gnutls_str_cpy(paths->hogweed, GNUTLS_PATH_MAX, path);
 #endif
 #ifdef GMP_LIBRARY_SONAME
-	else if (!strcmp(soname, GMP_LIBRARY_SONAME))
+	else if (streq(soname, GMP_LIBRARY_SONAME))
 		_gnutls_str_cpy(paths->gmp, GNUTLS_PATH_MAX, path);
 #endif
 	return 0;

@@ -146,8 +146,8 @@ static int gen_srp_cert_server_kx(gnutls_session_t session,
 		}
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(data, 16, signature.data,
-						signature.size);
+	ret = _gnutls_buffer_append_data_prefix16(data, signature.data,
+						  signature.size);
 
 	if (ret < 0) {
 		gnutls_assert();
@@ -162,12 +162,11 @@ cleanup:
 }
 
 static int proc_srp_cert_server_kx(gnutls_session_t session, uint8_t *data,
-				   size_t _data_size)
+				   size_t data_size)
 {
 	ssize_t ret;
-	int sigsize;
+	uint16_t sigsize;
 	gnutls_datum_t vparams, signature;
-	ssize_t data_size;
 	cert_auth_info_t info;
 	gnutls_pcert_st peer_cert;
 	uint8_t *p;
@@ -179,11 +178,11 @@ static int proc_srp_cert_server_kx(gnutls_session_t session, uint8_t *data,
 	if (unlikely(ver == NULL))
 		return gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
 
-	ret = _gnutls_proc_srp_server_kx(session, data, _data_size);
+	ret = _gnutls_proc_srp_server_kx(session, data, data_size);
 	if (ret < 0)
 		return ret;
 
-	data_size = _data_size - ret;
+	DECR_LEN(data_size, ret);
 
 	cred = (gnutls_certificate_credentials_t)_gnutls_get_cred(
 		session, GNUTLS_CRD_CERTIFICATE);

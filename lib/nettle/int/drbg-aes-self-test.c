@@ -142,7 +142,7 @@ int drbg_aes_self_test(void)
 				      tv[i].addtl[2]) == 0)
 			goto fail;
 
-		if (memcmp(result, tv[i].res, sizeof(result)) != 0) {
+		if (!memeq(result, tv[i].res, sizeof(result))) {
 			goto fail;
 		}
 
@@ -210,7 +210,7 @@ int drbg_aes_self_test(void)
 		/* test deinit, which is zeroize_key() */
 		memcpy(&test_ctx2, &test_ctx, sizeof(test_ctx));
 		zeroize_key(&test_ctx, sizeof(test_ctx));
-		if (memcmp(&test_ctx, &test_ctx2, sizeof(test_ctx)) == 0) {
+		if (memeq(&test_ctx, &test_ctx2, sizeof(test_ctx))) {
 			gnutls_assert();
 			goto fail;
 		}

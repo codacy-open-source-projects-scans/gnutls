@@ -507,7 +507,7 @@ const gnutls_digest_algorithm_t *gnutls_digest_list(void)
  **/
 gnutls_digest_algorithm_t gnutls_oid_to_digest(const char *oid)
 {
-	GNUTLS_HASH_LOOP(if (p->oid && strcmp(oid, p->oid) == 0) {
+	GNUTLS_HASH_LOOP(if (p->oid && streq(oid, p->oid)) {
 		if (_gnutls_digest_exists((gnutls_digest_algorithm_t)p->id)) {
 			return (gnutls_digest_algorithm_t)p->id;
 		}
@@ -530,7 +530,7 @@ gnutls_digest_algorithm_t gnutls_oid_to_digest(const char *oid)
  **/
 gnutls_mac_algorithm_t gnutls_oid_to_mac(const char *oid)
 {
-	GNUTLS_HASH_LOOP(if (p->mac_oid && strcmp(oid, p->mac_oid) == 0) {
+	GNUTLS_HASH_LOOP(if (p->mac_oid && streq(oid, p->mac_oid)) {
 		if (_gnutls_mac_exists(p->id)) {
 			return p->id;
 		}

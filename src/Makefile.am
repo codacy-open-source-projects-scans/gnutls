@@ -147,14 +147,8 @@ libcmd_cli_debug_la_SOURCES = gnutls-cli-debug-options.c gnutls-cli-debug-option
 
 #certtool
 COMMON_LIBS = $(LTLIBINTL)
-if ENABLE_MINITASN1
-COMMON_LIBS += ../lib/minitasn1/libminitasn1.la ../gl/libgnu.la 
-AM_CPPFLAGS += -I$(top_srcdir)/lib/minitasn1
-else
 COMMON_LIBS += $(LIBTASN1_LIBS)
 AM_CPPFLAGS += $(LIBTASN1_CFLAGS)
-endif
-
 
 certtool_SOURCES = certtool.c certtool-common.c certtool-extras.c common.c
 certtool_LDADD = ../lib/libgnutls.la 

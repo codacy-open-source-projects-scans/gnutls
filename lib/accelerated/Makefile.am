@@ -29,10 +29,6 @@ AM_CPPFLAGS += \
 	-I$(builddir)/../includes	\
 	-I$(srcdir)/..
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 noinst_LTLIBRARIES = libaccelerated.la
 
 EXTRA_DIST = accelerated.h cryptodev.h afalg.h

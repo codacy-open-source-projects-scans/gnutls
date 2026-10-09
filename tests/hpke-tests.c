@@ -179,7 +179,7 @@ static void test_hpke(const hpke_test_parameters_st *params)
 	}
 
 	if (params->expected_enc.size != enc.size ||
-	    memcmp(params->expected_enc.data, enc.data, enc.size) != 0) {
+	    !memeq(params->expected_enc.data, enc.data, enc.size)) {
 		fail("enc does not match expected value (mode %d, kem: %d, kdf: %d, aead: %d)\n",
 		     params->mode, params->kem, params->kdf, params->aead);
 	}
@@ -214,8 +214,8 @@ static void test_hpke(const hpke_test_parameters_st *params)
 
 		if (enc_params->expected_ciphertext.size !=
 			    ciphertext_out.size ||
-		    memcmp(enc_params->expected_ciphertext.data,
-			   ciphertext_out.data, ciphertext_out.size) != 0) {
+		    !memeq(enc_params->expected_ciphertext.data,
+			   ciphertext_out.data, ciphertext_out.size)) {
 			fail("ciphertext does not match expected value (mode %d, kem: %d, kdf: %d, aead: %d)\n",
 			     params->mode, params->kem, params->kdf,
 			     params->aead);
@@ -230,8 +230,8 @@ static void test_hpke(const hpke_test_parameters_st *params)
 		}
 
 		if (enc_params->plaintext.size != plaintext_out.size ||
-		    memcmp(enc_params->plaintext.data, plaintext_out.data,
-			   plaintext_out.size) != 0) {
+		    !memeq(enc_params->plaintext.data, plaintext_out.data,
+			   plaintext_out.size)) {
 			fail("decrypted plaintext does not match original plaintext (mode %d, kem: %d, kdf: %d, aead: %d)\n",
 			     params->mode, params->kem, params->kdf,
 			     params->aead);
@@ -271,8 +271,8 @@ static void test_hpke(const hpke_test_parameters_st *params)
 
 		if (exp_params->expected_exporter_value.size !=
 			    exporter_out.size ||
-		    memcmp(exp_params->expected_exporter_value.data,
-			   exporter_out.data, exporter_out.size) != 0) {
+		    !memeq(exp_params->expected_exporter_value.data,
+			   exporter_out.data, exporter_out.size)) {
 			fail("exported value does not match expected value (mode %d, kem: %d, kdf: %d, aead: %d)\n",
 			     params->mode, params->kem, params->kdf,
 			     params->aead);

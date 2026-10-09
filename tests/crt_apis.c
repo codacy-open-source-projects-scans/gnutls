@@ -285,9 +285,9 @@ void doit(void)
 		     gnutls_strerror(ret));
 
 	if (out.size != 45 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x2b\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6e\x69\x6b\x6f\x73\x31\x19\x30\x17\x06\x03\x55\x04\x0a\x13\x10\x6e\x6f\x6e\x65\x20\x74\x6f\x2c\x20\x6d\x65\x6e\x74\x69\x6f\x6e",
-		   45) != 0) {
+		   45)) {
 		hexprint(out.data, out.size);
 		fail("issuer DN comparison failed\n");
 	}
@@ -299,7 +299,7 @@ void doit(void)
 		fail("error: %s\n", gnutls_strerror(ret));
 
 	if (s != sizeof(ISSUER_UNIQUE_ID) - 1 ||
-	    memcmp(buf, ISSUER_UNIQUE_ID, s) != 0) {
+	    !memeq(buf, ISSUER_UNIQUE_ID, s)) {
 		fail("issuer unique id comparison failed\n");
 	}
 
@@ -309,7 +309,7 @@ void doit(void)
 		fail("error: %s\n", gnutls_strerror(ret));
 
 	if (s != sizeof(SUBJECT_UNIQUE_ID) - 1 ||
-	    memcmp(buf, SUBJECT_UNIQUE_ID, s) != 0) {
+	    !memeq(buf, SUBJECT_UNIQUE_ID, s)) {
 		fail("subject unique id comparison failed\n");
 	}
 
@@ -318,9 +318,9 @@ void doit(void)
 		fail("gnutls_x509_crt_get_raw_dn: %s\n", gnutls_strerror(ret));
 
 	if (out.size != 45 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x2b\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6e\x69\x6b\x6f\x73\x31\x19\x30\x17\x06\x03\x55\x04\x0a\x13\x10\x6e\x6f\x6e\x65\x20\x74\x6f\x2c\x20\x6d\x65\x6e\x74\x69\x6f\x6e",
-		   45) != 0) {
+		   45)) {
 		fail("DN comparison failed\n");
 	}
 	gnutls_free(out.data);
@@ -350,7 +350,7 @@ void doit(void)
 		fprintf(stderr, "%s\n", out.data);
 #if defined(HAVE_LIBIDN2)
 	assert(out.size == saved_crt.size);
-	assert(memcmp(out.data, saved_crt.data, out.size) == 0);
+	assert(memeq(out.data, saved_crt.data, out.size));
 #endif
 
 	/* test behavior of gnutls_x509_crt_export on various corner cases */
@@ -368,7 +368,7 @@ void doit(void)
 	assert(gnutls_x509_crt_export(crt, GNUTLS_X509_FMT_PEM, large_buf,
 				      &s) == 0);
 	assert(s == out.size);
-	assert(memcmp(large_buf, out.data, out.size) == 0);
+	assert(memeq(large_buf, out.data, out.size));
 	gnutls_free(out.data);
 
 	/* check whether the der out length differs */
@@ -378,7 +378,7 @@ void doit(void)
 	assert(gnutls_x509_crt_export2(crt, GNUTLS_X509_FMT_DER, &out) >= 0);
 
 	assert(s == out.size);
-	assert(memcmp(large_buf, out.data, out.size) == 0);
+	assert(memeq(large_buf, out.data, out.size));
 
 	/* verify some values written in the original cert */
 	gnutls_x509_crt_deinit(crt2);
@@ -402,7 +402,7 @@ void doit(void)
 
 	assert(san_type == GNUTLS_SAN_REGISTERED_ID);
 	assert(s == strlen(REGISTERED_OID));
-	assert(memcmp(buf, REGISTERED_OID, s) == 0);
+	assert(memeq(buf, REGISTERED_OID, s));
 
 	gnutls_free(out.data);
 

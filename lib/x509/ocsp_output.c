@@ -108,7 +108,7 @@ static void print_req(gnutls_buffer_st *str, gnutls_ocsp_req_const_t req)
 			adds(str, "\tExtensions:\n");
 
 		if (oid.size == sizeof(GNUTLS_OCSP_NONCE) - 1 &&
-		    memcmp(oid.data, GNUTLS_OCSP_NONCE, oid.size) == 0) {
+		    memeq(oid.data, GNUTLS_OCSP_NONCE, oid.size)) {
 			gnutls_datum_t nonce;
 			unsigned int ncrit;
 
@@ -248,7 +248,7 @@ static void print_resp(gnutls_buffer_st *str, gnutls_ocsp_resp_const_t resp,
 #define OCSP_BASIC "1.3.6.1.5.5.7.48.1.1"
 
 		if (oid.size == sizeof(OCSP_BASIC) - 1 &&
-		    memcmp(oid.data, OCSP_BASIC, oid.size) == 0) {
+		    memeq(oid.data, OCSP_BASIC, oid.size)) {
 			adds(str, "Basic OCSP Response\n");
 			gnutls_free(oid.data);
 		} else {
@@ -461,7 +461,7 @@ static void print_resp(gnutls_buffer_st *str, gnutls_ocsp_resp_const_t resp,
 		}
 
 		if (oid.size == sizeof(GNUTLS_OCSP_NONCE) - 1 &&
-		    memcmp(oid.data, GNUTLS_OCSP_NONCE, oid.size) == 0) {
+		    memeq(oid.data, GNUTLS_OCSP_NONCE, oid.size)) {
 			gnutls_datum_t nonce;
 			unsigned int ncrit;
 

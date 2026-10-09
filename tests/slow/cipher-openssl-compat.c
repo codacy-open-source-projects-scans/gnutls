@@ -91,8 +91,8 @@ static int cipher_test(const char *ocipher, gnutls_cipher_algorithm_t gcipher,
 		}
 
 		if (dec_data_size != sizeof(orig_plain_data) ||
-		    memcmp(dec_data, orig_plain_data,
-			   sizeof(orig_plain_data)) != 0) {
+		    !memeq(dec_data, orig_plain_data,
+			   sizeof(orig_plain_data))) {
 			fail("gnutls encrypt-decrypt failed (got: %d, expected: %d)\n",
 			     (int)dec_data_size, (int)sizeof(orig_plain_data));
 		}
@@ -137,8 +137,8 @@ static int cipher_test(const char *ocipher, gnutls_cipher_algorithm_t gcipher,
 			dec_data_size2 = tag_size;
 
 			if (dec_data_size != sizeof(orig_plain_data) ||
-			    memcmp(dec_data, orig_plain_data,
-				   sizeof(orig_plain_data)) != 0) {
+			    !memeq(dec_data, orig_plain_data,
+				   sizeof(orig_plain_data))) {
 				fail("openssl decrypt failed for %s\n",
 				     ocipher);
 			}
@@ -170,8 +170,8 @@ static int cipher_test(const char *ocipher, gnutls_cipher_algorithm_t gcipher,
 			       0);
 
 			if (dec_data_size != sizeof(orig_plain_data) ||
-			    memcmp(dec_data, orig_plain_data,
-				   sizeof(orig_plain_data)) != 0) {
+			    !memeq(dec_data, orig_plain_data,
+				   sizeof(orig_plain_data))) {
 				fail("openssl decrypt failed for %s\n",
 				     ocipher);
 			}

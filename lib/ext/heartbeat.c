@@ -34,23 +34,23 @@
 
 #ifdef ENABLE_HEARTBEAT
 /**
-  * gnutls_heartbeat_enable:
-  * @session: is a #gnutls_session_t type.
-  * @type: one of the GNUTLS_HB_* flags
-  *
-  * If this function is called with the %GNUTLS_HB_PEER_ALLOWED_TO_SEND
-  * @type, GnuTLS will allow heartbeat messages to be received. Moreover it also
-  * request the peer to accept heartbeat messages. This function
-  * must be called prior to TLS handshake.
-  *
-  * If the @type used is %GNUTLS_HB_LOCAL_ALLOWED_TO_SEND, then the peer
-  * will be asked to accept heartbeat messages but not send ones.
-  *
-  * The function gnutls_heartbeat_allowed() can be used to test Whether
-  * locally generated heartbeat messages can be accepted by the peer.
-  *
-  * Since: 3.1.2
-  **/
+ * gnutls_heartbeat_enable:
+ * @session: is a #gnutls_session_t type.
+ * @type: one of the GNUTLS_HB_* flags
+ *
+ * If this function is called with the %GNUTLS_HB_PEER_ALLOWED_TO_SEND
+ * @type, GnuTLS will allow heartbeat messages to be received. Moreover it also
+ * request the peer to accept heartbeat messages. This function
+ * must be called prior to TLS handshake.
+ *
+ * If the @type used is %GNUTLS_HB_LOCAL_ALLOWED_TO_SEND, then the peer
+ * will be asked to accept heartbeat messages but not send ones.
+ *
+ * The function gnutls_heartbeat_allowed() can be used to test Whether
+ * locally generated heartbeat messages can be accepted by the peer.
+ *
+ * Since: 3.1.2
+ **/
 void gnutls_heartbeat_enable(gnutls_session_t session, unsigned int type)
 {
 	gnutls_ext_priv_data_t epriv;
@@ -60,17 +60,17 @@ void gnutls_heartbeat_enable(gnutls_session_t session, unsigned int type)
 }
 
 /**
-  * gnutls_heartbeat_allowed:
-  * @session: is a #gnutls_session_t type.
-  * @type: one of %GNUTLS_HB_LOCAL_ALLOWED_TO_SEND and %GNUTLS_HB_PEER_ALLOWED_TO_SEND
-  *
-  * This function will check whether heartbeats are allowed
-  * to be sent or received in this session. 
-  *
-  * Returns: Non zero if heartbeats are allowed.
-  *
-  * Since: 3.1.2
-  **/
+ * gnutls_heartbeat_allowed:
+ * @session: is a #gnutls_session_t type.
+ * @type: one of %GNUTLS_HB_LOCAL_ALLOWED_TO_SEND and %GNUTLS_HB_PEER_ALLOWED_TO_SEND
+ *
+ * This function will check whether heartbeats are allowed
+ * to be sent or received in this session.
+ *
+ * Returns: Non zero if heartbeats are allowed.
+ *
+ * Since: 3.1.2
+ **/
 unsigned gnutls_heartbeat_allowed(gnutls_session_t session, unsigned int type)
 {
 	gnutls_ext_priv_data_t epriv;
@@ -141,7 +141,7 @@ cleanup:
  *
  * This function sends a ping to the peer. If the @flags is set
  * to %GNUTLS_HEARTBEAT_WAIT then it waits for a reply from the peer.
- * 
+ *
  * Note that it is highly recommended to use this function with the
  * flag %GNUTLS_HEARTBEAT_WAIT, or you need to handle retransmissions
  * and timeouts manually.
@@ -295,7 +295,7 @@ int gnutls_heartbeat_pong(gnutls_session_t session, unsigned int flags)
 }
 
 /*
- * Processes a heartbeat message. 
+ * Processes a heartbeat message.
  */
 int _gnutls_heartbeat_handle(gnutls_session_t session, mbuffer_st *bufel)
 {
@@ -343,8 +343,8 @@ int _gnutls_heartbeat_handle(gnutls_session_t session, mbuffer_st *bufel)
 			return gnutls_assert_val(GNUTLS_E_UNEXPECTED_PACKET);
 
 		if (hb_len > 0 &&
-		    memcmp(&msg[pos], session->internals.hb_local_data.data,
-			   hb_len) != 0) {
+		    !memeq(&msg[pos], session->internals.hb_local_data.data,
+			   hb_len)) {
 			if (IS_DTLS(session))
 				return gnutls_assert_val(
 					GNUTLS_E_AGAIN); /* ignore it */
@@ -413,7 +413,7 @@ void gnutls_heartbeat_set_timeouts(gnutls_session_t session,
 }
 
 static int _gnutls_heartbeat_recv_params(gnutls_session_t session,
-					 const uint8_t *data, size_t _data_size)
+					 const uint8_t *data, size_t data_size)
 {
 	unsigned policy;
 	gnutls_ext_priv_data_t epriv;
@@ -426,7 +426,7 @@ static int _gnutls_heartbeat_recv_params(gnutls_session_t session,
 		return 0; /* Not enabled */
 	}
 
-	if (_data_size == 0)
+	if (data_size == 0)
 		return GNUTLS_E_UNEXPECTED_PACKET_LENGTH;
 
 	policy = (intptr_t)epriv;

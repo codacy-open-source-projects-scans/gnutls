@@ -366,10 +366,10 @@ static unsigned check_zhaoxin(void)
 		return 0;
 
 	/* Zhaoxin and VIA CPU was detected */
-	if ((memcmp(&b, "Cent", 4) == 0 && memcmp(&d, "aurH", 4) == 0 &&
-	     memcmp(&c, "auls", 4) == 0) ||
-	    (memcmp(&b, "  Sh", 4) == 0 && memcmp(&d, "angh", 4) == 0 &&
-	     memcmp(&c, "ai  ", 4) == 0)) {
+	if ((memeq(&b, "Cent", 4) && memeq(&d, "aurH", 4) &&
+	     memeq(&c, "auls", 4)) ||
+	    (memeq(&b, "  Sh", 4) && memeq(&d, "angh", 4) &&
+	     memeq(&c, "ai  ", 4))) {
 		return 1;
 	}
 
@@ -801,18 +801,18 @@ static enum x86_cpu_vendor check_x86_cpu_vendor(void)
 		return X86_CPU_VENDOR_OTHER;
 	}
 
-	if (memcmp(&b, "Genu", 4) == 0 && memcmp(&d, "ineI", 4) == 0 &&
-	    memcmp(&c, "ntel", 4) == 0) {
+	if (memeq(&b, "Genu", 4) && memeq(&d, "ineI", 4) &&
+	    memeq(&c, "ntel", 4)) {
 		return X86_CPU_VENDOR_INTEL;
 	}
 
-	if (memcmp(&b, "Auth", 4) == 0 && memcmp(&d, "enti", 4) == 0 &&
-	    memcmp(&c, "cAMD", 4) == 0) {
+	if (memeq(&b, "Auth", 4) && memeq(&d, "enti", 4) &&
+	    memeq(&c, "cAMD", 4)) {
 		return X86_CPU_VENDOR_AMD;
 	}
 
-	if (memcmp(&b, "Hygo", 4) == 0 && memcmp(&d, "nGen", 4) == 0 &&
-	    memcmp(&c, "uine", 4) == 0) {
+	if (memeq(&b, "Hygo", 4) && memeq(&d, "nGen", 4) &&
+	    memeq(&c, "uine", 4)) {
 		return X86_CPU_VENDOR_HYGON;
 	}
 

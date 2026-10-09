@@ -161,7 +161,7 @@ commit-check:
     # we want $ALPINE_BASE_BUILD without git, so we are adding it here
     - apk add git bash grep clang21-extra-tools
     - devel/check_if_signed
-    - PATH=/usr/lib/llvm19/bin:$PATH devel/indent-gnutls
+    - PATH=/usr/lib/llvm21/bin:$PATH devel/indent-gnutls
     - devel/check-headers.sh
     - git diff --exit-code # nothing should change version controlled files
   retry: 0
@@ -175,7 +175,7 @@ fedora-docdist/build:
   script:
     # Fake distcheck-hook that checks bootstrap is called without --skip-po
     - mkdir -p po/.reference
-    - CFLAGS="-std=c99 -O2 -g" dash ./configure --disable-gcc-warnings --cache-file $CCACHE_FILE --prefix=/usr --libdir=/usr/lib64 --disable-cxx --disable-non-suiteb-curves --enable-gtk-doc --disable-maintainer-mode --with-pkcs12-iter-count=10000
+    - CFLAGS="-std=c99 -O2 -g" dash ./configure --disable-gcc-warnings --cache-file $CCACHE_FILE --prefix=/usr --libdir=/usr/lib64 --disable-cxx --disable-non-suiteb-curves --enable-gtk-doc --enable-hpke --disable-maintainer-mode --with-pkcs12-iter-count=10000
     - make -j$BUILDJOBS -C doc stamp-vti
     - make -j$BUILDJOBS -C doc stamp_enums
     - make -j$BUILDJOBS
@@ -183,7 +183,6 @@ fedora-docdist/build:
     - make -j$BUILDJOBS -C doc/latex gnutls.pdf
     - DB2EPUBDIR=$(dirname $(find /usr/share/sgml/docbook/xsl-ns-stylesheets-*/epub/bin/ -name dbtoepub -print))
     - PATH="$PATH:$DB2EPUBDIR" make -C doc gnutls.epub
-  when: manual
 
 fedora-docdist/test:
   extends:
@@ -195,7 +194,6 @@ fedora-docdist/test:
     # Fake distcheck-hook that checks bootstrap is called without --skip-po
     - mkdir -p po/.reference
     - make -j$CHECKJOBS distcheck
-  when: manual
 
 fedora-sanitizers/build:
   extends:
@@ -259,9 +257,9 @@ fedora-minimal/build:
   needs:
     - fedora/bootstrap
   script:
-    - dnf remove -y libunistring-devel libtasn1-devel libidn-devel
+    - dnf remove -y libunistring-devel libidn-devel
     - dnf install -y libtasn1-tools
-    - dash ./configure --cache-file $CCACHE_FILE --with-included-libtasn1
+    - dash ./configure --cache-file $CCACHE_FILE
       --disable-doc --disable-dtls-srtp-support --disable-alpn-support --disable-tests
       --disable-psk-authentication
       --disable-anon-authentication --disable-dhe --disable-ecdhe
@@ -393,7 +391,7 @@ fedora-interop/test:
     - tmt run plans -n interop tests -f "tag:interop-gnutls" -f "tag:interop-$TYPE" -f "tag:interop-$COMPONENT"  discover -v
     - echo "Slicing SLICE_TOTAL=$SLICES SLICE_ID=$SLICEID"
     - echo "Run the tests:"
-    - tmt run -a -e "SLICE_TOTAL=$SLICES" -e "SLICE_ID=$SLICEID" plans -n interop tests -f "tag:interop-gnutls" -f "tag:interop-$TYPE" -f "tag:interop-$COMPONENT" provision -h local --feeling-safe execute -h tmt --interactive
+    - tmt --allow-unsafe-behavior=provision/local run -a -e "SLICE_TOTAL=$SLICES" -e "SLICE_ID=$SLICEID" plans -n interop tests -f "tag:interop-gnutls" -f "tag:interop-$TYPE" -f "tag:interop-$COMPONENT" provision -h local execute -h tmt --interactive
     - if [[ $PATH != $CI_PROJECT_DIR/src:* ]]; then echo "Wrong PATH=$PATH"; false; fi
 
 fedora-legacy/build:
@@ -459,24 +457,6 @@ fedora-nettle/test:
   script:
     - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib/pkgconfig LD_LIBRARY_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib make -j$CHECKJOBS check
 
-# fedora-nettle-minigmp/build:
-#   extends:
-#     - .fedora-nettle/build
-#   variables:
-#     NETTLE_CONFIGURE_ARGS: "--enable-mini-gmp"
-
-# fedora-nettle-minigmp/test:
-#   extends:
-#     - .fedora-nettle/test
-#   dependencies:
-#     - fedora-nettle-minigmp/build
-#   needs:
-#     - fedora-nettle-minigmp/build
-#   script:
-#     # prolong timeout a bit as minigmp build is slow
-#     - PKG_CONFIG_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib64/pkgconfig LD_LIBRARY_PATH=${PWD}/nettle-git/$NETTLE_DIR/lib64 GNUTLS_TEST_TIMEOUT=600000 make -j$CHECKJOBS check
-#   timeout: 3h
-
 fedora-threadsan/build:
   extends:
     - .build
@@ -519,6 +499,11 @@ fedora-static-analyzers/build:
     - make -j$BUILDJOBS -C src/gl
     - scan-build --status-bugs -o scan-build-lib make -j$BUILDJOBS -C src
   #TODO originally, after_script was set to "/bin/true".. is there a reason not to create the cache?
+  artifacts:
+    expire_in: 1 week
+    when: on_failure
+    paths:
+      - scan-build-lib
 
 # FIXME: we disable this, as cppcheck currently hangs at the usage of
 # Gnulib's <intprops.h>: <https://trac.cppcheck.net/ticket/10192>.
@@ -536,7 +521,7 @@ fedora-static-analyzers/build:
 #       - cache/cppcheck
 #   script:
 #     - mkdir -p cache/cppcheck
-#     - cppcheck --cppcheck-build-dir=cache/cppcheck --force -q -Ilib/includes -Igl/ -Ilib/ -I. --error-exitcode=1 lib/ -i lib/unistring -i lib/minitasn1 -i lib/nettle/backport -i lib/nettle/ecc -j2 $CPPCHECK_OPTIONS
+#     - cppcheck --cppcheck-build-dir=cache/cppcheck --force -q -Ilib/includes -Igl/ -Ilib/ -I. --error-exitcode=1 lib/ -i lib/unistring -i lib/nettle/backport -i lib/nettle/ecc -j2 $CPPCHECK_OPTIONS
 #     - cppcheck --cppcheck-build-dir=cache/cppcheck --force -q -Ilib/includes -Igl/ -Ilibdane/ -I. --error-exitcode=1 libdane/ -j2 $CPPCHECK_OPTIONS
 #   timeout: 3h
 
@@ -584,7 +569,6 @@ fedora-cross/bootstrap:
   extends:
     - .bootstrap
     - .fedora-cross
-  when: manual
 
 .fedora-cross/build:
   extends:
@@ -621,7 +605,6 @@ fedora-cross/aarch64-linux-gnu/build: # name is important, see .fedora-cross/bui
     - .fedora-cross
   needs:
     - fedora-cross/bootstrap
-  when: manual
 
 fedora-cross/aarch64-linux-gnu/test:
   extends:
@@ -640,7 +623,6 @@ fedora-cross/ppc64le-linux-gnu/build: # name is important, see .fedora-cross/bui
     - .fedora-cross
   needs:
     - fedora-cross/bootstrap
-  when: manual
 
 fedora-cross/ppc64le-linux-gnu/test:
   extends:
@@ -659,7 +641,6 @@ fedora-cross/s390x-linux-gnu/build: # name is important, see .fedora-cross/build
     - .fedora-cross
   needs:
     - fedora-cross/bootstrap
-  when: manual
 
 fedora-cross/s390x-linux-gnu/test:
   extends:
@@ -690,7 +671,6 @@ fedora-i686/build:
     - setarch i686 -- make -j$BUILDJOBS
     # build tests, but don't execute them
     - setarch i686 -- make -j$BUILDJOBS -C tests check TESTS=""
-  when: manual
 
 fedora-i686/test:
   extends:

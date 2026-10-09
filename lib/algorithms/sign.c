@@ -626,7 +626,7 @@ gnutls_sign_algorithm_t gnutls_sign_get_id(const char *name)
 
 const gnutls_sign_entry_st *_gnutls_oid_to_sign_entry(const char *oid)
 {
-	GNUTLS_SIGN_LOOP(if (p->oid && strcmp(oid, p->oid) == 0) { return p; });
+	GNUTLS_SIGN_LOOP(if (p->oid && streq(oid, p->oid)) { return p; });
 	return NULL;
 }
 

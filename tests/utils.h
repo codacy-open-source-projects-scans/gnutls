@@ -23,6 +23,10 @@
 #ifndef GNUTLS_TESTS_UTILS_H
 #define GNUTLS_TESTS_UTILS_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>

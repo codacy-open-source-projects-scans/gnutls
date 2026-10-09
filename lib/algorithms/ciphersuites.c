@@ -1684,8 +1684,8 @@ int _gnutls_get_client_ciphersuites(gnutls_session_t session,
 		cipher_suites_size += 2;
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(cdata, 16, cipher_suites,
-						cipher_suites_size);
+	ret = _gnutls_buffer_append_data_prefix16(cdata, cipher_suites,
+						  cipher_suites_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 

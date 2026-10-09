@@ -237,7 +237,7 @@ int _gnutls_x509_read_pkalgo_params(asn1_node src, const char *src_name,
 		return _gnutls_asn2err(result);
 	}
 
-	if (strcmp(oid, PK_PKIX1_RSA_PSS_OID) == 0) {
+	if (streq(oid, PK_PKIX1_RSA_PSS_OID)) {
 		gnutls_datum_t tmp = { NULL, 0 };
 
 		_gnutls_str_cpy(name, sizeof(name), src_name);
@@ -265,7 +265,7 @@ int _gnutls_x509_read_pkalgo_params(asn1_node src, const char *src_name,
 			gnutls_assert();
 
 		return result;
-	} else if (strcmp(oid, PK_PKIX1_RSA_OAEP_OID) == 0) {
+	} else if (streq(oid, PK_PKIX1_RSA_OAEP_OID)) {
 		gnutls_datum_t tmp = { NULL, 0 };
 
 		_gnutls_str_cpy(name, sizeof(name), src_name);

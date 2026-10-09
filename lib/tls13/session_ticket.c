@@ -263,8 +263,8 @@ static int append_nst_extension(void *ctx, gnutls_buffer_st *buf)
 	if (!(session->internals.flags & GNUTLS_ENABLE_EARLY_DATA))
 		return 0;
 
-	ret = _gnutls_buffer_append_prefix(
-		buf, 32, session->security_parameters.max_early_data_size);
+	ret = _gnutls_buffer_append_uint32(
+		buf, session->security_parameters.max_early_data_size);
 	if (ret < 0)
 		gnutls_assert();
 
@@ -315,14 +315,14 @@ int _gnutls13_send_session_ticket(gnutls_session_t session, unsigned nr,
 				goto cleanup;
 			}
 
-			ret = _gnutls_buffer_append_prefix(&buf, 32,
+			ret = _gnutls_buffer_append_uint32(&buf,
 							   ticket.lifetime);
 			if (ret < 0) {
 				gnutls_assert();
 				goto cleanup;
 			}
 
-			ret = _gnutls_buffer_append_prefix(&buf, 32,
+			ret = _gnutls_buffer_append_uint32(&buf,
 							   ticket.age_add);
 			if (ret < 0) {
 				gnutls_assert();
@@ -330,17 +330,16 @@ int _gnutls13_send_session_ticket(gnutls_session_t session, unsigned nr,
 			}
 
 			/* append ticket_nonce */
-			ret = _gnutls_buffer_append_data_prefix(
-				&buf, 8, ticket.nonce, ticket.nonce_size);
+			ret = _gnutls_buffer_append_data_prefix8(
+				&buf, ticket.nonce, ticket.nonce_size);
 			if (ret < 0) {
 				gnutls_assert();
 				goto cleanup;
 			}
 
 			/* append ticket */
-			ret = _gnutls_buffer_append_data_prefix(
-				&buf, 16, ticket.ticket.data,
-				ticket.ticket.size);
+			ret = _gnutls_buffer_append_data_prefix16(
+				&buf, ticket.ticket.data, ticket.ticket.size);
 			if (ret < 0) {
 				gnutls_assert();
 				goto cleanup;
@@ -414,10 +413,8 @@ int _gnutls13_recv_session_ticket(gnutls_session_t session,
 				  gnutls_buffer_st *buf)
 {
 	int ret;
-	uint8_t value;
 	tls13_ticket_st *ticket = &session->internals.tls13_ticket;
 	gnutls_datum_t t;
-	size_t val;
 
 	if (unlikely(buf == NULL))
 		return gnutls_assert_val(GNUTLS_E_INTERNAL_ERROR);
@@ -429,23 +426,20 @@ int _gnutls13_recv_session_ticket(gnutls_session_t session,
 			      session);
 
 	/* ticket_lifetime */
-	ret = _gnutls_buffer_pop_prefix32(buf, &val, 0);
+	ret = _gnutls_buffer_pop_uint32(buf, &ticket->lifetime);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
-	ticket->lifetime = val;
 
 	/* ticket_age_add */
-	ret = _gnutls_buffer_pop_prefix32(buf, &val, 0);
+	ret = _gnutls_buffer_pop_uint32(buf, &ticket->age_add);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
-	ticket->age_add = val;
 
 	/* ticket_nonce */
-	ret = _gnutls_buffer_pop_prefix8(buf, &value, 0);
+	ret = _gnutls_buffer_pop_uint8(buf, &ticket->nonce_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
-	ticket->nonce_size = value;
 	ret = _gnutls_buffer_pop_data(buf, ticket->nonce, ticket->nonce_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);

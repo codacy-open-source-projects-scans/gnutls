@@ -60,7 +60,7 @@ static int _decode_pkcs7_signed_data(gnutls_pkcs7_t pkcs7)
 		return _gnutls_asn2err(result);
 	}
 
-	if (strcmp(pkcs7->encap_data_oid, SIGNED_DATA_OID) != 0) {
+	if (!streq(pkcs7->encap_data_oid, SIGNED_DATA_OID)) {
 		gnutls_assert();
 		_gnutls_debug_log("Unknown PKCS7 Content OID '%s'\n",
 				  pkcs7->encap_data_oid);
@@ -103,8 +103,8 @@ static int _decode_pkcs7_signed_data(gnutls_pkcs7_t pkcs7)
 		goto cleanup;
 	}
 
-	if (strcmp(pkcs7->encap_data_oid, DATA_OID) != 0 &&
-	    strcmp(pkcs7->encap_data_oid, DIGESTED_DATA_OID) != 0) {
+	if (!streq(pkcs7->encap_data_oid, DATA_OID) &&
+	    !streq(pkcs7->encap_data_oid, DIGESTED_DATA_OID)) {
 		_gnutls_debug_log(
 			"Unknown PKCS#7 Encapsulated Content OID '%s'; treating as raw data\n",
 			pkcs7->encap_data_oid);
@@ -361,7 +361,7 @@ int gnutls_pkcs7_get_crt_raw2(gnutls_pkcs7_t pkcs7, unsigned indx,
 
 	/* if 'Certificate' is the choice found:
 	 */
-	if (strcmp(oid, "certificate") == 0) {
+	if (streq(oid, "certificate")) {
 		int start, end;
 
 		result = _gnutls_x509_read_value(pkcs7->pkcs7, "content", &tmp);
@@ -707,7 +707,7 @@ int gnutls_pkcs7_get_signature_info(gnutls_pkcs7_t pkcs7, unsigned idx,
 			goto fail;
 		}
 
-		if (strcmp(oid, ATTR_SIGNING_TIME) == 0) {
+		if (streq(oid, ATTR_SIGNING_TIME)) {
 			info->signing_time = parse_time(pkcs7, root);
 		}
 	}
@@ -803,7 +803,7 @@ static int verify_hash_attr(gnutls_pkcs7_t pkcs7, const char *root,
 			return gnutls_assert_val(ret);
 		}
 
-		if (strcmp(oid, ATTR_MESSAGE_DIGEST) == 0) {
+		if (streq(oid, ATTR_MESSAGE_DIGEST)) {
 			ret = _gnutls_x509_decode_string(
 				ASN1_ETYPE_OCTET_STRING, tmp.data, tmp.size,
 				&tmp2, 0);
@@ -813,12 +813,12 @@ static int verify_hash_attr(gnutls_pkcs7_t pkcs7, const char *root,
 			}
 
 			if (tmp2.size == hash_size &&
-			    memcmp(hash_output, tmp2.data, tmp2.size) == 0) {
+			    memeq(hash_output, tmp2.data, tmp2.size)) {
 				msg_digest_ok = 1;
 			} else {
 				gnutls_assert();
 			}
-		} else if (strcmp(oid, ATTR_CONTENT_TYPE) == 0) {
+		} else if (streq(oid, ATTR_CONTENT_TYPE)) {
 			if (num_cont_types > 0) {
 				gnutls_assert();
 				ret = GNUTLS_E_PARSING_ERROR;
@@ -837,7 +837,7 @@ static int verify_hash_attr(gnutls_pkcs7_t pkcs7, const char *root,
 			}
 
 			if (tmp2.size != tmp.size ||
-			    memcmp(tmp.data, tmp2.data, tmp2.size) != 0) {
+			    !memeq(tmp.data, tmp2.data, tmp2.size)) {
 				gnutls_assert();
 				ret = GNUTLS_E_PARSING_ERROR;
 				goto cleanup;
@@ -1185,8 +1185,7 @@ find_child_of_with_serial(gnutls_pkcs7_t pkcs7, gnutls_x509_crt_t issuer,
 			}
 
 			if (tmp_size != info->signer_serial.size ||
-			    memcmp(info->signer_serial.data, tmp, tmp_size) !=
-				    0) {
+			    !memeq(info->signer_serial.data, tmp, tmp_size)) {
 				_gnutls_cert_log("doesn't match serial", crt);
 				gnutls_assert();
 				goto skip;
@@ -1201,8 +1200,7 @@ find_child_of_with_serial(gnutls_pkcs7_t pkcs7, gnutls_x509_crt_t issuer,
 			}
 
 			if (tmp_size != info->issuer_keyid.size ||
-			    memcmp(info->issuer_keyid.data, tmp, tmp_size) !=
-				    0) {
+			    !memeq(info->issuer_keyid.data, tmp, tmp_size)) {
 				_gnutls_cert_log("doesn't match key ID", crt);
 				gnutls_assert();
 			skip:

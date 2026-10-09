@@ -42,7 +42,7 @@ static void _check_unique_non_null(int line, int i, const char *val)
 	if (val == NULL)
 		fail("issue in line %d, item %d\n", line, i);
 
-	if (strcmp(val, previous_val) == 0) {
+	if (streq(val, previous_val)) {
 		fail("issue in line %d, item %d: %s\n", line, i, val);
 	}
 

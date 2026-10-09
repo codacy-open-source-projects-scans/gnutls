@@ -31,10 +31,6 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/../lib		\
 	-I$(builddir)/../lib
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../lib/minitasn1
-endif
-
 SUBDIRS = includes
 
 defexecdir = $(libdir)
@@ -57,11 +53,7 @@ libgnutls_openssl_la_LIBADD = ../gl/libgnu.la \
 
 libgnutls_openssl_la_LDFLAGS += -version-info $(LT_SSL_CURRENT):$(LT_SSL_REVISION):$(LT_SSL_AGE)
 
-if ENABLE_MINITASN1
-libgnutls_openssl_la_LIBADD += ../lib/minitasn1/libminitasn1.la
-else
 libgnutls_openssl_la_LIBADD += $(LTLIBTASN1)
-endif
 
 libgnutls_openssl_la_LIBADD += $(LIBSOCKET)
 

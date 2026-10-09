@@ -170,7 +170,7 @@ void doit(void)
 	assert(gnutls_x509_crt_export2(crt, GNUTLS_X509_FMT_DER, &tmp2) >= 0);
 
 	assert(tmp2.size == tmp.size);
-	assert(memcmp(tmp.data, tmp2.data, tmp.size) == 0);
+	assert(memeq(tmp.data, tmp2.data, tmp.size));
 	gnutls_free(tmp2.data);
 
 	/* check gnutls_pkcs11_obj_export */
@@ -181,7 +181,7 @@ void doit(void)
 	buf_size = sizeof(buf);
 	assert(gnutls_pkcs11_obj_export(obj, buf, &buf_size) >= 0);
 	assert(buf_size == tmp.size);
-	assert(memcmp(buf, tmp.data, tmp.size) == 0);
+	assert(memeq(buf, tmp.data, tmp.size));
 
 	gnutls_free(tmp.data);
 
@@ -190,23 +190,24 @@ void doit(void)
 	assert(gnutls_pkcs11_obj_get_info(obj, GNUTLS_PKCS11_OBJ_ID_HEX, buf,
 					  &buf_size) >= 0);
 	assert(buf_size == 60);
-	assert(memcmp(buf,
-		      "95:d1:ad:a4:52:e4:c5:61:12:a6:91:13:8d:80:dd:2d:81:22:3e:d4",
-		      60) == 0);
+	assert(memeq(
+		buf,
+		"95:d1:ad:a4:52:e4:c5:61:12:a6:91:13:8d:80:dd:2d:81:22:3e:d4",
+		60));
 
 	/* label */
 	buf_size = sizeof(buf);
 	assert(gnutls_pkcs11_obj_get_info(obj, GNUTLS_PKCS11_OBJ_LABEL, buf,
 					  &buf_size) >= 0);
 	assert(buf_size == 4);
-	assert(memcmp(buf, "cert", 4) == 0);
+	assert(memeq(buf, "cert", 4));
 
 	/* token-label */
 	buf_size = sizeof(buf);
 	assert(gnutls_pkcs11_obj_get_info(obj, GNUTLS_PKCS11_OBJ_TOKEN_LABEL,
 					  buf, &buf_size) >= 0);
 	assert(buf_size == 4);
-	assert(memcmp(buf, "test", 4) == 0);
+	assert(memeq(buf, "test", 4));
 
 	/* token-serial */
 	buf_size = sizeof(buf);

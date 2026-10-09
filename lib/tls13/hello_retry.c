@@ -58,8 +58,8 @@ int _gnutls13_send_hello_retry_request(gnutls_session_t session, unsigned again)
 			goto cleanup;
 		}
 
-		ret = _gnutls_buffer_append_data_prefix(
-			&buf, 8, session->security_parameters.session_id,
+		ret = _gnutls_buffer_append_data_prefix8(
+			&buf, session->security_parameters.session_id,
 			session->security_parameters.session_id_size);
 		if (ret < 0) {
 			gnutls_assert();
@@ -74,7 +74,7 @@ int _gnutls13_send_hello_retry_request(gnutls_session_t session, unsigned again)
 		}
 
 		/* compression */
-		ret = _gnutls_buffer_append_prefix(&buf, 8, 0);
+		ret = _gnutls_buffer_append_uint8(&buf, 0);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;
@@ -134,7 +134,7 @@ int _gnutls13_recv_hello_retry_request(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(GNUTLS_E_UNEXPECTED_PACKET_LENGTH);
 
-	if (memcmp(random, HRR_RANDOM, GNUTLS_RANDOM_SIZE) != 0) {
+	if (!memeq(random, HRR_RANDOM, GNUTLS_RANDOM_SIZE)) {
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}
 

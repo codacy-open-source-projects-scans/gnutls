@@ -231,21 +231,19 @@ static void verify_issuer(gnutls_x509_crl_t crl,
 	assert(gnutls_x509_crl_get_issuer_dn(
 		       crl, crl_issuer, &crl_issuer_size) == GNUTLS_E_SUCCESS);
 	assert(crl_issuer_size == issuer_size &&
-	       memcmp(crl_issuer, issuer, issuer_size) == 0);
+	       memeq(crl_issuer, issuer, issuer_size));
 
 	gnutls_datum_t dn;
 	dn.data = NULL;
 	dn.size = 0;
 	assert(gnutls_x509_crl_get_issuer_dn2(crl, &dn) == GNUTLS_E_SUCCESS);
-	assert(dn.size == issuer_size &&
-	       memcmp(dn.data, issuer, issuer_size) == 0);
+	assert(dn.size == issuer_size && memeq(dn.data, issuer, issuer_size));
 	gnutls_free(dn.data);
 	dn.data = NULL;
 	dn.size = 0;
 
 	assert(gnutls_x509_crl_get_issuer_dn3(crl, &dn, 0) == GNUTLS_E_SUCCESS);
-	assert(dn.size == issuer_size &&
-	       memcmp(dn.data, issuer, issuer_size) == 0);
+	assert(dn.size == issuer_size && memeq(dn.data, issuer, issuer_size));
 	gnutls_free(dn.data);
 	dn.data = NULL;
 	dn.size = 0;
@@ -253,8 +251,7 @@ static void verify_issuer(gnutls_x509_crl_t crl,
 	assert(gnutls_x509_crl_get_issuer_dn3(crl, &dn,
 					      GNUTLS_X509_DN_FLAG_COMPAT) ==
 	       GNUTLS_E_SUCCESS);
-	assert(dn.size == issuer_size &&
-	       memcmp(dn.data, issuer, issuer_size) == 0);
+	assert(dn.size == issuer_size && memeq(dn.data, issuer, issuer_size));
 	gnutls_free(dn.data);
 	dn.data = NULL;
 	dn.size = 0;
@@ -287,7 +284,7 @@ static void get_dn_by_oid(gnutls_x509_crl_t crl,
 					     &crl_buf_size);
 
 	assert(crt_buf_size == crl_buf_size &&
-	       memcmp(crt_buf, crl_buf, crl_buf_size) == 0);
+	       memeq(crt_buf, crl_buf, crl_buf_size));
 
 	gnutls_free(crt_buf);
 	gnutls_free(crl_buf);
@@ -324,7 +321,7 @@ void doit(void)
 	fprintf(stdout, "%s", out.data);
 
 	assert(out.size == saved_crl.size);
-	assert(memcmp(out.data, saved_crl.data, out.size) == 0);
+	assert(memeq(out.data, saved_crl.data, out.size));
 
 	gnutls_free(out.data);
 	gnutls_x509_crl_deinit(crl);
@@ -337,7 +334,7 @@ void doit(void)
 	fprintf(stdout, "%s", out.data);
 
 	assert(out.size == saved_min_crl.size);
-	assert(memcmp(out.data, saved_min_crl.data, out.size) == 0);
+	assert(memeq(out.data, saved_min_crl.data, out.size));
 
 	/* verify issuer */
 	verify_issuer(crl, &ca3_cert);

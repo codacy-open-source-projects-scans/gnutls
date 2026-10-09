@@ -157,4 +157,7 @@ char *simple_ctime(const time_t *t, char buf[SIMPLE_CTIME_BUF_SIZE]);
 void get_system_time(struct timespec *ts);
 void set_system_time(struct timespec *ts);
 
+const char *host_from_url(const char *url, unsigned int *port,
+			  const char **path);
+
 #endif /* GNUTLS_SRC_COMMON_H */

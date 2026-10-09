@@ -178,7 +178,7 @@ static int psk_server_func(gnutls_session_t session, const char *username,
 	if (debug)
 		printf("psk: username %s\n", username);
 
-	if (strcmp(username, "test") != 0) {
+	if (!streq(username, "test")) {
 		fail("error in received username: '%s'\n", username);
 	}
 

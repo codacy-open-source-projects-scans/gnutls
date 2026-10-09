@@ -622,28 +622,28 @@ int main(int argc, char **argv)
 	signal(SIGPIPE, SIG_IGN);
 
 	if (argc > 1) {
-		if (strcmp(argv[1], "sha1") == 0) {
+		if (streq(argv[1], "sha1")) {
 			test = &test_sha1;
 			hash = "SHA1";
-		} else if (strcmp(argv[1], "sha1-short") == 0) {
+		} else if (streq(argv[1], "sha1-short")) {
 			test = &test_sha1_short;
 			hash = "SHA1";
-		} else if (strcmp(argv[1], "sha256-short") == 0) {
+		} else if (streq(argv[1], "sha256-short")) {
 			test = &test_sha256_short;
 			hash = "SHA256";
-		} else if (strcmp(argv[1], "sha256-new") == 0) {
+		} else if (streq(argv[1], "sha256-new")) {
 			test = &test_sha256_new;
 			hash = "SHA256";
-		} else if (strcmp(argv[1], "sha256") == 0) {
+		} else if (streq(argv[1], "sha256")) {
 			test = &test_sha256;
 			hash = "SHA256";
-		} else if (strcmp(argv[1], "sha384-short") == 0) {
+		} else if (streq(argv[1], "sha384-short")) {
 			test = &test_sha384_short;
 			hash = "SHA384";
-		} else if (strcmp(argv[1], "sha384") == 0) {
+		} else if (streq(argv[1], "sha384")) {
 			test = &test_sha384;
 			hash = "SHA384";
-		} else if (strcmp(argv[1], "sha1-one") == 0) {
+		} else if (streq(argv[1], "sha1-one")) {
 			test = &test_sha1_one;
 			hash = "SHA1";
 		} else {

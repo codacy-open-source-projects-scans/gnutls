@@ -67,8 +67,7 @@ static void decode(const char *test_name, const gnutls_datum_t *raw,
 		}
 		if (i == idx) {
 			if (psk.identity.size == id->size &&
-			    memcmp(psk.identity.data, id->data, id->size) ==
-				    0) {
+			    memeq(psk.identity.data, id->data, id->size)) {
 				if (debug)
 					success("%s: found id\n", test_name);
 				found = 1;
@@ -97,8 +96,7 @@ static void decode(const char *test_name, const gnutls_datum_t *raw,
 	if (debug)
 		success("%s: found binder\n", test_name);
 
-	if (binder.size != b->size ||
-	    memcmp(binder.data, b->data, b->size) != 0) {
+	if (binder.size != b->size || !memeq(binder.data, b->data, b->size)) {
 		hexprint(binder.data, binder.size);
 		fail("%s: did not match binder on index %d\n", test_name, idx);
 	}

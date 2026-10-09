@@ -216,8 +216,8 @@ static int supported_versions_send_params(gnutls_session_t session,
 
 		versions_size = ret;
 
-		ret = _gnutls_buffer_append_data_prefix(extdata, 8, versions,
-							versions_size);
+		ret = _gnutls_buffer_append_data_prefix8(extdata, versions,
+							 versions_size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 

@@ -140,8 +140,8 @@ static int _gnutls_srp_send_params(gnutls_session_t session,
 	if (cred->username != NULL) { /* send username */
 		len = MIN(strlen(cred->username), 255);
 
-		ret = _gnutls_buffer_append_data_prefix(extdata, 8,
-							cred->username, len);
+		ret = _gnutls_buffer_append_data_prefix8(extdata,
+							 cred->username, len);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;
@@ -183,8 +183,8 @@ static int _gnutls_srp_send_params(gnutls_session_t session,
 		priv->username = username;
 		priv->password = password;
 
-		ret = _gnutls_buffer_append_data_prefix(extdata, 8, username,
-							len);
+		ret = _gnutls_buffer_append_data_prefix8(extdata, username,
+							 len);
 		if (ret < 0) {
 			ret = gnutls_assert_val(ret);
 			goto cleanup;

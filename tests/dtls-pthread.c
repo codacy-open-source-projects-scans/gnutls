@@ -91,7 +91,7 @@ static void *recv_thread(void *arg)
 		if (ret < 0)
 			fail("client: recv failed: %s\n", gnutls_strerror(ret));
 		if (ret != sizeof(MSG) - 1 ||
-		    memcmp(buf, MSG, sizeof(MSG) - 1) != 0) {
+		    !memeq(buf, MSG, sizeof(MSG) - 1)) {
 			fail("client: recv failed; not the expected values (got: %d, exp: %d)\n",
 			     ret, (int)sizeof(MSG) - 1);
 		}
@@ -107,8 +107,7 @@ static void *recv_thread(void *arg)
 	if (ret < 0)
 		fail("client: recv2 failed: %s\n", gnutls_strerror(ret));
 
-	if (ret != sizeof(MSG2) - 1 ||
-	    memcmp(buf, MSG2, sizeof(MSG2) - 1) != 0) {
+	if (ret != sizeof(MSG2) - 1 || !memeq(buf, MSG2, sizeof(MSG2) - 1)) {
 		fail("client: recv2 failed; not the expected values\n");
 	}
 

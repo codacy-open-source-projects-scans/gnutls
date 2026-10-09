@@ -253,7 +253,7 @@ static int pull_timeout_func(gnutls_transport_ptr_t ptr, unsigned int ms)
 		       &cli_addr_size);
 	if (ret > 0) {
 		if (cli_addr_size == priv->cli_addr_size &&
-		    memcmp(&cli_addr, priv->cli_addr, sizeof(cli_addr)) == 0)
+		    memeq(&cli_addr, priv->cli_addr, sizeof(cli_addr)))
 			return 1;
 	}
 
@@ -284,7 +284,7 @@ static ssize_t pull_func(gnutls_transport_ptr_t p, void *data, size_t size)
 		return ret;
 
 	if (cli_addr_size == priv->cli_addr_size &&
-	    memcmp(&cli_addr, priv->cli_addr, sizeof(cli_addr)) == 0)
+	    memeq(&cli_addr, priv->cli_addr, sizeof(cli_addr)))
 		return ret;
 
 	printf("Denied connection from %s\n",

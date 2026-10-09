@@ -112,9 +112,9 @@ int _gnutls13_recv_certificate(gnutls_session_t session)
 
 		if (context.size !=
 			    session->internals.post_handshake_cr_context.size ||
-		    memcmp(context.data,
+		    !memeq(context.data,
 			   session->internals.post_handshake_cr_context.data,
-			   context.size) != 0) {
+			   context.size)) {
 			ret = GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER;
 			gnutls_assert();
 			goto cleanup;
@@ -229,7 +229,7 @@ static int append_status_request(void *_ctx, gnutls_buffer_st *buf)
 		goto cleanup;
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(buf, 24, resp.data, resp.size);
+	ret = _gnutls_buffer_append_data_prefix24(buf, resp.data, resp.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -296,8 +296,8 @@ int _gnutls13_send_certificate(gnutls_session_t session, unsigned again)
 		cert_pos_mark = buf.length;
 
 		if (session->security_parameters.entity == GNUTLS_CLIENT) {
-			ret = _gnutls_buffer_append_data_prefix(
-				&buf, 8,
+			ret = _gnutls_buffer_append_data_prefix8(
+				&buf,
 				session->internals.post_handshake_cr_context
 					.data,
 				session->internals.post_handshake_cr_context
@@ -308,7 +308,7 @@ int _gnutls13_send_certificate(gnutls_session_t session, unsigned again)
 			}
 
 		} else {
-			ret = _gnutls_buffer_append_prefix(&buf, 8, 0);
+			ret = _gnutls_buffer_append_uint8(&buf, 0);
 			if (ret < 0) {
 				gnutls_assert();
 				goto cleanup;
@@ -317,15 +317,15 @@ int _gnutls13_send_certificate(gnutls_session_t session, unsigned again)
 
 		/* mark total size */
 		pos_mark = buf.length;
-		ret = _gnutls_buffer_append_prefix(&buf, 24, 0);
+		ret = _gnutls_buffer_append_uint24(&buf, 0);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;
 		}
 
 		for (i = 0; i < (unsigned)apr_cert_list_length; i++) {
-			ret = _gnutls_buffer_append_data_prefix(
-				&buf, 24, apr_cert_list[i].cert.data,
+			ret = _gnutls_buffer_append_data_prefix24(
+				&buf, apr_cert_list[i].cert.data,
 				apr_cert_list[i].cert.size);
 			if (ret < 0) {
 				gnutls_assert();
@@ -369,7 +369,7 @@ int _gnutls13_send_certificate(gnutls_session_t session, unsigned again)
 			} else
 #endif
 			{
-				ret = _gnutls_buffer_append_prefix(&buf, 16, 0);
+				ret = _gnutls_buffer_append_uint16(&buf, 0);
 				if (ret < 0) {
 					gnutls_assert();
 					goto cleanup;
@@ -633,17 +633,17 @@ static int compress_certificate(gnutls_buffer_st *buf, unsigned cert_pos_mark,
 	comp.size = ret;
 
 	buf->length = cert_pos_mark;
-	ret = _gnutls_buffer_append_prefix(buf, 16, method_num);
+	ret = _gnutls_buffer_append_uint16(buf, method_num);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
-	ret = _gnutls_buffer_append_prefix(buf, 24, plain.size);
+	ret = _gnutls_buffer_append_uint24(buf, plain.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
 	}
-	ret = _gnutls_buffer_append_data_prefix(buf, 24, comp.data, comp.size);
+	ret = _gnutls_buffer_append_data_prefix24(buf, comp.data, comp.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -658,11 +658,12 @@ static int decompress_certificate(gnutls_session_t session,
 				  gnutls_buffer_st *buf)
 {
 	int ret;
-	size_t method_num, plain_exp_len;
+	uint16_t method_num;
+	uint32_t plain_exp_len;
 	gnutls_datum_t comp, plain = { NULL, 0 };
 	gnutls_compression_method_t comp_method;
 
-	ret = _gnutls_buffer_pop_prefix16(buf, &method_num, 0);
+	ret = _gnutls_buffer_pop_uint16(buf, &method_num);
 	if (ret < 0)
 		return gnutls_assert_val(GNUTLS_E_UNEXPECTED_PACKET_LENGTH);
 	comp_method = _gnutls_compress_certificate_num2method(method_num);
@@ -671,7 +672,7 @@ static int decompress_certificate(gnutls_session_t session,
 							    comp_method))
 		return gnutls_assert_val(GNUTLS_E_ILLEGAL_PARAMETER);
 
-	ret = _gnutls_buffer_pop_prefix24(buf, &plain_exp_len, 0);
+	ret = _gnutls_buffer_pop_uint24(buf, &plain_exp_len);
 	if (ret < 0)
 		return gnutls_assert_val(GNUTLS_E_UNEXPECTED_PACKET_LENGTH);
 

@@ -239,8 +239,7 @@ int _gnutls_gost_keytrans_decrypt(gnutls_pk_params_st *priv,
 	 * of any kind as all values are transmitted in cleartext. Returning
 	 * that this point won't give any information to the attacker.
 	 */
-	if (ukm2.size != ukm->size ||
-	    memcmp(ukm2.data, ukm->data, ukm->size) != 0) {
+	if (ukm2.size != ukm->size || !memeq(ukm2.data, ukm->data, ukm->size)) {
 		gnutls_assert();
 		_gnutls_free_datum(&ukm2);
 		ret = GNUTLS_E_DECRYPTION_FAILED;

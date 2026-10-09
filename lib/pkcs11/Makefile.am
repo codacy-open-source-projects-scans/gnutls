@@ -29,10 +29,6 @@ AM_CPPFLAGS += \
 	$(LIBTASN1_CFLAGS)		\
 	$(P11_KIT_CFLAGS)
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 noinst_LTLIBRARIES = libgnutls_pkcs11.la
 
 libgnutls_pkcs11_la_SOURCES = \

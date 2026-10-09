@@ -62,7 +62,7 @@ static void verify_alpn(gnutls_session_t session)
 	}
 
 	if (strlen(str) != selected.size ||
-	    memcmp(str, selected.data, selected.size) != 0) {
+	    !memeq(str, selected.data, selected.size)) {
 		fail("expected protocol %s, got %.*s\n", str, selected.size,
 		     selected.data);
 		exit(1);

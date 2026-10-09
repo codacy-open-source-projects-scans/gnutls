@@ -111,8 +111,7 @@ static unsigned import_key(gnutls_certificate_credentials_t xcred,
 		}
 
 		if (tcert.size != pcert_list[i].cert.size ||
-		    memcmp(tcert.data, pcert_list[i].cert.data, tcert.size) !=
-			    0) {
+		    !memeq(tcert.data, pcert_list[i].cert.data, tcert.size)) {
 			fail("error in %d: cert %d: %s\n", __LINE__, i,
 			     "ca cert don't match");
 			exit(1);

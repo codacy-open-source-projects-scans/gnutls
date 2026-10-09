@@ -205,7 +205,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (strcmp(oid, "1.2.840.113549.1.9.3") != 0) {
+	if (!streq(oid, "1.2.840.113549.1.9.3")) {
 		fail("error in %d: %s\n", __LINE__, oid);
 		exit(1);
 	}
@@ -218,8 +218,8 @@ void doit(void)
 		exit(1);
 	}
 
-	if (strcmp(oid, "1.2.3.4") != 0 || data.size != data1.size ||
-	    memcmp(data.data, data1.data, data.size) != 0) {
+	if (!streq(oid, "1.2.3.4") || data.size != data1.size ||
+	    !memeq(data.data, data1.data, data.size)) {
 		fail("error in %d: %s\n", __LINE__, oid);
 		exit(1);
 	}
@@ -232,8 +232,8 @@ void doit(void)
 		exit(1);
 	}
 
-	if (strcmp(oid, "2.3.4") != 0 || data.size != data2.size ||
-	    memcmp(data.data, data2.data, data.size) != 0) {
+	if (!streq(oid, "2.3.4") || data.size != data2.size ||
+	    !memeq(data.data, data2.data, data.size)) {
 		fail("error in %d: %s\n", __LINE__, oid);
 		exit(1);
 	}
@@ -246,8 +246,8 @@ void doit(void)
 		exit(1);
 	}
 
-	if (strcmp(oid, "2.3.4") != 0 || data.size != data3.size ||
-	    memcmp(data.data, data3.data, data.size) != 0) {
+	if (!streq(oid, "2.3.4") || data.size != data3.size ||
+	    !memeq(data.data, data3.data, data.size)) {
 		fail("error in %d: %s\n", __LINE__, oid);
 		exit(1);
 	}

@@ -91,7 +91,7 @@ static int ext_recv_client_params(gnutls_session_t session,
 	if (buflen != sizeof(ext_data))
 		myfail("ext_recv_client_params: Invalid input buffer length\n");
 
-	if (memcmp(buf, ext_data, sizeof(ext_data)) != 0)
+	if (!memeq(buf, ext_data, sizeof(ext_data)))
 		myfail("ext_recv_client_params: Invalid input buffer data\n");
 
 	TLSEXT_TYPE_client_received = 1;
@@ -132,7 +132,7 @@ static int ext_recv_server_params(gnutls_session_t session,
 	if (buflen != sizeof(ext_data))
 		myfail("ext_recv_server_params: Invalid input buffer length\n");
 
-	if (memcmp(buf, ext_data, sizeof(ext_data)) != 0)
+	if (!memeq(buf, ext_data, sizeof(ext_data)))
 		myfail("ext_recv_server_params: Invalid input buffer data\n");
 
 	TLSEXT_TYPE_server_received = 1;
@@ -186,7 +186,7 @@ static void client(int sd, const char *name, const char *prio, unsigned flags,
 
 	ext_name =
 		gnutls_ext_get_name2(session, TLSEXT_TYPE_IGN, GNUTLS_EXT_ANY);
-	if (ext_name == NULL || strcmp(ext_name, "ext_ign"))
+	if (ext_name == NULL || !streq(ext_name, "ext_ign"))
 		myfail("client: retrieve name of extension %u\n",
 		       TLSEXT_TYPE_IGN);
 

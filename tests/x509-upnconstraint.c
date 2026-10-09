@@ -124,7 +124,7 @@ void verify_upn_constraints(gnutls_x509_name_constraints_t name_constraints)
 	}
 
 	if ((constraint.size != sizeof(example3) - 1) ||
-	    memcmp(constraint.data, example3, sizeof(example3) - 1) != 0) {
+	    !memeq(constraint.data, example3, sizeof(example3) - 1)) {
 		fail("Error permitted constraint 3 was %s expected %s line: %d\n",
 		     constraint.data, example3, __LINE__);
 		exit(1);
@@ -145,7 +145,7 @@ void verify_upn_constraints(gnutls_x509_name_constraints_t name_constraints)
 	}
 
 	if ((constraint.size != sizeof(example4) - 1) ||
-	    memcmp(constraint.data, example4, sizeof(example4) - 1) != 0) {
+	    !memeq(constraint.data, example4, sizeof(example4) - 1)) {
 		fail("Error permitted constraint 4 was %s expected %s line: %d\n",
 		     constraint.data, example4, __LINE__);
 		exit(1);
@@ -166,7 +166,7 @@ void verify_upn_constraints(gnutls_x509_name_constraints_t name_constraints)
 	}
 
 	if ((constraint.size != sizeof(subdomain2) - 1) ||
-	    memcmp(constraint.data, subdomain2, sizeof(subdomain2) - 1) != 0) {
+	    !memeq(constraint.data, subdomain2, sizeof(subdomain2) - 1)) {
 		fail("Error excluded constraint 2 was %s expected %s line: %d\n",
 		     constraint.data, subdomain2, __LINE__);
 		exit(1);
@@ -187,7 +187,7 @@ void verify_upn_constraints(gnutls_x509_name_constraints_t name_constraints)
 	}
 
 	if ((constraint.size != sizeof(subdomain3) - 1) ||
-	    memcmp(constraint.data, subdomain3, sizeof(subdomain3) - 1) != 0) {
+	    !memeq(constraint.data, subdomain3, sizeof(subdomain3) - 1)) {
 		fail("Error excluded constraint 3 was %s expected %s line: %d\n",
 		     constraint.data, subdomain3, __LINE__);
 		exit(1);

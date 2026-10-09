@@ -141,7 +141,7 @@ _gnutls_oid_get_entry(const struct oid_to_string *ots, const char *oid)
 	unsigned len = strlen(oid);
 
 	do {
-		if (len == ots[i].oid_size && strcmp(ots[i].oid, oid) == 0)
+		if (len == ots[i].oid_size && streq(ots[i].oid, oid))
 			return &ots[i];
 		i++;
 	} while (ots[i].oid != NULL);
@@ -369,11 +369,11 @@ static int decode_complex_string(const struct oid_to_string *oentry,
 	/* We set the etype on the strings that may need
 	 * some conversion to UTF-8. The INVALID flag indicates
 	 * no conversion needed */
-	if (strcmp(str, "teletexString") == 0)
+	if (streq(str, "teletexString"))
 		etype = ASN1_ETYPE_TELETEX_STRING;
-	else if (strcmp(str, "bmpString") == 0)
+	else if (streq(str, "bmpString"))
 		etype = ASN1_ETYPE_BMP_STRING;
-	else if (strcmp(str, "universalString") == 0)
+	else if (streq(str, "universalString"))
 		etype = ASN1_ETYPE_UNIVERSAL_STRING;
 	else
 		etype = ASN1_ETYPE_INVALID;
@@ -498,19 +498,19 @@ static int data2hex(const void *data, size_t data_size, gnutls_datum_t *out)
 
 gnutls_x509_subject_alt_name_t _gnutls_x509_san_find_type(char *str_type)
 {
-	if (strcmp(str_type, "dNSName") == 0)
+	if (streq(str_type, "dNSName"))
 		return GNUTLS_SAN_DNSNAME;
-	if (strcmp(str_type, "rfc822Name") == 0)
+	if (streq(str_type, "rfc822Name"))
 		return GNUTLS_SAN_RFC822NAME;
-	if (strcmp(str_type, "uniformResourceIdentifier") == 0)
+	if (streq(str_type, "uniformResourceIdentifier"))
 		return GNUTLS_SAN_URI;
-	if (strcmp(str_type, "iPAddress") == 0)
+	if (streq(str_type, "iPAddress"))
 		return GNUTLS_SAN_IPADDRESS;
-	if (strcmp(str_type, "otherName") == 0)
+	if (streq(str_type, "otherName"))
 		return GNUTLS_SAN_OTHERNAME;
-	if (strcmp(str_type, "directoryName") == 0)
+	if (streq(str_type, "directoryName"))
 		return GNUTLS_SAN_DN;
-	if (strcmp(str_type, "registeredID") == 0)
+	if (streq(str_type, "registeredID"))
 		return GNUTLS_SAN_REGISTERED_ID;
 
 	return (gnutls_x509_subject_alt_name_t)-1;
@@ -1256,7 +1256,7 @@ int _gnutls_x509_get_signature_algorithm(asn1_node src, const char *src_name)
 	 * RSA-PSS, parameters are not read. They will be read from
 	 * the issuer's certificate if needed.
 	 */
-	if (sa.data && strcmp((char *)sa.data, PK_PKIX1_RSA_PSS_OID) == 0) {
+	if (sa.data && streq((char *)sa.data, PK_PKIX1_RSA_PSS_OID)) {
 		gnutls_datum_t der = { NULL, 0 };
 		gnutls_x509_spki_st params;
 
@@ -1674,7 +1674,7 @@ unsigned _gnutls_check_valid_key_id(const gnutls_datum_t *key_id,
 	if (has_ski)
 		*has_ski = 1;
 
-	if (id_size == key_id->size && !memcmp(id, key_id->data, id_size))
+	if (id_size == key_id->size && memeq(id, key_id->data, id_size))
 		result = 1;
 
 out:
@@ -1896,15 +1896,15 @@ const char *gnutls_gost_paramset_get_oid(gnutls_gost_paramset_t param)
  **/
 gnutls_gost_paramset_t gnutls_oid_to_gost_paramset(const char *oid)
 {
-	if (!strcmp(oid, GOST28147_89_TC26Z_OID))
+	if (streq(oid, GOST28147_89_TC26Z_OID))
 		return GNUTLS_GOST_PARAMSET_TC26_Z;
-	else if (!strcmp(oid, GOST28147_89_CPA_OID))
+	else if (streq(oid, GOST28147_89_CPA_OID))
 		return GNUTLS_GOST_PARAMSET_CP_A;
-	else if (!strcmp(oid, GOST28147_89_CPB_OID))
+	else if (streq(oid, GOST28147_89_CPB_OID))
 		return GNUTLS_GOST_PARAMSET_CP_B;
-	else if (!strcmp(oid, GOST28147_89_CPC_OID))
+	else if (streq(oid, GOST28147_89_CPC_OID))
 		return GNUTLS_GOST_PARAMSET_CP_C;
-	else if (!strcmp(oid, GOST28147_89_CPD_OID))
+	else if (streq(oid, GOST28147_89_CPD_OID))
 		return GNUTLS_GOST_PARAMSET_CP_D;
 	else
 		return gnutls_assert_val(GNUTLS_GOST_PARAMSET_UNKNOWN);

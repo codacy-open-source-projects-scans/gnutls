@@ -97,7 +97,7 @@ void doit(void)
 				return;
 			}
 
-			if (memcmp(buf1, buf2, sizeof(buf1)) == 0) {
+			if (memeq(buf1, buf2, sizeof(buf1))) {
 				fail("error in the random generator (%u). Produces same values after fork()\n",
 				     i);
 				return;

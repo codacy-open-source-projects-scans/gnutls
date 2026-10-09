@@ -139,7 +139,7 @@ int _gnutls_sign_algorithm_write_params(gnutls_session_t session,
 		prev = aid;
 	}
 
-	return _gnutls_buffer_append_data_prefix(extdata, 16, buffer, len);
+	return _gnutls_buffer_append_data_prefix16(extdata, buffer, len);
 }
 
 /* Parses the Signature Algorithm structure and stores data into

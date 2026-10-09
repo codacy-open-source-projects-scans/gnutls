@@ -260,8 +260,8 @@ void doit(void)
 			}
 
 			if (get_ca_datum_test.size != get_ca_datum.size ||
-			    memcmp(get_ca_datum_test.data, get_ca_datum.data,
-				   get_ca_datum.size) != 0) {
+			    !memeq(get_ca_datum_test.data, get_ca_datum.data,
+				   get_ca_datum.size)) {
 				fail("gnutls_x509_trist_list_iter_get_ca: Unexpected certificate (%u != %u):\n\n%s\n\nvs.\n\n%s",
 				     get_ca_datum.size, get_ca_datum_test.size,
 				     get_ca_datum.data, get_ca_datum_test.data);

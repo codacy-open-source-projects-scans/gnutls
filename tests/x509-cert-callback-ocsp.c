@@ -202,7 +202,7 @@ static void start(const char *prio)
 		fail("no response was found: %s\n", gnutls_strerror(ret));
 
 	assert(response.size == OCSP_SIZE);
-	assert(memcmp(response.data, OCSP_DATA, OCSP_SIZE) == 0);
+	assert(memeq(response.data, OCSP_DATA, OCSP_SIZE));
 
 	if (gnutls_protocol_get_version(client) == GNUTLS_TLS1_3) {
 		ret = gnutls_ocsp_status_request_get2(client, 1, &response);
@@ -211,7 +211,7 @@ static void start(const char *prio)
 			     gnutls_strerror(ret));
 
 		assert(response.size == OCSP_SIZE);
-		assert(memcmp(response.data, OCSP_DATA, OCSP_SIZE) == 0);
+		assert(memeq(response.data, OCSP_DATA, OCSP_SIZE));
 	}
 
 	ret = gnutls_ocsp_status_request_get2(client, 2, &response);

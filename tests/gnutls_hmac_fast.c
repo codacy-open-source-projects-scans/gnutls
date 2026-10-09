@@ -47,10 +47,10 @@ void doit(void)
 	if (err < 0)
 		fail("gnutls_hmac_fast(SHA1) failed: %d\n", err);
 	else {
-		if (memcmp(digest,
-			   "\x58\x93\x7a\x58\xfe\xea\x82\xf8"
-			   "\x0e\x64\x62\x01\x40\x2b\x2c\xed\x5d\x54\xc1\xfa",
-			   20) == 0) {
+		if (memeq(digest,
+			  "\x58\x93\x7a\x58\xfe\xea\x82\xf8"
+			  "\x0e\x64\x62\x01\x40\x2b\x2c\xed\x5d\x54\xc1\xfa",
+			  20)) {
 			if (debug)
 				success("gnutls_hmac_fast(SHA1) OK\n");
 		} else {
@@ -69,10 +69,10 @@ void doit(void)
 	if (err < 0)
 		fail("gnutls_hmac_fast(MD5) failed: %d\n", err);
 	else {
-		if (memcmp(digest,
-			   "\x3c\xb0\x9d\x83\x28\x01\xef\xc0"
-			   "\x7b\xb3\xaf\x42\x69\xe5\x93\x9a",
-			   16) == 0) {
+		if (memeq(digest,
+			  "\x3c\xb0\x9d\x83\x28\x01\xef\xc0"
+			  "\x7b\xb3\xaf\x42\x69\xe5\x93\x9a",
+			  16)) {
 			if (debug)
 				success("gnutls_hmac_fast(MD5) OK\n");
 		} else {

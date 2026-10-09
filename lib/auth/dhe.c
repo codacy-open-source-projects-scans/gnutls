@@ -121,25 +121,24 @@ static int gen_dhe_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 }
 
 static int proc_dhe_server_kx(gnutls_session_t session, uint8_t *data,
-			      size_t _data_size)
+			      size_t data_size)
 {
 	gnutls_datum_t vdata;
 	int ret;
 
-	ret = _gnutls_proc_dh_common_server_kx(session, data, _data_size);
+	ret = _gnutls_proc_dh_common_server_kx(session, data, data_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
 	vdata.data = data;
 	vdata.size = ret;
 
-	return _gnutls_proc_dhe_signature(session, data + ret, _data_size - ret,
+	return _gnutls_proc_dhe_signature(session, data + ret, data_size - ret,
 					  &vdata);
 }
 
 static int proc_dhe_client_kx(gnutls_session_t session, uint8_t *data,
-			      size_t _data_size)
+			      size_t data_size)
 {
-	return _gnutls_proc_dh_common_client_kx(session, data, _data_size,
-						NULL);
+	return _gnutls_proc_dh_common_client_kx(session, data, data_size, NULL);
 }

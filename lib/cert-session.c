@@ -201,20 +201,20 @@ gnutls_certificate_get_verify_flags(gnutls_certificate_credentials_t res)
 /**
  * gnutls_certificate_set_verify_limits:
  * @res: is a gnutls_certificate_credentials type
- * @max_bits: is the number of bits of an acceptable certificate (default 8200)
- * @max_depth: is maximum depth of the verification of a certificate chain (default 5)
+ * @max_bits: unused; retained for backwards compatibility
+ * @max_depth: is the maximum number of certificates in the peer's chain (default 101)
  *
- * This function will set some upper limits for the default
+ * This function will set an upper limit for the default
  * verification function, gnutls_certificate_verify_peers2(), to avoid
- * denial of service attacks.  You can set them to zero to disable
- * limits.
+ * denial of service attacks. You can set @max_depth to zero to disable
+ * the limit.
  **/
 void gnutls_certificate_set_verify_limits(gnutls_certificate_credentials_t res,
 					  unsigned int max_bits,
 					  unsigned int max_depth)
 {
+	(void)max_bits;
 	res->verify_depth = max_depth;
-	res->verify_bits = max_bits;
 }
 
 #ifdef ENABLE_OCSP
@@ -283,10 +283,16 @@ static int check_ocsp_response(gnutls_session_t session, gnutls_x509_crt_t cert,
 			break;
 	}
 	if (ret < 0) {
+		if (resp_indx == 0 &&
+		    ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
+			_gnutls_audit_log(session, "Got OCSP response with"
+						   " no certificates.\n");
+		} else {
+			_gnutls_audit_log(session,
+					  "Got OCSP response with"
+					  " an unrelated certificate.\n");
+		}
 		ret = gnutls_assert_val(0);
-		_gnutls_audit_log(
-			session,
-			"Got OCSP response with an unrelated certificate.\n");
 		check_failed = 1;
 		*ostatus |= GNUTLS_CERT_INVALID;
 		*ostatus |= GNUTLS_CERT_INVALID_OCSP_STATUS;
@@ -343,9 +349,9 @@ static int check_ocsp_response(gnutls_session_t session, gnutls_x509_crt_t cert,
 		goto cleanup;
 	}
 
-	ret = gnutls_ocsp_resp_get_single(resp, 0, NULL, NULL, NULL, NULL,
-					  &cert_status, &vtime, &ntime, &rtime,
-					  NULL);
+	ret = gnutls_ocsp_resp_get_single(resp, resp_indx, NULL, NULL, NULL,
+					  NULL, &cert_status, &vtime, &ntime,
+					  &rtime, NULL);
 	if (ret < 0) {
 		_gnutls_audit_log(
 			session,
@@ -635,9 +641,9 @@ skip_ocsp:
  * the verified certificate belongs to the actual peer, see gnutls_x509_crt_check_hostname(),
  * or use gnutls_certificate_verify_peers3().
  *
- * To avoid denial of service attacks some
- * default upper limits regarding the certificate key size and chain
- * size are set. To override them use gnutls_certificate_set_verify_limits().
+ * To avoid denial of service attacks, a default upper limit on the
+ * certificate chain size is set. To override it use
+ * gnutls_certificate_set_verify_limits().
  *
  * Note that when using raw public-keys verification will not work because there is
  * no corresponding certificate body belonging to the raw key that can be verified. In that
@@ -679,9 +685,9 @@ int gnutls_certificate_verify_peers2(gnutls_session_t session,
  * In order to verify the purpose of the end-certificate (by checking the extended
  * key usage), use gnutls_certificate_verify_peers().
  *
- * To avoid denial of service attacks some
- * default upper limits regarding the certificate key size and chain
- * size are set. To override them use gnutls_certificate_set_verify_limits().
+ * To avoid denial of service attacks, a default upper limit on the
+ * certificate chain size is set. To override it use
+ * gnutls_certificate_set_verify_limits().
  *
  * Note that when using raw public-keys verification will not work because there is
  * no corresponding certificate body belonging to the raw key that can be verified. In that
@@ -736,9 +742,9 @@ int gnutls_certificate_verify_peers3(gnutls_session_t session,
  * or be marked for any purpose, otherwise verification status will have the
  * %GNUTLS_CERT_SIGNER_CONSTRAINTS_FAILURE flag set.
  *
- * To avoid denial of service attacks some
- * default upper limits regarding the certificate key size and chain
- * size are set. To override them use gnutls_certificate_set_verify_limits().
+ * To avoid denial of service attacks, a default upper limit on the
+ * certificate chain size is set. To override it use
+ * gnutls_certificate_set_verify_limits().
  *
  * Note that when using raw public-keys verification will not work because there is
  * no corresponding certificate body belonging to the raw key that can be verified. In that

@@ -28,10 +28,6 @@ AM_CPPFLAGS += \
 	-I$(builddir)/../../gl          \
 	-I$(srcdir)/..
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 noinst_LTLIBRARIES = libgnutls_auth.la
 
 libgnutls_auth_la_SOURCES = anon.c cert.c dh_common.c dhe.c \

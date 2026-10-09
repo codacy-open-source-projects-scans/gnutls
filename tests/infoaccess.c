@@ -162,7 +162,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (memcmp("1.3.6.1.5.5.7.48.1", data.data, data.size) != 0) {
+	if (!memeq("1.3.6.1.5.5.7.48.1", data.data, data.size)) {
 		fail("memcmp OCSP OID failed\n");
 		exit(1);
 	}
@@ -177,7 +177,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (memcmp("uniformResourceIdentifier", data.data, data.size) != 0) {
+	if (!memeq("uniformResourceIdentifier", data.data, data.size)) {
 		fail("memcmp URI failed\n");
 		exit(1);
 	}
@@ -191,8 +191,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (memcmp("https://ocsp.quovadisoffshore.com", data.data, data.size) !=
-	    0) {
+	if (!memeq("https://ocsp.quovadisoffshore.com", data.data, data.size)) {
 		fail("memcmp URI value failed\n");
 		exit(1);
 	}
@@ -206,8 +205,7 @@ void doit(void)
 		exit(1);
 	}
 
-	if (memcmp("https://ocsp.quovadisoffshore.com", data.data, data.size) !=
-	    0) {
+	if (!memeq("https://ocsp.quovadisoffshore.com", data.data, data.size)) {
 		fail("memcmp URI value failed\n");
 		exit(1);
 	}

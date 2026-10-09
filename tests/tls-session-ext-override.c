@@ -74,7 +74,7 @@ static int ext_recv_client_params(gnutls_session_t session,
 	if (buflen != sizeof(ext_data))
 		fail("ext_recv_client_params: Invalid input buffer length\n");
 
-	if (memcmp(buf, ext_data, sizeof(ext_data)) != 0)
+	if (!memeq(buf, ext_data, sizeof(ext_data)))
 		fail("ext_recv_client_params: Invalid input buffer data\n");
 
 	TLSEXT_TYPE_client_received = 1;
@@ -98,7 +98,7 @@ static int ext_recv_server_params(gnutls_session_t session,
 	if (buflen != sizeof(ext_data))
 		fail("ext_recv_server_params: Invalid input buffer length\n");
 
-	if (memcmp(buf, ext_data, sizeof(ext_data)) != 0)
+	if (!memeq(buf, ext_data, sizeof(ext_data)))
 		fail("ext_recv_server_params: Invalid input buffer data\n");
 
 	TLSEXT_TYPE_server_received = 1;

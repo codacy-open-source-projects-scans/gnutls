@@ -85,7 +85,6 @@ typedef struct gnutls_certificate_credentials_st {
 					 * certificate verification.
 					 */
 	unsigned int verify_depth;
-	unsigned int verify_bits;
 
 	/* It's a mess here. However we need to keep the old 3 functions
 	 * for compatibility */
@@ -146,7 +145,7 @@ int _gnutls_get_selected_cert(gnutls_session_t session,
 			      gnutls_privkey_t *apr_pkey);
 
 int _gnutls_select_client_cert(gnutls_session_t session, const uint8_t *_data,
-			       size_t _data_size,
+			       size_t data_size,
 			       gnutls_pk_algorithm_t *pk_algos,
 			       int pk_algos_length);
 
@@ -170,7 +169,7 @@ int _gnutls_check_key_cert_match(gnutls_certificate_credentials_t res);
 int _gnutls_gen_dhe_signature(gnutls_session_t session, gnutls_buffer_st *data,
 			      uint8_t *plain, unsigned plain_size);
 int _gnutls_proc_dhe_signature(gnutls_session_t session, uint8_t *data,
-			       size_t _data_size, gnutls_datum_t *vparams);
+			       size_t data_size, gnutls_datum_t *vparams);
 
 int _gnutls_gen_rawpk_crt(gnutls_session_t session, gnutls_buffer_st *data);
 int _gnutls_proc_rawpk_crt(gnutls_session_t session, uint8_t *data,

@@ -77,7 +77,7 @@ static void encode(const char *test_name, const gnutls_datum_t *raw,
 		exit(1);
 	}
 
-	if (memcmp(raw->data, out.data, out.size) != 0) {
+	if (!memeq(raw->data, out.data, out.size)) {
 		fail("%s: gnutls_srp_base64_decode2: output does not match the expected\n",
 		     test_name);
 		exit(1);
@@ -117,7 +117,7 @@ static void decode(const char *test_name, const gnutls_datum_t *raw,
 		exit(1);
 	}
 
-	if (memcmp(raw->data, out.data, out.size) != 0) {
+	if (!memeq(raw->data, out.data, out.size)) {
 		fail("%s: gnutls_srp_base64_decode2: output does not match the expected\n",
 		     test_name);
 		exit(1);

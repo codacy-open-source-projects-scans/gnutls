@@ -228,15 +228,15 @@ void binprint(const void *_str, size_t len)
 int main(int argc, char *argv[])
 {
 	do
-		if (strcmp(argv[argc - 1], "-v") == 0 ||
-		    strcmp(argv[argc - 1], "--verbose") == 0)
+		if (streq(argv[argc - 1], "-v") ||
+		    streq(argv[argc - 1], "--verbose"))
 			debug = 1;
-		else if (strcmp(argv[argc - 1], "-b") == 0 ||
-			 strcmp(argv[argc - 1], "--break-on-error") == 0)
+		else if (streq(argv[argc - 1], "-b") ||
+			 streq(argv[argc - 1], "--break-on-error"))
 			break_on_error = 1;
-		else if (strcmp(argv[argc - 1], "-h") == 0 ||
-			 strcmp(argv[argc - 1], "-?") == 0 ||
-			 strcmp(argv[argc - 1], "--help") == 0) {
+		else if (streq(argv[argc - 1], "-h") ||
+			 streq(argv[argc - 1], "-?") ||
+			 streq(argv[argc - 1], "--help")) {
 			printf("Usage: %s [-vbh?] [--verbose] [--break-on-error] [--help]\n",
 			       argv[0]);
 			return 1;

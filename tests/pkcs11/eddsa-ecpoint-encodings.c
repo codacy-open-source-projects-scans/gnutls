@@ -83,7 +83,7 @@ static void test_eddsa_encoding(const char *name, const gnutls_datum_t *ecpoint,
 		fail("failed to export public key: %s\n", gnutls_strerror(ret));
 
 	if (exported.size != expected->size ||
-	    memcmp(exported.data, expected->data, expected->size) != 0) {
+	    !memeq(exported.data, expected->data, expected->size)) {
 		success("exported data:\n");
 		hexprint(exported.data, exported.size);
 		success("expected data:\n");

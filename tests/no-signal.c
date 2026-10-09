@@ -112,7 +112,7 @@ static void client(int fd)
 		success("client: received %d bytes\n", ret);
 
 	memset(buf2, 0, sizeof(buf));
-	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
+	if (!memeq(buf, buf2, sizeof(buf))) {
 		kill(getppid(), SIGPIPE);
 		fail("client: recv data failed");
 	}

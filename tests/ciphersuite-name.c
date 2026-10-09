@@ -84,13 +84,13 @@ static void start(const char *test_name, const char *prio,
 		success("Handshake established\n");
 
 	name = gnutls_ciphersuite_get(server);
-	if (!name || strcmp(name, expected_name) != 0) {
+	if (!name || !streq(name, expected_name)) {
 		fail("server: gnutls_ciphersuite_get returned %s while %s is expected\n",
 		     name, expected_name);
 	}
 
 	name = gnutls_ciphersuite_get(client);
-	if (!name || strcmp(name, expected_name) != 0) {
+	if (!name || !streq(name, expected_name)) {
 		fail("client: gnutls_ciphersuite_get returned %s while %s is expected\n",
 		     name, expected_name);
 	}

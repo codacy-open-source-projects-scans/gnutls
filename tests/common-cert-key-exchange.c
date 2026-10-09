@@ -435,7 +435,7 @@ void try_with_key_ks(const char *name, const char *client_prio,
 		exit(1);
 	}
 
-	if (ret != strlen(MSG) || memcmp(MSG, buffer, ret) != 0) {
+	if (ret != strlen(MSG) || !memeq(MSG, buffer, ret)) {
 		fail("client: Error in data received. Expected %d, got %d\n",
 		     (int)strlen(MSG), ret);
 		exit(1);
@@ -627,7 +627,7 @@ void dtls_try_with_key_mtu(const char *name, const char *client_prio,
 		exit(1);
 	}
 
-	if (ret != strlen(MSG) || memcmp(MSG, buffer, ret) != 0) {
+	if (ret != strlen(MSG) || !memeq(MSG, buffer, ret)) {
 		fail("client: Error in data received. Expected %d, got %d\n",
 		     (int)strlen(MSG), ret);
 		exit(1);

@@ -60,7 +60,7 @@ static int _decode_pkcs12_auth_safe(asn1_node pkcs12, asn1_node *authen_safe,
 		return _gnutls_asn2err(result);
 	}
 
-	if (strcmp(oid, DATA_OID) != 0) {
+	if (!streq(oid, DATA_OID)) {
 		gnutls_assert();
 		_gnutls_debug_log("Unknown PKCS12 Content OID '%s'\n", oid);
 		return GNUTLS_E_UNKNOWN_PKCS_CONTENT_TYPE;
@@ -316,15 +316,15 @@ int gnutls_pkcs12_export2(gnutls_pkcs12_t pkcs12, gnutls_x509_crt_fmt_t format,
 
 static int oid2bag(const char *oid)
 {
-	if (strcmp(oid, BAG_PKCS8_KEY) == 0)
+	if (streq(oid, BAG_PKCS8_KEY))
 		return GNUTLS_BAG_PKCS8_KEY;
-	if (strcmp(oid, BAG_PKCS8_ENCRYPTED_KEY) == 0)
+	if (streq(oid, BAG_PKCS8_ENCRYPTED_KEY))
 		return GNUTLS_BAG_PKCS8_ENCRYPTED_KEY;
-	if (strcmp(oid, BAG_CERTIFICATE) == 0)
+	if (streq(oid, BAG_CERTIFICATE))
 		return GNUTLS_BAG_CERTIFICATE;
-	if (strcmp(oid, BAG_CRL) == 0)
+	if (streq(oid, BAG_CRL))
 		return GNUTLS_BAG_CRL;
-	if (strcmp(oid, BAG_SECRET) == 0)
+	if (streq(oid, BAG_SECRET))
 		return GNUTLS_BAG_SECRET;
 
 	return GNUTLS_BAG_UNKNOWN;
@@ -468,7 +468,7 @@ int _pkcs12_decode_safe_contents(const gnutls_datum_t *content,
 					continue; /* continue in case we find some known attributes */
 				}
 
-				if (strcmp(oid, KEY_ID_OID) == 0) {
+				if (streq(oid, KEY_ID_OID)) {
 					result = _gnutls_x509_decode_string(
 						ASN1_ETYPE_OCTET_STRING,
 						attr_val.data, attr_val.size,
@@ -489,8 +489,7 @@ int _pkcs12_decode_safe_contents(const gnutls_datum_t *content,
 						t.data;
 					bag->element[i].local_key_id.size =
 						t.size;
-				} else if (strcmp(oid, FRIENDLY_NAME_OID) ==
-						   0 &&
+				} else if (streq(oid, FRIENDLY_NAME_OID) &&
 					   bag->element[i].friendly_name ==
 						   NULL) {
 					result = _gnutls_x509_decode_string(
@@ -620,7 +619,7 @@ int gnutls_pkcs12_get_bag(gnutls_pkcs12_t pkcs12, int indx,
 
 	snprintf(root2, sizeof(root2), "?%d.content", indx + 1);
 
-	if (strcmp(oid, DATA_OID) == 0) {
+	if (streq(oid, DATA_OID)) {
 		result = _parse_safe_contents(c2, root2, bag);
 		goto cleanup;
 	}
@@ -1158,7 +1157,7 @@ static int pkcs12_verify_mac_pbmac1(gnutls_pkcs12_t pkcs12, const char *pass)
 	}
 
 	if ((unsigned)len != _gnutls_mac_get_algo_len(me) ||
-	    memcmp(mac_output_orig, mac_output, len) != 0) {
+	    !memeq(mac_output_orig, mac_output, len)) {
 		gnutls_assert();
 		result = GNUTLS_E_MAC_VERIFY_FAILED;
 		goto cleanup;
@@ -1258,7 +1257,7 @@ pkcs12_try_gost:
 	}
 
 	if ((unsigned)len != mac_len ||
-	    memcmp(mac_output_orig, mac_output, len) != 0) {
+	    !memeq(mac_output_orig, mac_output, len)) {
 #if ENABLE_GOST
 		/* It is possible that GOST files use proprietary
 		 * key generation scheme */
@@ -1324,7 +1323,7 @@ int gnutls_pkcs12_verify_mac(gnutls_pkcs12_t pkcs12, const char *pass)
 		return _gnutls_asn2err(result);
 	}
 
-	if (strcmp(oid, PBMAC1_OID) == 0) {
+	if (streq(oid, PBMAC1_OID)) {
 		return pkcs12_verify_mac_pbmac1(pkcs12, pass);
 	} else {
 		gnutls_mac_algorithm_t algo;
@@ -1869,8 +1868,8 @@ int gnutls_pkcs12_simple_parse(gnutls_pkcs12_t p12, const char *password,
 					goto done;
 				}
 
-				if (memcmp(cert_id, key_id, cert_id_size) !=
-				    0) { /* they don't match - skip the certificate */
+				if (!memeq(cert_id, key_id,
+					   cert_id_size)) { /* they don't match - skip the certificate */
 					if (unlikely(INT_ADD_OVERFLOW(
 						    _extra_certs_len, 1))) {
 						ret = gnutls_assert_val(
@@ -2058,7 +2057,7 @@ int gnutls_pkcs12_mac_info(gnutls_pkcs12_t pkcs12, unsigned int *mac,
 		*oid = (char *)tmp.data;
 	}
 
-	if (strcmp((char *)tmp.data, PBMAC1_OID) == 0) {
+	if (streq((char *)tmp.data, PBMAC1_OID)) {
 		algo = GNUTLS_MAC_PBMAC1;
 	} else {
 		algo = DIG_TO_MAC(gnutls_oid_to_digest((char *)tmp.data));

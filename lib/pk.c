@@ -770,7 +770,7 @@ int gnutls_decode_ber_digest_info(const gnutls_datum_t *info,
 	   parameters field is not present, or it contains 0x05 0x00. */
 	if (!(result == ASN1_ELEMENT_NOT_FOUND ||
 	      (result == ASN1_SUCCESS && len == ASN1_NULL_SIZE &&
-	       memcmp(str, ASN1_NULL, ASN1_NULL_SIZE) == 0))) {
+	       memeq(str, ASN1_NULL, ASN1_NULL_SIZE)))) {
 		gnutls_assert();
 		asn1_delete_structure(&dinfo);
 		return GNUTLS_E_ASN1_GENERIC_ERROR;

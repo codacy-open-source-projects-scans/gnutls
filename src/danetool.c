@@ -674,9 +674,9 @@ static const char *obtain_cert(const char *hostname, const char *proto,
 	}
 	gnutls_certificate_set_verify_function(xcred, cert_callback);
 
-	if (strcmp(proto, "udp") == 0)
+	if (streq(proto, "udp"))
 		udp = 1;
-	else if (strcmp(proto, "tcp") != 0) {
+	else if (!streq(proto, "tcp")) {
 		/* we cannot handle this protocol */
 		return NULL;
 	}

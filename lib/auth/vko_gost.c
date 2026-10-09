@@ -34,7 +34,7 @@
 #if defined(ENABLE_GOST)
 static int gen_vko_gost_client_kx(gnutls_session_t, gnutls_buffer_st *);
 static int proc_vko_gost_client_kx(gnutls_session_t session, uint8_t *data,
-				   size_t _data_size);
+				   size_t data_size);
 
 /* VKO GOST Key Exchange:
  * see draft-smyshlyaev-tls12-gost-suites-06, Section 4.2.4
@@ -144,7 +144,7 @@ static int vko_prepare_client_keys(gnutls_session_t session,
 		_gnutls_debug_log("received curve %s\n", group->name);
 	}
 
-	if (!_gnutls_session_supports_group(session, group->id))
+	if (!_gnutls_session_supports_group(session, group))
 		return gnutls_assert_val(GNUTLS_E_ECC_UNSUPPORTED_CURVE);
 
 	if (pub->algo == GNUTLS_PK_GOST_12_512) {
@@ -199,10 +199,9 @@ static int vko_prepare_client_keys(gnutls_session_t session,
    */
 
 static int proc_vko_gost_client_kx(gnutls_session_t session, uint8_t *data,
-				   size_t _data_size)
+				   size_t data_size)
 {
 	int ret, i = 0;
-	ssize_t data_size = _data_size;
 	gnutls_privkey_t privkey = session->internals.selected_key;
 	uint8_t ukm_data[MAX_HASH_SIZE];
 	gnutls_datum_t ukm = { ukm_data, VKO_GOST_UKM_LEN };
@@ -221,11 +220,11 @@ static int proc_vko_gost_client_kx(gnutls_session_t session, uint8_t *data,
 	ret = asn1_get_length_der(&data[i], data_size, &len);
 	if (ret < 0)
 		return gnutls_assert_val(GNUTLS_E_ASN1_DER_ERROR);
-	DECR_LEN(data_size, len);
+	DECR_LEN(data_size, (size_t)len);
 	i += len;
 
 	/* Check that nothing is left after TLSGostKeyTransportBlob */
-	DECR_LEN_FINAL(data_size, ret);
+	DECR_LEN_FINAL(data_size, (size_t)ret);
 
 	/* Point data to GostR3410-KeyTransport */
 	data_size = ret;
@@ -234,7 +233,7 @@ static int proc_vko_gost_client_kx(gnutls_session_t session, uint8_t *data,
 	/* Now do the tricky part: determine length of GostR3410-KeyTransport */
 	DECR_LEN(data_size, 1); /* tag */
 	ret = asn1_get_length_der(&data[1], data_size, &len);
-	DECR_LEN_FINAL(data_size, len + ret);
+	DECR_LEN_FINAL(data_size, (size_t)len + ret);
 
 	cek.data = data;
 	cek.size = ret + len + 1;

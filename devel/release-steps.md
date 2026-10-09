@@ -2,6 +2,8 @@
 
 ## General steps
 
+1. Prepare and test the security fixes in private.
+1. Consider updating every submodule.
 1. Create a new 'milestone' for the next release and move all issues
    present in the current release milestone.
 1. Verification of release notes: ensure that release notes
@@ -26,10 +28,14 @@
    ```console
    gpg --detach-sign --user your-key-id gnutls-$VERSION.tar.xz
    ```
-1. Create a git tag and push it: use [git-evtag] if possible; at least use
-   GPG-signed tag:
+   Repeat this step for everyone who's available to sign the release,
+   and concatenate the signatures together.
+1. *Point of no return: update the release merge request with security fixes.*
+1. Merge the changes.
+1. Create a git tag on the merge commit and push it:
+   use [git-evtag] if possible; at least use GPG-signed tag:
    ```console
-   git tag -s $VERSION
+   git tag -s $VERSION -m "released $VERSION"
    git push --atomic origin $VERSION
    ```
 1. Upload the tarball and the signature to ftp.gnupg.org:
@@ -41,12 +47,15 @@
    Create a detached GPG signature.
    Upload zip and signature files to ftp.gnupg.org.
    Do the same analogically for `mingw64/archive`.
+1. Reveal and close the security issues addressed in the release.
+1. Close the security fixes merge requests addressed in the release.
 1. Create and send announcement email based on previously sent email
-   to the list and [NEWS](NEWS) file.
+   to the [gnutls-help@lists.gnutls.org list] and [NEWS](NEWS) file.
+   Optionally CC [info-gnu@gnu.org list] for extra visibility.
 1. Create a [NEWS entry] and/or a [security advisory entry] at
    [web-pages repository] if necessary. The NEWS entry is usually
-   pointing to the announcement email. A commit auto-generates the
-   [gnutls web site].
+   pointing to the announcement email in gnutls-help archives.
+   A commit auto-generates the [gnutls web site].
 1. Optionally announce the release on the @GnuTLS twitter account.
 1. Close the current release milestone.
 
@@ -64,3 +73,5 @@
 [gnutls web site]: https://gnutls.gitlab.io/web-pages/
 [git-evtag]: https://github.com/cgwalters/git-evtag
 [CI/CD jobs]: https://gitlab.com/gnutls/gnutls/-/jobs
+[gnutls-help@lists.gnutls.org list]: https://lists.gnutls.org/pipermail/gnutls-help
+[info-gnu@gnu.org list]: https://lists.gnu.org/archive/html/info-gnu

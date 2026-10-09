@@ -158,7 +158,7 @@ static gnutls_x509_crq_t generate_crq(void)
 
 	s = 10;
 	ret = gnutls_x509_crq_get_challenge_password(crq, smallbuf, &s);
-	if (ret != 0 || s != 3 || strcmp(smallbuf, "foo") != 0)
+	if (ret != 0 || s != 3 || !streq(smallbuf, "foo"))
 		fail("%d: gnutls_x509_crq_get_challenge_password3 %d/%d/%s\n",
 		     __LINE__, ret, (int)s, smallbuf);
 
@@ -275,7 +275,7 @@ static gnutls_x509_crq_t generate_crq(void)
 		     gnutls_strerror(ret));
 
 	if (out.size != sizeof(EXT_DATA1) - 1 ||
-	    memcmp(out.data, EXT_DATA1, out.size) != 0) {
+	    !memeq(out.data, EXT_DATA1, out.size)) {
 		fail("ext1 doesn't match\n");
 	}
 	if (crit != 0) {
@@ -291,7 +291,7 @@ static gnutls_x509_crq_t generate_crq(void)
 		     gnutls_strerror(ret));
 
 	if (out.size != sizeof(EXT_DATA2) - 1 ||
-	    memcmp(out.data, EXT_DATA2, out.size) != 0) {
+	    !memeq(out.data, EXT_DATA2, out.size)) {
 		fail("ext2 doesn't match\n");
 	}
 	if (crit != 1) {
@@ -316,24 +316,21 @@ static void test_crq(gnutls_x509_crq_t crq)
 	ret = gnutls_x509_crq_get_dn2(crq, &out);
 	assert(ret == 0);
 	assert(out.size == 28);
-	assert(memcmp(out.data, "CN=nikos,O=none to\\, mention", out.size) ==
-	       0);
+	assert(memeq(out.data, "CN=nikos,O=none to\\, mention", out.size));
 
 	gnutls_free(out.data);
 
 	ret = gnutls_x509_crq_get_dn3(crq, &out, GNUTLS_X509_DN_FLAG_COMPAT);
 	assert(ret == 0);
 	assert(out.size == 28);
-	assert(memcmp(out.data, "CN=nikos,O=none to\\, mention", out.size) ==
-	       0);
+	assert(memeq(out.data, "CN=nikos,O=none to\\, mention", out.size));
 
 	gnutls_free(out.data);
 
 	ret = gnutls_x509_crq_get_dn3(crq, &out, 0);
 	assert(ret == 0);
 	assert(out.size == 28);
-	assert(memcmp(out.data, "O=none to\\, mention,CN=nikos", out.size) ==
-	       0);
+	assert(memeq(out.data, "O=none to\\, mention,CN=nikos", out.size));
 
 	gnutls_free(out.data);
 
@@ -347,7 +344,7 @@ static void test_crq(gnutls_x509_crq_t crq)
 						   &crit);
 	assert(ret >= 0);
 	assert(s == 3);
-	assert(memcmp(buf, "apa", s) == 0);
+	assert(memeq(buf, "apa", s));
 	assert(type == GNUTLS_SAN_DNSNAME);
 	assert(crit == 0);
 
@@ -356,7 +353,7 @@ static void test_crq(gnutls_x509_crq_t crq)
 						   &crit);
 	assert(ret >= 0);
 	assert(s == 3);
-	assert(memcmp(buf, "foo", s) == 0);
+	assert(memeq(buf, "foo", s));
 	assert(type == GNUTLS_SAN_DNSNAME);
 	assert(crit == 0);
 
@@ -374,14 +371,14 @@ static void test_crq(gnutls_x509_crq_t crq)
 	ret = gnutls_x509_crq_get_attribute_info(crq, 1, buf, &s);
 	assert(ret >= 0);
 	assert(s == sizeof(CPASS_OID));
-	assert(memcmp(buf, CPASS_OID, s) == 0);
+	assert(memeq(buf, CPASS_OID, s));
 
 	/* check the contents */
 	s = sizeof(buf);
 	ret = gnutls_x509_crq_get_attribute_data(crq, 1, buf, &s);
 	assert(ret >= 0);
 	assert(s == sizeof(CPASS) - 1 + 2);
-	assert(memcmp(buf, "\x13\x03" CPASS, s) == 0);
+	assert(memeq(buf, "\x13\x03" CPASS, s));
 }
 
 static void run_set_extensions(gnutls_x509_crq_t crq)
@@ -427,9 +424,9 @@ static void run_set_extensions(gnutls_x509_crq_t crq)
 		     gnutls_strerror(ret));
 
 	if (out.size != 41 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x27\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6d\x79\x20\x43\x41\x31\x15\x30\x13\x06\x03\x55\x04\x0a\x13\x0c\x62\x69\x67\x2c\x20\x61\x6e\x64\x20\x6f\x6e\x65",
-		   41) != 0) {
+		   41)) {
 		hexprint(out.data, out.size);
 		fail("issuer DN comparison failed\n");
 	}
@@ -440,9 +437,9 @@ static void run_set_extensions(gnutls_x509_crq_t crq)
 		fail("gnutls_x509_crt_get_raw_dn: %s\n", gnutls_strerror(ret));
 
 	if (out.size != 45 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x2b\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6e\x69\x6b\x6f\x73\x31\x19\x30\x17\x06\x03\x55\x04\x0a\x13\x10\x6e\x6f\x6e\x65\x20\x74\x6f\x2c\x20\x6d\x65\x6e\x74\x69\x6f\x6e",
-		   45) != 0) {
+		   45)) {
 		fail("DN comparison failed\n");
 	}
 	gnutls_free(out.data);
@@ -489,8 +486,8 @@ static void run_set_extension_by_oid(gnutls_x509_crq_t crq)
 	if (ret != 0)
 		fail("gnutls_x509_crt_get_extension_info\n");
 
-	if (strcmp(oid, GNUTLS_X509EXT_OID_EXTENDED_KEY_USAGE) != 0)
-		fail("strcmp\n");
+	if (!streq(oid, GNUTLS_X509EXT_OID_EXTENDED_KEY_USAGE))
+		fail("streq\n");
 
 	ret = gnutls_x509_crt_get_extension_data2(crt, 0, &out);
 	if (ret != 0)
@@ -502,7 +499,7 @@ static void run_set_extension_by_oid(gnutls_x509_crq_t crq)
 							 NULL);
 		if (ret < 0)
 			fail("loop: ext not found: %s\n", gnutls_strerror(ret));
-		if (strcmp(oid, GNUTLS_X509EXT_OID_EXTENDED_KEY_USAGE) == 0) {
+		if (streq(oid, GNUTLS_X509EXT_OID_EXTENDED_KEY_USAGE)) {
 			ret = gnutls_x509_crq_get_extension_data2(crq, 3,
 								  &out2);
 			if (ret != 0)
@@ -511,8 +508,7 @@ static void run_set_extension_by_oid(gnutls_x509_crq_t crq)
 		}
 	}
 
-	if (out.size != out2.size ||
-	    memcmp(out.data, out2.data, out.size) != 0) {
+	if (out.size != out2.size || !memeq(out.data, out2.data, out.size)) {
 		fail("memcmp %d, %d\n", out.size, out2.size);
 	}
 
@@ -529,9 +525,9 @@ static void run_set_extension_by_oid(gnutls_x509_crq_t crq)
 		fail("gnutls_x509_crt_get_raw_dn: %s\n", gnutls_strerror(ret));
 
 	if (out.size != 45 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x2b\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6e\x69\x6b\x6f\x73\x31\x19\x30\x17\x06\x03\x55\x04\x0a\x13\x10\x6e\x6f\x6e\x65\x20\x74\x6f\x2c\x20\x6d\x65\x6e\x74\x69\x6f\x6e",
-		   45) != 0) {
+		   45)) {
 		fail("DN comparison failed\n");
 	}
 	gnutls_free(out.data);
@@ -566,7 +562,7 @@ void doit(void)
 
 #if defined(HAVE_LIBIDN2)
 	assert(out.size == saved_crq.size);
-	assert(memcmp(out.data, saved_crq.data, out.size) == 0);
+	assert(memeq(out.data, saved_crq.data, out.size));
 #endif
 
 	gnutls_free(out.data);

@@ -336,7 +336,7 @@ static int test_rsa_enc(gnutls_pk_algorithm_t pk, unsigned bits,
 	}
 
 	if (enc.size == signed_data.size &&
-	    memcmp(signed_data.data, enc.data, enc.size) == 0) {
+	    memeq(signed_data.data, enc.data, enc.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 		goto cleanup;
@@ -349,7 +349,7 @@ static int test_rsa_enc(gnutls_pk_algorithm_t pk, unsigned bits,
 	}
 
 	if (dec.size != signed_data.size ||
-	    memcmp(dec.data, signed_data.data, dec.size) != 0) {
+	    !memeq(dec.data, signed_data.data, dec.size)) {
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 		gnutls_assert();
 		goto cleanup;
@@ -361,7 +361,7 @@ static int test_rsa_enc(gnutls_pk_algorithm_t pk, unsigned bits,
 		gnutls_assert();
 		goto cleanup;
 	}
-	if (memcmp(plaintext2, signed_data.data, signed_data.size) != 0) {
+	if (!memeq(plaintext2, signed_data.data, signed_data.size)) {
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 		gnutls_assert();
 		goto cleanup;
@@ -614,8 +614,7 @@ static int test_known_sig(gnutls_pk_algorithm_t pk, unsigned bits,
 	ssig.data = (void *)stored_sig;
 	ssig.size = stored_sig_size;
 
-	if (sig.size != ssig.size ||
-	    memcmp(sig.data, ssig.data, sig.size) != 0) {
+	if (sig.size != ssig.size || !memeq(sig.data, ssig.data, sig.size)) {
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 #if 0
 		unsigned i;
@@ -882,7 +881,7 @@ static int test_dh(void)
 		goto cleanup;
 	}
 
-	if (memcmp(out.data, known_dh_k, out.size) != 0) {
+	if (!memeq(out.data, known_dh_k, out.size)) {
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 		gnutls_assert();
 		goto cleanup;
@@ -992,7 +991,7 @@ static int test_ecdh(void)
 		goto cleanup;
 	}
 
-	if (memcmp(out.data, known_key, out.size) != 0) {
+	if (!memeq(out.data, known_key, out.size)) {
 		ret = GNUTLS_E_SELF_TEST_ERROR;
 		gnutls_assert();
 		goto cleanup;

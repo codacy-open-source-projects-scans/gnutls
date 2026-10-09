@@ -58,7 +58,7 @@ static void encode(const char *test_name, gnutls_digest_algorithm_t hash,
 		exit(1);
 	}
 
-	if (memcmp(expected->data, out.data, out.size) != 0) {
+	if (!memeq(expected->data, out.data, out.size)) {
 		hexprint(out.data, out.size);
 		fail("%s: gnutls_encode_ber_digest_info: output does not match the expected\n",
 		     test_name);
@@ -85,7 +85,7 @@ static void encode(const char *test_name, gnutls_digest_algorithm_t hash,
 		exit(1);
 	}
 
-	if (memcmp(raw->data, digest, digest_size) != 0) {
+	if (!memeq(raw->data, digest, digest_size)) {
 		fail("%s: gnutls_decode_ber_digest_info: output does not match the expected\n",
 		     test_name);
 		exit(1);
@@ -128,7 +128,7 @@ static void decode(const char *test_name, gnutls_digest_algorithm_t hash,
 		exit(1);
 	}
 
-	if (memcmp(raw->data, digest, digest_size) != 0) {
+	if (!memeq(raw->data, digest, digest_size)) {
 		fail("%s: gnutls_decode_ber_digest_info: output does not match the expected\n",
 		     test_name);
 		exit(1);

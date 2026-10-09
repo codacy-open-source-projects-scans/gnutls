@@ -95,7 +95,7 @@ void doit(void)
 		fail("FAIL: could not export subject DN: %s\n",
 		     gnutls_strerror(rv));
 
-	if (buflen == buf2len && memcmp(buf, buf2, buflen) != 0)
+	if (buflen == buf2len && !memeq(buf, buf2, buflen))
 		fail("FAIL: export/import/export differ.\n");
 
 	gnutls_x509_dn_deinit(dn2);

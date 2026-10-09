@@ -25,10 +25,6 @@ AM_CPPFLAGS += \
 	-I$(builddir)/../includes	\
 	-I$(srcdir)/..	
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 EXTRA_DIST = supported_exts.gperf
 BUILT_SOURCES = supported_exts.h
 

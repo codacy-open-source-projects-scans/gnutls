@@ -271,7 +271,7 @@ static void try(const char *client_prio, gnutls_kx_algorithm_t client_kx)
 		exit(1);
 	}
 
-	if (ret != strlen(MSG) || memcmp(MSG, buffer, ret) != 0) {
+	if (ret != strlen(MSG) || !memeq(MSG, buffer, ret)) {
 		fail("client: Error in data received. Expected %d, got %d\n",
 		     (int)strlen(MSG), ret);
 		exit(1);

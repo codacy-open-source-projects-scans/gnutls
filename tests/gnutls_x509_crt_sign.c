@@ -224,9 +224,9 @@ void doit(void)
 		fail("gnutls_x509_crt_get_raw_dn: %s\n", gnutls_strerror(ret));
 
 	if (out.size != 45 ||
-	    memcmp(out.data,
+	    !memeq(out.data,
 		   "\x30\x2b\x31\x0e\x30\x0c\x06\x03\x55\x04\x03\x13\x05\x6e\x69\x6b\x6f\x73\x31\x19\x30\x17\x06\x03\x55\x04\x0a\x13\x10\x6e\x6f\x6e\x65\x20\x74\x6f\x2c\x20\x6d\x65\x6e\x74\x69\x6f\x6e",
-		   45) != 0) {
+		   45)) {
 		fail("DN comparison failed\n");
 	}
 	gnutls_free(out.data);
@@ -255,7 +255,7 @@ void doit(void)
 	if (debug)
 		fprintf(stderr, "%s\n", out.data);
 	assert(out.size == saved_crt.size);
-	assert(memcmp(out.data, saved_crt.data, out.size) == 0);
+	assert(memeq(out.data, saved_crt.data, out.size));
 
 	gnutls_free(out.data);
 

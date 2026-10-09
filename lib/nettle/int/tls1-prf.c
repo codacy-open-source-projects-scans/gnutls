@@ -167,7 +167,7 @@ int tls12_prf(void *mac_ctx, nettle_hash_update_func *update,
 	 * self-tests.
 	 */
 	if (label_size == MASTER_SECRET_SIZE &&
-	    memcmp(label, MASTER_SECRET, MASTER_SECRET_SIZE) == 0) {
+	    memeq(label, MASTER_SECRET, MASTER_SECRET_SIZE)) {
 		_gnutls_switch_fips_state(GNUTLS_FIPS140_OP_NOT_APPROVED);
 	} else {
 		_gnutls_switch_fips_state(GNUTLS_FIPS140_OP_APPROVED);

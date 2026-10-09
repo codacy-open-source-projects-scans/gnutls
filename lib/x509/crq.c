@@ -1805,7 +1805,7 @@ int gnutls_x509_crq_get_extension_by_oid(gnutls_x509_crq_t crq, const char *oid,
 			return result;
 		}
 
-		if (strcmp(oid, _oid) == 0) { /* found */
+		if (streq(oid, _oid)) { /* found */
 			if (indx == 0)
 				return gnutls_x509_crq_get_extension_data(
 					crq, i, buf, buf_size);
@@ -1856,7 +1856,7 @@ int gnutls_x509_crq_get_extension_by_oid2(gnutls_x509_crq_t crq,
 			return result;
 		}
 
-		if (strcmp(oid, _oid) == 0) { /* found */
+		if (streq(oid, _oid)) { /* found */
 			if (indx == 0)
 				return gnutls_x509_crq_get_extension_data2(
 					crq, i, output);

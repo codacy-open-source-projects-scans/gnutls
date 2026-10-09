@@ -122,7 +122,7 @@ int _x509_parse_attribute(asn1_node asn1_struct, const char *attr_name,
 			goto cleanup;
 		}
 
-		if (strcmp(oid, given_oid) == 0) { /* Found the OID */
+		if (streq(oid, given_oid)) { /* Found the OID */
 
 			/* Read the Value
 			 */
@@ -260,7 +260,7 @@ int _x509_set_attribute(asn1_node asn, const char *root, const char *ext_id,
 
 			/* Handle Extension
 			 */
-			if (strcmp(extnID, ext_id) == 0) {
+			if (streq(extnID, ext_id)) {
 				/* attribute was found
 				 */
 				return overwrite_attribute(asn, root, k,

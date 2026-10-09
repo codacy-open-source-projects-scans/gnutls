@@ -128,7 +128,6 @@ static int _client_pull_timeout(gnutls_transport_ptr_t ptr, unsigned int ms)
 static void _process_data(EV_P_ ev_io *w, int revents)
 {
 	static int ret = -1, lastret = 0;
-	static unsigned int count = 0;
 	static int prev_direction;
 
 	if (!done && (revents & (EV_WRITE | EV_READ))) {
@@ -143,7 +142,6 @@ static void _process_data(EV_P_ ev_io *w, int revents)
 
 		lastret = ret;
 		ret = gnutls_handshake(session);
-		count++;
 
 		if (gnutls_record_get_direction(session)) {
 			ev_io_stop(EV_A_ & remote_w);
@@ -183,7 +181,6 @@ static void _process_data(EV_P_ ev_io *w, int revents)
 	}
 
 	if (ret == GNUTLS_E_SUCCESS) {
-		count = 0;
 		ret = -1;
 		done = 1;
 		lastret = 0;

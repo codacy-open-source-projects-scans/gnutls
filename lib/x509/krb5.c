@@ -109,8 +109,7 @@ static krb5_principal_data *name_to_principal(const char *_name)
 			p = strtok_r(NULL, "/", &sp);
 		}
 
-		if ((princ->length == 2) &&
-		    (strcmp(princ->data[0], "krbtgt") == 0)) {
+		if ((princ->length == 2) && (streq(princ->data[0], "krbtgt"))) {
 			princ->type = 2; /* KRB_NT_SRV_INST */
 		} else {
 			princ->type = 1; /* KRB_NT_PRINCIPAL */

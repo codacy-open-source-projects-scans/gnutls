@@ -67,7 +67,7 @@ static gnutls_datum_t wrap_db_fetch(void *dbf, gnutls_datum_t key)
 	gnutls_datum_t r = { NULL, 0 };
 
 	if (key.size != test_id.size ||
-	    memcmp(test_id.data, key.data, test_id.size) != 0)
+	    !memeq(test_id.data, key.data, test_id.size))
 		fail("received ID does not match the expected\n");
 
 	if (!(*try_resume))

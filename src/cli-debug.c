@@ -329,7 +329,7 @@ int main(int argc, char **argv)
 	printf("Checking %s:%s\n", hostname, portname);
 
 	for (i = 0; tls_tests[i].test_name != NULL; i++) {
-		if (strcmp(app_proto, "https") != 0 &&
+		if (!streq(app_proto, "https") &&
 		    tls_tests[i].https_only != 0) {
 			continue;
 		}

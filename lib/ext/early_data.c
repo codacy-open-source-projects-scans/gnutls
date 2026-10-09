@@ -53,7 +53,7 @@ const hello_ext_entry_st ext_mod_early_data = {
 };
 
 static int early_data_recv_params(gnutls_session_t session, const uint8_t *data,
-				  size_t _data_size)
+				  size_t data_size)
 {
 	const version_entry_st *vers = get_version(session);
 

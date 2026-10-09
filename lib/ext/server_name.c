@@ -157,7 +157,7 @@ static int _gnutls_server_name_send_params(gnutls_session_t session,
 
 		/* UINT16: write total size of all names
 		 */
-		ret = _gnutls_buffer_append_prefix(extdata, 16, total_size - 2);
+		ret = _gnutls_buffer_append_uint16(extdata, total_size - 2);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
@@ -165,15 +165,15 @@ static int _gnutls_server_name_send_params(gnutls_session_t session,
 		 * UINT16: size of the first name
 		 * LEN: the actual server name.
 		 */
-		ret = _gnutls_buffer_append_prefix(extdata, 8, 0);
+		ret = _gnutls_buffer_append_uint8(extdata, 0);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
 		_gnutls_debug_log("HSK[%p]: sent server name: '%.*s'\n",
 				  session, name.size, name.data);
 
-		ret = _gnutls_buffer_append_data_prefix(extdata, 16, name.data,
-							name.size);
+		ret = _gnutls_buffer_append_data_prefix16(extdata, name.data,
+							  name.size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 	} else {
@@ -372,7 +372,7 @@ unsigned _gnutls_server_name_matches_resumed(gnutls_session_t session)
 	if (name1.size != name2.size)
 		return 0;
 
-	if (memcmp(name1.data, name2.data, name1.size) != 0)
+	if (!memeq(name1.data, name2.data, name1.size))
 		return 0;
 
 	return 1;

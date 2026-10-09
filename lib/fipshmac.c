@@ -107,18 +107,18 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
 	const char *path = info->dlpi_name;
 	const char *soname = last_component(path);
 
-	if (!strcmp(soname, GNUTLS_LIBRARY_SONAME))
+	if (streq(soname, GNUTLS_LIBRARY_SONAME))
 		return print_lib(data ? data : path, soname);
 #ifdef NETTLE_LIBRARY_SONAME
-	if (!strcmp(soname, NETTLE_LIBRARY_SONAME))
+	if (streq(soname, NETTLE_LIBRARY_SONAME))
 		return print_lib(path, soname);
 #endif
 #ifdef HOGWEED_LIBRARY_SONAME
-	if (!strcmp(soname, HOGWEED_LIBRARY_SONAME))
+	if (streq(soname, HOGWEED_LIBRARY_SONAME))
 		return print_lib(path, soname);
 #endif
 #ifdef GMP_LIBRARY_SONAME
-	if (!strcmp(soname, GMP_LIBRARY_SONAME))
+	if (streq(soname, GMP_LIBRARY_SONAME))
 		return print_lib(path, soname);
 #endif
 	return 0;

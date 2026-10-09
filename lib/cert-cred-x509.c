@@ -1329,13 +1329,13 @@ int gnutls_certificate_set_x509_crl(gnutls_certificate_credentials_t res,
 		goto cleanup;
 	}
 
-	free(new_crl);
+	gnutls_free(new_crl);
 	return ret;
 
 cleanup:
 	for (j = 0; j < i; j++)
 		gnutls_x509_crl_deinit(new_crl[j]);
-	free(new_crl);
+	gnutls_free(new_crl);
 
 	return ret;
 }

@@ -226,9 +226,6 @@ lib/libgnutls-xssl.la
 lib/libgnutlsxx.la
 lib/Makefile
 lib/Makefile.in
-lib/minitasn1/libminitasn1.la
-lib/minitasn1/Makefile
-lib/minitasn1/Makefile.in
 lib/nettle/libcrypto.la
 lib/nettle/backport
 lib/nettle/ecc
@@ -469,6 +466,7 @@ tests/libpkcs11mock1.la
 tests/libpkcs11mock2.la
 tests/libpkcs11mock3.la
 tests/libpkcs11mock4.la
+tests/libpkcs11mock5.la
 tests/libutils.la
 tests/long-session-id
 tests/mini
@@ -626,6 +624,7 @@ tests/pkcs12_simple
 tests/pkcs7
 tests/pkcs7-cat-parse
 tests/pkcs7-gen
+tests/pkcs7-pad
 tests/pkcs7-verify-double-free
 tests/pkcs8-decode/Makefile
 tests/pkcs8-decode/Makefile.in

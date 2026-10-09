@@ -1089,10 +1089,10 @@ int gnutls_session_is_resumed(gnutls_session_t session)
 		    session->security_parameters.session_id_size ==
 			    session->internals.resumed_security_parameters
 				    .session_id_size &&
-		    memcmp(session->security_parameters.session_id,
-			   session->internals.resumed_security_parameters
-				   .session_id,
-			   session->security_parameters.session_id_size) == 0)
+		    memeq(session->security_parameters.session_id,
+			  session->internals.resumed_security_parameters
+				  .session_id,
+			  session->security_parameters.session_id_size))
 			return 1;
 	} else {
 		if (session->internals.resumed)

@@ -118,7 +118,7 @@ void doit(void)
 		exit(1);
 	}
 
-	assert(strcmp(oid, "1.3.6.1.4.1.311.10.1") == 0);
+	assert(streq(oid, "1.3.6.1.4.1.311.10.1"));
 
 	ret = gnutls_pkcs7_get_embedded_data(pkcs7, GNUTLS_PKCS7_EDATA_GET_RAW,
 					     &data);
@@ -129,7 +129,7 @@ void doit(void)
 	}
 
 	assert(data.size == der_content_size);
-	assert(memcmp(data.data, der_content, data.size) == 0);
+	assert(memeq(data.data, der_content, data.size));
 
 	gnutls_pkcs7_deinit(pkcs7);
 	gnutls_free(data.data);

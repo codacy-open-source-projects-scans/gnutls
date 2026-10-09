@@ -25,10 +25,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib/includes		\
 	-I$(top_srcdir)/gl \
 	-I.
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(top_builddir)/lib/minitasn1
-endif
-
 EXTRA_DIST = ncrypt-int.h check-output
 
 AM_LDFLAGS = -no-install

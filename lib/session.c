@@ -305,7 +305,7 @@ int gnutls_session_set_data(gnutls_session_t session, const void *session_data,
 	/* under TLS1.3 we always return some data on resumption when there
 	 * is no ticket in order to keep compatibility with existing apps */
 	if (session_data_size == EMPTY_DATA_SIZE &&
-	    memcmp(session_data, EMPTY_DATA, EMPTY_DATA_SIZE) == 0) {
+	    memeq(session_data, EMPTY_DATA, EMPTY_DATA_SIZE)) {
 		return 0;
 	}
 

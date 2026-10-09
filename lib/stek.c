@@ -277,9 +277,8 @@ int _gnutls_get_session_ticket_decryption_key(gnutls_session_t session,
 	 * Is current key valid?
 	 * We compare the first 16 bytes --> The key_name field.
 	 */
-	if (memcmp(ticket_data->data,
-		   &session->key.session_ticket_key[NAME_POS],
-		   TICKET_KEY_NAME_SIZE) == 0) {
+	if (memeq(ticket_data->data, &session->key.session_ticket_key[NAME_POS],
+		  TICKET_KEY_NAME_SIZE)) {
 		key_data = session->key.session_ticket_key;
 		goto key_found;
 	}
@@ -297,9 +296,9 @@ int _gnutls_get_session_ticket_decryption_key(gnutls_session_t session,
 		return gnutls_assert_val(retval);
 	}
 
-	if (memcmp(ticket_data->data,
-		   &session->key.previous_ticket_key[NAME_POS],
-		   TICKET_KEY_NAME_SIZE) == 0) {
+	if (memeq(ticket_data->data,
+		  &session->key.previous_ticket_key[NAME_POS],
+		  TICKET_KEY_NAME_SIZE)) {
 		key_data = session->key.previous_ticket_key;
 		goto key_found;
 	}

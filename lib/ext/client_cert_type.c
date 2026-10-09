@@ -336,8 +336,8 @@ static int _gnutls_client_cert_type_send_params(gnutls_session_t session,
 			 * uint8: length of sequence of cert types (1 octet)
 			 * uint8: cert types (0 <= #octets <= 255)
 			 */
-			ret = _gnutls_buffer_append_data_prefix(
-				data, 8, cert_types, num_cert_types);
+			ret = _gnutls_buffer_append_data_prefix8(
+				data, cert_types, num_cert_types);
 
 			// Check for errors
 			if (ret < 0) {

@@ -19,9 +19,9 @@
  * along with GnuTLS.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "utils.h"
 #include <assert.h>
 #include <stdio.h>
-#include "utils.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/abstract.h>
 #include <gnutls/x509.h>

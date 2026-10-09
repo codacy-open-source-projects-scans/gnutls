@@ -255,8 +255,7 @@ int gnutls_pkcs7_print(gnutls_pkcs7_t pkcs7,
 	 * we don't print the eContent Type explicitly */
 	oid = gnutls_pkcs7_get_embedded_data_oid(pkcs7);
 	if (oid) {
-		if (strcmp(oid, DATA_OID) != 0 &&
-		    strcmp(oid, DIGESTED_DATA_OID) != 0) {
+		if (!streq(oid, DATA_OID) && !streq(oid, DIGESTED_DATA_OID)) {
 			addf(&str, "eContent Type: %s\n", oid);
 		}
 	}

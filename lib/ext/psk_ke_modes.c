@@ -93,7 +93,7 @@ static int psk_ke_modes_send_params(gnutls_session_t session,
 		session->internals.hsk_flags |= HSK_PSK_KE_MODE_PSK;
 	}
 
-	ret = _gnutls_buffer_append_data_prefix(extdata, 8, data, pos);
+	ret = _gnutls_buffer_append_data_prefix8(extdata, data, pos);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 

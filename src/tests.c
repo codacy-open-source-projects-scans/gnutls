@@ -592,7 +592,7 @@ test_code_t test_dhe_group(gnutls_session_t session)
 		}
 
 		if (pubkey2.data && pubkey2.size == pubkey.size &&
-		    memcmp(pubkey.data, pubkey2.data, pubkey.size) == 0) {
+		    memeq(pubkey.data, pubkey2.data, pubkey.size)) {
 			fprintf(fp,
 				" (public key seems to be static among sessions)\n");
 		}
@@ -1558,7 +1558,7 @@ test_code_t test_session_resume2(gnutls_session_t session)
 		return TEST_SUCCEED;
 
 	if (tmp_session_id_size == session_id_size &&
-	    memcmp(tmp_session_id, session_id, tmp_session_id_size) == 0)
+	    memeq(tmp_session_id, session_id, tmp_session_id_size))
 		return TEST_SUCCEED;
 	else
 		return TEST_FAILED;

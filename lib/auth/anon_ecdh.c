@@ -89,7 +89,7 @@ static int gen_anon_ecdh_server_kx(gnutls_session_t session,
 }
 
 static int proc_anon_ecdh_client_kx(gnutls_session_t session, uint8_t *data,
-				    size_t _data_size)
+				    size_t data_size)
 {
 	gnutls_anon_server_credentials_t cred;
 
@@ -100,12 +100,12 @@ static int proc_anon_ecdh_client_kx(gnutls_session_t session, uint8_t *data,
 		return GNUTLS_E_INSUFFICIENT_CREDENTIALS;
 	}
 
-	return _gnutls_proc_ecdh_common_client_kx(session, data, _data_size,
+	return _gnutls_proc_ecdh_common_client_kx(session, data, data_size,
 						  get_group(session), NULL);
 }
 
 int proc_anon_ecdh_server_kx(gnutls_session_t session, uint8_t *data,
-			     size_t _data_size)
+			     size_t data_size)
 {
 	int ret;
 
@@ -116,7 +116,7 @@ int proc_anon_ecdh_server_kx(gnutls_session_t session, uint8_t *data,
 		return ret;
 	}
 
-	ret = _gnutls_proc_ecdh_common_server_kx(session, data, _data_size);
+	ret = _gnutls_proc_ecdh_common_server_kx(session, data, data_size);
 	if (ret < 0) {
 		gnutls_assert();
 		return ret;

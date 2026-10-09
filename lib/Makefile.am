@@ -29,10 +29,6 @@ if ENABLE_PKCS11
 SUBDIRS += pkcs11
 endif
 
-if ENABLE_MINITASN1
-SUBDIRS += minitasn1
-endif
-
 localedir = $(datadir)/locale
 
 include $(top_srcdir)/lib/common.mk
@@ -56,10 +52,6 @@ thirdparty_libadd =
 if !HAVE_LIBUNISTRING
 SUBDIRS += unistring
 AM_CPPFLAGS += -I$(srcdir)/unistring/ -I$(builddir)/unistring/
-endif
-
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/minitasn1
 endif
 
 # Pkg-config script.
@@ -291,11 +283,7 @@ else
 libgnutls_la_LDFLAGS += -export-symbols-regex '^(gnutls|_gnutls).*'
 endif
 
-if ENABLE_MINITASN1
-libgnutls_la_LIBADD += minitasn1/libminitasn1.la
-else
 thirdparty_libadd += $(LIBTASN1_LIBS)
-endif
 
 if ENABLE_NETTLE
 thirdparty_libadd += $(HOGWEED_LIBS) $(NETTLE_LIBS) $(GMP_LIBS)

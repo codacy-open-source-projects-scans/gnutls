@@ -57,10 +57,8 @@ const hello_ext_entry_st ext_mod_etm = {
  *
  */
 static int _gnutls_ext_etm_recv_params(gnutls_session_t session,
-				       const uint8_t *data, size_t _data_size)
+				       const uint8_t *data, size_t data_size)
 {
-	ssize_t data_size = _data_size;
-
 	if (data_size != 0) {
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}

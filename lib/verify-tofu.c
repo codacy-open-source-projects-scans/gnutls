@@ -171,7 +171,7 @@ static int parse_commitment_line(char *line, const char *host, size_t host_len,
 	if (p == NULL)
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
-	if (p[0] != '*' && host != NULL && strcmp(p, host) != 0)
+	if (p[0] != '*' && host != NULL && !streq(p, host))
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
 	/* read service */
@@ -179,7 +179,7 @@ static int parse_commitment_line(char *line, const char *host, size_t host_len,
 	if (p == NULL)
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
-	if (p[0] != '*' && service != NULL && strcmp(p, service) != 0)
+	if (p[0] != '*' && service != NULL && !streq(p, service))
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
 	/* read expiration */
@@ -226,7 +226,7 @@ static int parse_commitment_line(char *line, const char *host, size_t host_len,
 	if (kp_len != phash_size * 2)
 		return gnutls_assert_val(GNUTLS_E_CERTIFICATE_KEY_MISMATCH);
 
-	if (memcmp(kp, hphash, kp_len) != 0)
+	if (!memeq(kp, hphash, kp_len))
 		return gnutls_assert_val(GNUTLS_E_CERTIFICATE_KEY_MISMATCH);
 
 	/* key found and matches */
@@ -260,7 +260,7 @@ static int parse_line(char *line, const char *host, size_t host_len,
 	if (p == NULL)
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
-	if (p[0] != '*' && host != NULL && strcmp(p, host) != 0)
+	if (p[0] != '*' && host != NULL && !streq(p, host))
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
 	/* read service */
@@ -268,7 +268,7 @@ static int parse_line(char *line, const char *host, size_t host_len,
 	if (p == NULL)
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
-	if (p[0] != '*' && service != NULL && strcmp(p, service) != 0)
+	if (p[0] != '*' && service != NULL && !streq(p, service))
 		return gnutls_assert_val(GNUTLS_E_PARSING_ERROR);
 
 	/* read expiration */
@@ -293,7 +293,7 @@ static int parse_line(char *line, const char *host, size_t host_len,
 	if (kp_len != b64key->size)
 		return gnutls_assert_val(GNUTLS_E_CERTIFICATE_KEY_MISMATCH);
 
-	if (memcmp(kp, b64key->data, b64key->size) != 0)
+	if (!memeq(kp, b64key->data, b64key->size))
 		return gnutls_assert_val(GNUTLS_E_CERTIFICATE_KEY_MISMATCH);
 
 	/* key found and matches */

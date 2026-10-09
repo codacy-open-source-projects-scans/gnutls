@@ -170,7 +170,7 @@ void doit(void)
 			exit(1);
 		}
 
-		if (strcmp(oid, crq_list[i].sign_oid) != 0) {
+		if (!streq(oid, crq_list[i].sign_oid)) {
 			fail("%s: error on the extracted signature algorithm: %s\n",
 			     crq_list[i].name, oid);
 			exit(1);
@@ -192,7 +192,7 @@ void doit(void)
 			exit(1);
 		}
 
-		if (strcmp(oid, crq_list[i].pk_oid) != 0) {
+		if (!streq(oid, crq_list[i].pk_oid)) {
 			fail("%s: error on the extracted PK algorithm: %s\n",
 			     crq_list[i].name, oid);
 			exit(1);

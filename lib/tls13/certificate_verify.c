@@ -229,8 +229,8 @@ int _gnutls13_send_certificate_verify(gnutls_session_t session, unsigned again)
 			goto cleanup;
 		}
 
-		ret = _gnutls_buffer_append_data_prefix(&buf, 16, sig.data,
-							sig.size);
+		ret = _gnutls_buffer_append_data_prefix16(&buf, sig.data,
+							  sig.size);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;

@@ -61,7 +61,7 @@
 static int _gnutls13_reauth_client(gnutls_session_t session)
 {
 	int ret = 0;
-	size_t tmp;
+	uint32_t tmp;
 
 	if (!session->internals.initial_negotiation_completed)
 		return gnutls_assert_val(GNUTLS_E_UNAVAILABLE_DURING_HANDSHAKE);
@@ -97,8 +97,8 @@ static int _gnutls13_reauth_client(gnutls_session_t session)
 			session->internals.handshake_hash_buffer.length;
 
 		/* skip the reauth buffer handshake message headers */
-		ret = _gnutls_buffer_pop_prefix32(
-			&session->internals.reauth_buffer, &tmp, 0);
+		ret = _gnutls_buffer_pop_uint32(
+			&session->internals.reauth_buffer, &tmp);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 

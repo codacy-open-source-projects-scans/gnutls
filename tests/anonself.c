@@ -127,7 +127,7 @@ static void client(int sd, const char *prio)
 		goto end;
 	}
 
-	if (ret != sizeof(MSG) - 1 || memcmp(buffer, MSG, ret) != 0) {
+	if (ret != sizeof(MSG) - 1 || !memeq(buffer, MSG, ret)) {
 		fail("client: received data of different size! (expected: %d, have: %d)\n",
 		     (int)strlen(MSG), ret);
 		goto end;

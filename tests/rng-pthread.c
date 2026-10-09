@@ -98,8 +98,8 @@ static void do_thread_stuff(unsigned level)
 		pthread_join(data[i].id, NULL);
 		for (j = 0; j < MAX_THREADS; j++) {
 			if (i != j) {
-				if (memcmp(data[i].buf, data[j].buf,
-					   sizeof(data[i].buf)) == 0) {
+				if (memeq(data[i].buf, data[j].buf,
+					  sizeof(data[i].buf))) {
 					fail("identical data found in thread %d and %d\n",
 					     i, j);
 				}

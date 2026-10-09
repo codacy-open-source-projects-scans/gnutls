@@ -237,22 +237,22 @@ static int _gnutls_srtp_send_params(gnutls_session_t session,
 		if (priv->selected_profile == 0)
 			return 0;
 
-		ret = _gnutls_buffer_append_prefix(extdata, 16, 2);
+		ret = _gnutls_buffer_append_uint16(extdata, 2);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
-		ret = _gnutls_buffer_append_prefix(extdata, 16,
+		ret = _gnutls_buffer_append_uint16(extdata,
 						   priv->selected_profile);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 		total_size = 4;
 	} else {
-		ret = _gnutls_buffer_append_prefix(extdata, 16,
+		ret = _gnutls_buffer_append_uint16(extdata,
 						   2 * priv->profiles_size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
 		for (i = 0; i < priv->profiles_size; i++) {
-			ret = _gnutls_buffer_append_prefix(extdata, 16,
+			ret = _gnutls_buffer_append_uint16(extdata,
 							   priv->profiles[i]);
 			if (ret < 0)
 				return gnutls_assert_val(ret);
@@ -261,8 +261,8 @@ static int _gnutls_srtp_send_params(gnutls_session_t session,
 	}
 
 	/* use_mki */
-	ret = _gnutls_buffer_append_data_prefix(extdata, 8, priv->mki,
-						priv->mki_size);
+	ret = _gnutls_buffer_append_data_prefix8(extdata, priv->mki,
+						 priv->mki_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 	total_size += 1 + priv->mki_size;

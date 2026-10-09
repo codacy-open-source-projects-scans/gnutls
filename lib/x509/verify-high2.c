@@ -173,7 +173,7 @@ int gnutls_x509_trust_list_remove_trust_mem(gnutls_x509_trust_list_t list,
 #ifdef ENABLE_PKCS11
 static int remove_pkcs11_url(gnutls_x509_trust_list_t list, const char *ca_file)
 {
-	if (strcmp(ca_file, list->pkcs11_token) == 0) {
+	if (streq(ca_file, list->pkcs11_token)) {
 		gnutls_free(list->pkcs11_token);
 	}
 	return 0;
@@ -207,8 +207,7 @@ static int add_trust_list_pkcs11_object_url(gnutls_x509_trust_list_t list,
 		goto cleanup;
 	}
 
-	xcrt_list = _gnutls_reallocarray(NULL, pcrt_list_size,
-					 sizeof(gnutls_x509_crt_t));
+	xcrt_list = gnutls_calloc(pcrt_list_size, sizeof(gnutls_x509_crt_t));
 	if (xcrt_list == NULL) {
 		ret = GNUTLS_E_MEMORY_ERROR;
 		goto cleanup;
@@ -254,8 +253,7 @@ static int remove_pkcs11_object_url(gnutls_x509_trust_list_t list,
 		goto cleanup;
 	}
 
-	xcrt_list = _gnutls_reallocarray(NULL, pcrt_list_size,
-					 sizeof(gnutls_x509_crt_t));
+	xcrt_list = gnutls_calloc(pcrt_list_size, sizeof(gnutls_x509_crt_t));
 	if (xcrt_list == NULL) {
 		ret = GNUTLS_E_MEMORY_ERROR;
 		goto cleanup;

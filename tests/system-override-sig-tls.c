@@ -85,7 +85,7 @@ static int ext_callback(void *ctx, unsigned tls_id, const unsigned char *data,
 			fail("invalid signature_algorithms length: %u != 4\n",
 			     size);
 		}
-		if (memcmp(data, SIGALGS_EXP, sizeof(SIGALGS_EXP) - 1) != 0) {
+		if (!memeq(data, SIGALGS_EXP, sizeof(SIGALGS_EXP) - 1)) {
 			fail("invalid signature_algorithms\n");
 		}
 	}

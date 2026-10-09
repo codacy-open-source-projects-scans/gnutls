@@ -222,7 +222,7 @@ static void client(int fd)
 		fail("gnutls_record_recv(pong): %s\n", gnutls_strerror(ret));
 	}
 
-	if (ret != 4 || memcmp(buf, "pong", 4) != 0) {
+	if (ret != 4 || !memeq(buf, "pong", 4)) {
 		fail("did not receive the expected data");
 	}
 
@@ -317,7 +317,7 @@ static void server(int fd)
 		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
 
 		if (ret > 0) {
-			if (ret == 5 && memcmp(buf, "reset", 5) == 0) {
+			if (ret == 5 && memeq(buf, "reset", 5)) {
 				if (debug)
 					success("got reset\n");
 				break;
@@ -348,7 +348,7 @@ static void server(int fd)
 		ret = gnutls_record_recv(session, buf, sizeof(buf));
 	} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
 
-	if (ret == 4 && memcmp(buf, "ping", 4) == 0) {
+	if (ret == 4 && memeq(buf, "ping", 4)) {
 		do {
 			ret = gnutls_record_send(session, "pong", 4);
 		} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);

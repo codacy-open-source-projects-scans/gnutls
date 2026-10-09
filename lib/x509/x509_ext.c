@@ -126,8 +126,9 @@ int gnutls_subject_alt_names_get(gnutls_subject_alt_names_t sans,
  * copy the strings. It expects all the provided input to be already
  * allocated by gnutls. */
 static int subject_alt_names_set(struct name_st **names, unsigned int *size,
-				 unsigned int san_type, gnutls_datum_t *san,
-				 char *othername_oid, unsigned raw)
+				 unsigned int san_type,
+				 const gnutls_datum_t *san,
+				 const char *othername_oid, unsigned raw)
 {
 	void *tmp;
 	int ret;
@@ -174,26 +175,13 @@ int gnutls_subject_alt_names_set(gnutls_subject_alt_names_t sans,
 				 const char *othername_oid)
 {
 	int ret;
-	gnutls_datum_t copy;
-	char *ooc;
 
-	ret = _gnutls_set_strdatum(&copy, san->data, san->size);
+	ret = subject_alt_names_set(&sans->names, &sans->size, san_type, san,
+				    othername_oid, 0);
 	if (ret < 0)
-		return gnutls_assert_val(ret);
+		gnutls_assert();
 
-	if (othername_oid != NULL)
-		ooc = gnutls_strdup(othername_oid);
-	else
-		ooc = NULL;
-	ret = subject_alt_names_set(&sans->names, &sans->size, san_type, &copy,
-				    ooc, 0);
-	if (ret < 0) {
-		gnutls_free(ooc);
-		gnutls_free(copy.data);
-		return gnutls_assert_val(ret);
-	}
-
-	return 0;
+	return ret;
 }
 
 /**
@@ -220,7 +208,7 @@ int gnutls_x509_ext_import_subject_alt_names(const gnutls_datum_t *ext,
 	asn1_node c2 = NULL;
 	int result, ret;
 	unsigned int i;
-	gnutls_datum_t san, othername_oid;
+	gnutls_datum_t san = {}, othername_oid = {};
 	unsigned type;
 
 	result = asn1_create_element(_gnutls_get_pkix(), "PKIX1.GeneralNames",
@@ -238,9 +226,8 @@ int gnutls_x509_ext_import_subject_alt_names(const gnutls_datum_t *ext,
 	}
 
 	for (i = 0;; i++) {
-		san.data = NULL;
-		san.size = 0;
-		othername_oid.data = NULL;
+		_gnutls_free_datum(&san);
+		_gnutls_free_datum(&othername_oid);
 
 		ret = _gnutls_parse_general_name2(c2, "", i, &san, &type, 0);
 		if (ret < 0)
@@ -258,16 +245,18 @@ int gnutls_x509_ext_import_subject_alt_names(const gnutls_datum_t *ext,
 		}
 
 		ret = subject_alt_names_set(&sans->names, &sans->size, type,
-					    &san, (char *)othername_oid.data,
+					    &san,
+					    (const char *)othername_oid.data,
 					    1);
 		if (ret < 0)
 			break;
 	}
 
+	_gnutls_free_datum(&san);
+	_gnutls_free_datum(&othername_oid);
+
 	sans->size = i;
 	if (ret < 0 && ret != GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
-		gnutls_free(san.data);
-		gnutls_free(othername_oid.data);
 		gnutls_assert();
 		goto cleanup;
 	}
@@ -776,7 +765,6 @@ int gnutls_x509_aki_set_cert_issuer(gnutls_x509_aki_t aki,
 				    const gnutls_datum_t *serial)
 {
 	int ret;
-	gnutls_datum_t t_san, t_othername_oid = { NULL, 0 };
 
 	ret = _gnutls_set_datum(&aki->serial, serial->data, serial->size);
 	if (ret < 0)
@@ -784,30 +772,13 @@ int gnutls_x509_aki_set_cert_issuer(gnutls_x509_aki_t aki,
 
 	aki->cert_issuer.names[aki->cert_issuer.size].type = san_type;
 
-	ret = _gnutls_set_strdatum(&t_san, san->data, san->size);
-	if (ret < 0)
-		return gnutls_assert_val(ret);
-
-	if (othername_oid) {
-		t_othername_oid.data = (uint8_t *)gnutls_strdup(othername_oid);
-		if (t_othername_oid.data == NULL) {
-			gnutls_free(t_san.data);
-			return gnutls_assert_val(GNUTLS_E_MEMORY_ERROR);
-		}
-		t_othername_oid.size = strlen(othername_oid);
-	}
-
 	ret = subject_alt_names_set(&aki->cert_issuer.names,
-				    &aki->cert_issuer.size, san_type, &t_san,
-				    (char *)t_othername_oid.data, 0);
-	if (ret < 0) {
-		gnutls_free(t_othername_oid.data);
-		gnutls_free(t_san.data);
+				    &aki->cert_issuer.size, san_type, san,
+				    othername_oid, 0);
+	if (ret < 0)
 		gnutls_assert();
-		return ret;
-	}
 
-	return 0;
+	return ret;
 }
 
 /**
@@ -921,18 +892,21 @@ int gnutls_x509_ext_import_authority_key_id(const gnutls_datum_t *ext,
 
 		ret = subject_alt_names_set(&aki->cert_issuer.names,
 					    &aki->cert_issuer.size, type, &san,
-					    (char *)othername_oid.data, 1);
+					    (const char *)othername_oid.data,
+					    1);
+		gnutls_free(othername_oid.data);
 		if (ret < 0)
 			break;
+
+		gnutls_free(san.data);
 	}
+	gnutls_free(san.data);
 
 	assert(ret < 0);
 	aki->cert_issuer.size = i;
 	if (ret != GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE &&
 	    ret != GNUTLS_E_ASN1_ELEMENT_NOT_FOUND) {
 		gnutls_assert();
-		gnutls_free(san.data);
-		gnutls_free(othername_oid.data);
 		goto cleanup;
 	}
 
@@ -1103,8 +1077,8 @@ int gnutls_x509_ext_import_key_usage(const gnutls_datum_t *ext,
 static int _last_key_usage_set_bit(int usage)
 {
 	/* the byte ordering is a bit strange here, see how GNUTLS_KEY_* is laid out, and how 
- * asn1_write_value() writes out BIT STRING objects.
- */
+	 * asn1_write_value() writes out BIT STRING objects.
+	 */
 	if (usage & GNUTLS_KEY_DECIPHER_ONLY)
 		return 9;
 	else if (usage & GNUTLS_KEY_ENCIPHER_ONLY)
@@ -1413,7 +1387,7 @@ int gnutls_x509_ext_import_basic_constraints(const gnutls_datum_t *ext,
 	 */
 	len = sizeof(str) - 1;
 	result = asn1_read_value(c2, "cA", str, &len);
-	if (result == ASN1_SUCCESS && strcmp(str, "TRUE") == 0)
+	if (result == ASN1_SUCCESS && streq(str, "TRUE"))
 		*ca = 1;
 	else
 		*ca = 0;
@@ -1695,10 +1669,10 @@ static int decode_user_notice(const void *data, size_t size,
 		goto cleanup;
 	}
 
-	if (strcmp(choice_type, "utf8String") != 0 &&
-	    strcmp(choice_type, "ia5String") != 0 &&
-	    strcmp(choice_type, "bmpString") != 0 &&
-	    strcmp(choice_type, "visibleString") != 0) {
+	if (!streq(choice_type, "utf8String") &&
+	    !streq(choice_type, "ia5String") &&
+	    !streq(choice_type, "bmpString") &&
+	    !streq(choice_type, "visibleString")) {
 		gnutls_assert();
 		ret = GNUTLS_E_PARSING_ERROR;
 		goto cleanup;
@@ -1712,7 +1686,7 @@ static int decode_user_notice(const void *data, size_t size,
 		goto cleanup;
 	}
 
-	if (strcmp(choice_type, "bmpString") == 0) { /* convert to UTF-8 */
+	if (streq(choice_type, "bmpString")) { /* convert to UTF-8 */
 		ret = _gnutls_ucs2_to_utf8(td.data, td.size, &utd, 1);
 		_gnutls_free_datum(&td);
 		if (ret < 0) {
@@ -1947,7 +1921,7 @@ int gnutls_x509_ext_import_policies(const gnutls_datum_t *ext,
 				goto full_cleanup;
 			}
 
-			if (strcmp(tmpoid, "1.3.6.1.5.5.7.2.1") == 0) {
+			if (streq(tmpoid, "1.3.6.1.5.5.7.2.1")) {
 				snprintf(tmpstr, sizeof(tmpstr),
 					 "?%u.policyQualifiers.?%u.qualifier",
 					 j + 1, i + 1);
@@ -1966,7 +1940,7 @@ int gnutls_x509_ext_import_policies(const gnutls_datum_t *ext,
 				td.data = NULL;
 				policies->policy[j].qualifier[i].type =
 					GNUTLS_X509_QUALIFIER_URI;
-			} else if (strcmp(tmpoid, "1.3.6.1.5.5.7.2.2") == 0) {
+			} else if (streq(tmpoid, "1.3.6.1.5.5.7.2.2")) {
 				gnutls_datum_t txt = { NULL, 0 };
 
 				snprintf(tmpstr, sizeof(tmpstr),
@@ -3682,7 +3656,7 @@ static int _gnutls_export_ct_v1_sct(gnutls_buffer_st *buf,
 
 	/* Length field; filled later */
 	length_offset = buf->length;
-	if ((ret = _gnutls_buffer_append_prefix(buf, 16, 0)) < 0)
+	if ((ret = _gnutls_buffer_append_uint16(buf, 0)) < 0)
 		return gnutls_assert_val(ret);
 
 	/* Version */
@@ -3714,8 +3688,8 @@ static int _gnutls_export_ct_v1_sct(gnutls_buffer_st *buf,
 		return gnutls_assert_val(ret);
 
 	/* Signature */
-	if ((ret = _gnutls_buffer_append_data_prefix(
-		     buf, 16, sct->signature.data, sct->signature.size)) < 0)
+	if ((ret = _gnutls_buffer_append_data_prefix16(
+		     buf, sct->signature.data, sct->signature.size)) < 0)
 		return gnutls_assert_val(ret);
 
 	/* Fill the length */
@@ -3758,13 +3732,13 @@ int gnutls_x509_ext_ct_import_scts(const gnutls_datum_t *ext,
 	if (retval < 0)
 		return gnutls_assert_val(retval);
 
-	if (scts_content.size < 2) {
+	if (scts_content.size < sizeof(uint16_t)) {
 		gnutls_free(scts_content.data);
 		return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;
 	}
 
 	length = _gnutls_read_uint16(scts_content.data);
-	if (length < 4 || length > scts_content.size) {
+	if (length < 4 || length > scts_content.size - sizeof(uint16_t)) {
 		gnutls_free(scts_content.data);
 		return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;
 	}
@@ -3775,11 +3749,11 @@ int gnutls_x509_ext_ct_import_scts(const gnutls_datum_t *ext,
 			break;
 
 		sct_length = _gnutls_read_uint16(ptr);
-		if (sct_length == 0 || sct_length > length)
-			break;
-
 		ptr += sizeof(uint16_t);
 		length -= sizeof(uint16_t);
+
+		if (sct_length == 0 || sct_length > length)
+			break;
 
 		/*
 		 * _gnutls_parse_ct_sct() will try to read exactly sct_length bytes,
@@ -3826,7 +3800,7 @@ int gnutls_x509_ext_ct_export_scts(const gnutls_x509_ct_scts_t scts,
 
 	/* Start with the length of the whole string; the actual
 	 * length is filled later */
-	_gnutls_buffer_append_prefix(&buf, 16, 0);
+	_gnutls_buffer_append_uint16(&buf, 0);
 
 	for (size_t i = 0; i < scts->size; i++) {
 		if ((ret = _gnutls_export_ct_v1_sct(&buf, &scts->scts[i])) <

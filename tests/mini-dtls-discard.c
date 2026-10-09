@@ -228,7 +228,7 @@ static void server(int fd, const char *prio)
 		ret = gnutls_record_recv(session, buffer, sizeof(buffer));
 	} while (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED);
 
-	if (ret != TXT2_SIZE || memcmp(buffer, TXT2, TXT2_SIZE) != 0) {
+	if (ret != TXT2_SIZE || !memeq(buffer, TXT2, TXT2_SIZE)) {
 		fail("didn't receive the expected data!\n");
 		terminate();
 	}

@@ -65,7 +65,7 @@ struct gnutls_pkcs11_provider_st {
 	char *module_name;
 	unsigned active;
 	unsigned trusted; /* in the sense of p11-kit trusted:
-				 * it can be used for verification */
+			   * it can be used for verification */
 	struct ck_info info;
 	struct ck_c_initialize_args init_args;
 };
@@ -277,7 +277,7 @@ static int pkcs11_provider_init(struct gnutls_pkcs11_provider_st *provider,
 	struct ck_c_initialize_args args;
 	const void *reserved = NULL;
 	ck_rv_t rv;
-	char *p;
+	const char *p;
 
 	_gnutls_debug_log("p11: Initializing module: %s\n", module_name);
 
@@ -356,7 +356,7 @@ static int pkcs11_provider_add(const struct gnutls_pkcs11_provider_st *provider)
 	for (i = 0; i < active_providers; i++) {
 		/* already loaded, skip the rest */
 		if (provider->module == providers[i].module ||
-		    memcmp(&info, &providers[i].info, sizeof(info)) == 0) {
+		    memeq(&info, &providers[i].info, sizeof(info))) {
 			_gnutls_debug_log("p11: module %s is already loaded.\n",
 					  provider->module_name);
 			return GNUTLS_E_INT_RET_0;
@@ -379,7 +379,7 @@ static int pkcs11_provider_add(const struct gnutls_pkcs11_provider_st *provider)
  *
  * The output value of the callback will be returned if it is
  * a negative one (indicating failure).
-*/
+ */
 int _gnutls_pkcs11_check_init(init_level_t req_level, void *priv,
 			      pkcs11_reinit_function cb)
 {
@@ -1464,7 +1464,7 @@ int gnutls_pkcs11_obj_export3(gnutls_pkcs11_obj_t obj,
 		}
 	case GNUTLS_PKCS11_OBJ_PUBKEY: {
 		/* that approach allows to return a public key even if
-			 * CKA_VALUE is not set */
+		 * CKA_VALUE is not set */
 		gnutls_pubkey_t pubkey;
 
 		ret = gnutls_pubkey_init(&pubkey);
@@ -3549,8 +3549,8 @@ static int find_multi_objs_cb(struct ck_function_list *module,
 		if (find_data->flags & GNUTLS_PKCS11_OBJ_FLAG_WITH_PRIVKEY)
 			for (i = 0; i < plist.key_ids_size; ++i)
 				if (plist.key_ids[i].length != id.size ||
-				    memcmp(plist.key_ids[i].data, id.data,
-					   id.size) != 0)
+				    !memeq(plist.key_ids[i].data, id.data,
+					   id.size))
 					continue;
 
 		ret = gnutls_pkcs11_obj_init(
@@ -3869,6 +3869,7 @@ int gnutls_x509_crt_list_import_pkcs11(gnutls_x509_crt_t *certs,
 cleanup:
 	for (j = 0; j < i; j++) {
 		gnutls_x509_crt_deinit(certs[j]);
+		certs[j] = NULL;
 	}
 
 	return ret;
@@ -4272,7 +4273,7 @@ static enum distrust_purpose distrust_purpose_from_oid(const char *oid)
 	size_t i;
 
 	for (i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
-		if (strcmp(map[i].oid, oid) == 0) {
+		if (streq(map[i].oid, oid)) {
 			return map[i].purpose;
 		}
 	}
@@ -4341,7 +4342,7 @@ static int find_cert_cb(struct ck_function_list *module,
 
 	/* the DISTRUSTED flag is p11-kit module specific */
 	if (priv->flags & GNUTLS_PKCS11_OBJ_FLAG_RETRIEVE_DISTRUSTED) {
-		if (memcmp(lib_info->manufacturer_id, "PKCS#11 Kit", 11) != 0) {
+		if (!memeq(lib_info->manufacturer_id, "PKCS#11 Kit", 11)) {
 			gnutls_assert();
 			return GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE;
 		}

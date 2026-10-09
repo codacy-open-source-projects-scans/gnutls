@@ -45,9 +45,9 @@
 
 static int gen_ecdhe_server_kx(gnutls_session_t, gnutls_buffer_st *);
 static int proc_ecdhe_server_kx(gnutls_session_t session, uint8_t *data,
-				size_t _data_size);
+				size_t data_size);
 static int proc_ecdhe_client_kx(gnutls_session_t session, uint8_t *data,
-				size_t _data_size);
+				size_t data_size);
 
 #if defined(ENABLE_ECDHE)
 const mod_auth_st ecdhe_ecdsa_auth_struct = {
@@ -131,10 +131,9 @@ cleanup:
 }
 
 int _gnutls_proc_ecdh_common_client_kx(
-	gnutls_session_t session, uint8_t *data, size_t _data_size,
+	gnutls_session_t session, uint8_t *data, size_t data_size,
 	const struct gnutls_group_entry_st *group, gnutls_datum_t *psk_key)
 {
-	ssize_t data_size = _data_size;
 	int ret, i = 0;
 	unsigned point_size;
 	const gnutls_ecc_curve_entry_st *ecurve;
@@ -208,7 +207,7 @@ cleanup:
 }
 
 static int proc_ecdhe_client_kx(gnutls_session_t session, uint8_t *data,
-				size_t _data_size)
+				size_t data_size)
 {
 	gnutls_certificate_credentials_t cred;
 
@@ -219,7 +218,7 @@ static int proc_ecdhe_client_kx(gnutls_session_t session, uint8_t *data,
 		return GNUTLS_E_INSUFFICIENT_CREDENTIALS;
 	}
 
-	return _gnutls_proc_ecdh_common_client_kx(session, data, _data_size,
+	return _gnutls_proc_ecdh_common_client_kx(session, data, data_size,
 						  get_group(session), NULL);
 }
 
@@ -269,8 +268,8 @@ int _gnutls_gen_ecdh_common_client_kx_int(gnutls_session_t session,
 			goto cleanup;
 		}
 
-		ret = _gnutls_buffer_append_data_prefix(data, 8, out.data,
-							out.size);
+		ret = _gnutls_buffer_append_data_prefix8(data, out.data,
+							 out.size);
 
 		_gnutls_free_datum(&out);
 
@@ -279,9 +278,8 @@ int _gnutls_gen_ecdh_common_client_kx_int(gnutls_session_t session,
 			goto cleanup;
 		}
 	} else if (pk == GNUTLS_PK_ECDH_X25519 || pk == GNUTLS_PK_ECDH_X448) {
-		ret = _gnutls_buffer_append_data_prefix(
-			data, 8,
-			session->key.proto.tls12.ecdh.params.raw_pub.data,
+		ret = _gnutls_buffer_append_data_prefix8(
+			data, session->key.proto.tls12.ecdh.params.raw_pub.data,
 			session->key.proto.tls12.ecdh.params.raw_pub.size);
 		if (ret < 0) {
 			gnutls_assert();
@@ -303,29 +301,28 @@ cleanup:
 }
 
 static int proc_ecdhe_server_kx(gnutls_session_t session, uint8_t *data,
-				size_t _data_size)
+				size_t data_size)
 {
 	int ret;
 	gnutls_datum_t vparams;
 
-	ret = _gnutls_proc_ecdh_common_server_kx(session, data, _data_size);
+	ret = _gnutls_proc_ecdh_common_server_kx(session, data, data_size);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
 	vparams.data = data;
 	vparams.size = ret;
 
-	return _gnutls_proc_dhe_signature(session, data + ret, _data_size - ret,
+	return _gnutls_proc_dhe_signature(session, data + ret, data_size - ret,
 					  &vparams);
 }
 
 int _gnutls_proc_ecdh_common_server_kx(gnutls_session_t session, uint8_t *data,
-				       size_t _data_size)
+				       size_t data_size)
 {
 	int i, ret;
 	unsigned point_size;
 	const gnutls_group_entry_st *group;
-	ssize_t data_size = _data_size;
 	const gnutls_ecc_curve_entry_st *ecurve;
 
 	/* just in case we are resuming a session */
@@ -351,7 +348,7 @@ int _gnutls_proc_ecdh_common_server_kx(gnutls_session_t session, uint8_t *data,
 
 	i += 2;
 
-	if (!_gnutls_session_supports_group(session, group->id))
+	if (!_gnutls_session_supports_group(session, group))
 		return gnutls_assert_val(GNUTLS_E_ECC_UNSUPPORTED_CURVE);
 
 	ecurve = _gnutls_ecc_curve_get_params(group->curve);
@@ -426,7 +423,7 @@ int _gnutls_ecdh_common_print_server_kx(gnutls_session_t session,
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
-	ret = _gnutls_buffer_append_prefix(data, 16, group->tls_id);
+	ret = _gnutls_buffer_append_uint16(data, group->tls_id);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
@@ -448,8 +445,8 @@ int _gnutls_ecdh_common_print_server_kx(gnutls_session_t session,
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
-		ret = _gnutls_buffer_append_data_prefix(data, 8, out.data,
-							out.size);
+		ret = _gnutls_buffer_append_data_prefix8(data, out.data,
+							 out.size);
 
 		_gnutls_free_datum(&out);
 
@@ -458,9 +455,8 @@ int _gnutls_ecdh_common_print_server_kx(gnutls_session_t session,
 
 	} else if (group->pk == GNUTLS_PK_ECDH_X25519 ||
 		   group->pk == GNUTLS_PK_ECDH_X448) {
-		ret = _gnutls_buffer_append_data_prefix(
-			data, 8,
-			session->key.proto.tls12.ecdh.params.raw_pub.data,
+		ret = _gnutls_buffer_append_data_prefix8(
+			data, session->key.proto.tls12.ecdh.params.raw_pub.data,
 			session->key.proto.tls12.ecdh.params.raw_pub.size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);

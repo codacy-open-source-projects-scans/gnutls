@@ -97,6 +97,16 @@ inline static void _gnutls_write_uint16(uint16_t num, uint8_t *data)
 	memcpy(data, &num, sizeof(uint16_t));
 }
 
+inline static uint8_t _gnutls_read_uint8(const uint8_t *data)
+{
+	return *data;
+}
+
+inline static void _gnutls_write_uint8(uint8_t num, uint8_t *data)
+{
+	*data = num;
+}
+
 inline static uint32_t _gnutls_conv_uint32(uint32_t data)
 {
 #ifndef WORDS_BIGENDIAN

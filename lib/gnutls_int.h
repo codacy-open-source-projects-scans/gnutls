@@ -38,11 +38,6 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#ifdef NO_SSIZE_T
-#define HAVE_SSIZE_T
-typedef int ssize_t;
-#endif
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -54,6 +49,7 @@ typedef int ssize_t;
 #include <time.h>
 
 #include "attribute.h"
+#include "minmax.h"
 
 #define ENABLE_ALIGN16
 
@@ -150,8 +146,6 @@ typedef int ssize_t;
  * supported groups/curves is not present */
 #define DEFAULT_EC_GROUP GNUTLS_GROUP_SECP256R1
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
 typedef enum transport_t {
 	GNUTLS_STREAM,
 	GNUTLS_DGRAM
@@ -234,14 +228,14 @@ typedef enum record_send_state_t {
 
 #define MAX_PK_PARAM_SIZE 2048
 
-/* Defaults for verification functions.
- *
- * update many_icas in tests/test-chains.h when increasing
- * DEFAULT_MAX_VERIFY_DEPTH.
- */
-#define DEFAULT_MAX_VERIFY_DEPTH 16
+/* Defaults for verification functions. */
 #define DEFAULT_MAX_VERIFY_BITS (MAX_PK_PARAM_SIZE * 8)
 #define MAX_VERIFY_DEPTH 4096
+/* Match OpenSSL's maximum verification depth of 100.
+ * Add 1 because OpenSSL doesn't count the peer certificate
+ * in the limit, while GnuTLS does.
+ */
+#define DEFAULT_MAX_VERIFY_DEPTH 101
 
 #include "mem.h"
 
@@ -460,10 +454,10 @@ typedef struct {
 	uint16_t sequence;
 
 	/* indicate whether that message is complete.
-	 * complete means start_offset == 0 and end_offset == length
+	 * complete means start_offset == 0 and frag_length == length
 	 */
 	uint32_t start_offset;
-	uint32_t end_offset;
+	uint32_t frag_length; /* used exclusively in DTLS reassembly */
 
 	uint8_t header[MAX_HANDSHAKE_HEADER_SIZE];
 	int header_size;
@@ -1127,7 +1121,7 @@ typedef struct {
 	uint32_t lifetime;
 	uint32_t age_add;
 	uint8_t nonce[255];
-	size_t nonce_size;
+	uint8_t nonce_size;
 	const mac_entry_st *prf;
 	uint8_t resumption_master_secret[MAX_HASH_SIZE];
 	gnutls_datum_t ticket;

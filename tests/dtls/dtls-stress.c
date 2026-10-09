@@ -1367,7 +1367,7 @@ static int parse_permutation(const char *arg, const char *permutations[],
 {
 	*val = 0;
 	while (permutations[*val]) {
-		if (strcmp(permutations[*val], arg) == 0) {
+		if (streq(permutations[*val], arg)) {
 			return 1;
 		} else {
 			*val += 1;
@@ -1409,11 +1409,11 @@ int main(int argc, const char *argv[])
 	} while (0);
 
 	for (arg = 1; arg < argc; arg++) {
-		if (strcmp("-die", argv[arg]) == 0) {
+		if (streq("-die", argv[arg])) {
 			run_to_end = 0;
-		} else if (strcmp("-batch", argv[arg]) == 0) {
+		} else if (streq("-batch", argv[arg])) {
 			batch = 1;
-		} else if (strcmp("-d", argv[arg]) == 0) {
+		} else if (streq("-d", argv[arg])) {
 			char *end;
 			int level;
 
@@ -1427,11 +1427,11 @@ int main(int argc, const char *argv[])
 			} else {
 				debug++;
 			}
-		} else if (strcmp("-nb", argv[arg]) == 0) {
+		} else if (streq("-nb", argv[arg])) {
 			nonblock = 1;
-		} else if (strcmp("-r", argv[arg]) == 0) {
+		} else if (streq("-r", argv[arg])) {
 			replay = 1;
-		} else if (strcmp("-timeout", argv[arg]) == 0) {
+		} else if (streq("-timeout", argv[arg])) {
 			char *end;
 			int val;
 
@@ -1442,7 +1442,7 @@ int main(int argc, const char *argv[])
 			} else {
 				FAIL_ARG(timeout);
 			}
-		} else if (strcmp("-retransmit", argv[arg]) == 0) {
+		} else if (streq("-retransmit", argv[arg])) {
 			char *end;
 			int val;
 
@@ -1453,7 +1453,7 @@ int main(int argc, const char *argv[])
 			} else {
 				FAIL_ARG(retransmit);
 			}
-		} else if (strcmp("-j", argv[arg]) == 0) {
+		} else if (streq("-j", argv[arg])) {
 			char *end;
 			int val;
 
@@ -1464,7 +1464,7 @@ int main(int argc, const char *argv[])
 			} else {
 				FAIL_ARG(j);
 			}
-		} else if (strcmp("-full", argv[arg]) == 0) {
+		} else if (streq("-full", argv[arg])) {
 			if (resume) {
 				fprintf(stderr,
 					"You cannot combine full with resume\n");
@@ -1472,7 +1472,7 @@ int main(int argc, const char *argv[])
 			}
 
 			full = 1;
-		} else if (strcmp("-resume", argv[arg]) == 0) {
+		} else if (streq("-resume", argv[arg])) {
 			if (full) {
 				fprintf(stderr,
 					"You cannot combine full with resume\n");
@@ -1480,7 +1480,7 @@ int main(int argc, const char *argv[])
 			}
 
 			resume = 1;
-		} else if (strcmp("-shello", argv[arg]) == 0) {
+		} else if (streq("-shello", argv[arg])) {
 			if (resume) {
 				fprintf(stderr,
 					"Please use -sfinished instead of -shello\n");
@@ -1495,7 +1495,7 @@ int main(int argc, const char *argv[])
 				FAIL_ARG(shell);
 			}
 			single++;
-		} else if (strcmp("-sfinished", argv[arg]) == 0) {
+		} else if (streq("-sfinished", argv[arg])) {
 			const char **pname;
 			NEXT_ARG(cfinished);
 			if (resume)
@@ -1507,7 +1507,7 @@ int main(int argc, const char *argv[])
 				FAIL_ARG(cfinished);
 			}
 			single++;
-		} else if (strcmp("-cfinished", argv[arg]) == 0) {
+		} else if (streq("-cfinished", argv[arg])) {
 			const char **pname;
 			NEXT_ARG(cfinished);
 			if (full)
@@ -1541,8 +1541,8 @@ int main(int argc, const char *argv[])
 			}
 
 			for (drop = 0; drop < filter_count; drop++) {
-				if (strcmp(local_filter_names[drop],
-					   argv[arg]) == 0) {
+				if (streq(local_filter_names[drop],
+					  argv[arg])) {
 					dropMode |= (1 << drop);
 					break;
 				}

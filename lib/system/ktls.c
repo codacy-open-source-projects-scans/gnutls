@@ -486,7 +486,7 @@ int _gnutls_ktls_set_keys(gnutls_session_t session,
 		return GNUTLS_E_INTERNAL_ERROR;
 	}
 
-	if (strcmp(utsname.sysname, "Linux") != 0) {
+	if (!streq(utsname.sysname, "Linux")) {
 		return GNUTLS_E_INTERNAL_ERROR;
 	}
 

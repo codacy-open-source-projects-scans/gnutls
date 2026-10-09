@@ -34,6 +34,8 @@
  * - INITIALLY_DISABLED_CURVES - space-separated string
  */
 
+#include "utils.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +44,6 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/abstract.h>
-
-#include "utils.h"
 
 #define _assert(cond, format, ...) \
 	if (!(cond))               \

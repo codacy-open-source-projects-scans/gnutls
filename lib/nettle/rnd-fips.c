@@ -110,7 +110,7 @@ static int get_entropy(struct fips_ctx *fctx, uint8_t *buffer, size_t length)
 		sha256_digest(&ctx, sizeof(hash), hash);
 #endif
 
-		if (memcmp(hash, fctx->entropy_hash, sizeof(hash)) == 0) {
+		if (memeq(hash, fctx->entropy_hash, sizeof(hash))) {
 			_gnutls_switch_fips_state(GNUTLS_FIPS140_OP_ERROR);
 			_gnutls_switch_lib_state(LIB_STATE_ERROR);
 			return gnutls_assert_val(GNUTLS_E_RANDOM_FAILED);
@@ -238,7 +238,7 @@ static int _rngfips_ctx_reinit(struct fips_ctx *fctx)
 static int _rngfips_init(void **_ctx)
 {
 	/* Basic initialization is required to
-   do a few checks on the implementation.  */
+	   do a few checks on the implementation.  */
 	struct fips_ctx *ctx;
 	int ret;
 

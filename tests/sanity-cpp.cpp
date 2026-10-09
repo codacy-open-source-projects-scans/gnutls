@@ -25,25 +25,27 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/gnutlsxx.h>
-#include <iostream>
 #include <assert.h>
 
-extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include "cert-common.h"
 #include <setjmp.h>
+
+/* These header files assume C linkage */
+extern "C" {
+#include "cert-common.h"
 #include <cmocka.h>
+}
+
 #undef MIN
 #define MIN(x,y) (x > y ? y : x)
-}
 
 /* This is a basic test for C++ API */
 static void tls_log_func(int level, const char *str)
 {
-	std::cerr << level << "| " << str << "\n";
+	fprintf(stderr, "%d| %s\n", level, str);
 }
 
 static char to_server[64 * 1024];
@@ -152,7 +154,7 @@ static void test_handshake(void **glob_state, const char *prio,
 		client.set_transport_ptr(client.ptr());
 	}
 	catch (std::exception &ex) {
-		std::cerr << "Exception caught: " << ex.what() << std::endl;
+		fprintf(stderr, "Exception caught: %s\n", ex.what());
 		fail();
 	}
 
@@ -196,7 +198,7 @@ static void test_handshake(void **glob_state, const char *prio,
 		server.bye(GNUTLS_SHUT_WR);
 	}
 	catch (std::exception &ex) {
-		std::cerr << "Exception caught: " << ex.what() << std::endl;
+		fprintf(stderr, "Exception caught: %s\n", ex.what());
 		fail();
 	}
 

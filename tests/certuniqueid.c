@@ -148,7 +148,7 @@ void doit(void)
 	result = gnutls_x509_crt_get_issuer_unique_id(cert, buf, &buf_size);
 	if (result < 0)
 		fail("get_issuer_unique_id %d\n", result);
-	if (memcmp(buf, expectedId, buf_size) != 0)
+	if (!memeq(buf, expectedId, buf_size))
 		fail("expected id mismatch for issuer\n");
 
 	buf_size = 15;
@@ -162,7 +162,7 @@ void doit(void)
 	result = gnutls_x509_crt_get_subject_unique_id(cert, buf, &buf_size);
 	if (result < 0)
 		fail("get_subject_unique_id %d\n", result);
-	if (memcmp(buf, expectedId, buf_size) != 0)
+	if (!memeq(buf, expectedId, buf_size))
 		fail("expected id mismatch for subject\n");
 
 	gnutls_x509_crt_deinit(cert);

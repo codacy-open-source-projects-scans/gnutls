@@ -32,10 +32,6 @@ AM_CPPFLAGS += \
 	-I$(builddir)/../../gl          \
 	-I$(srcdir)/..
 
-if ENABLE_MINITASN1
-AM_CPPFLAGS += -I$(srcdir)/../minitasn1
-endif
-
 if ENABLE_LEANCRYPTO
 AM_CPPFLAGS += $(LEANCRYPTO_CFLAGS)
 endif

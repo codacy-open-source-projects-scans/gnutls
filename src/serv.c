@@ -2098,7 +2098,7 @@ static gnutls_datum_t wrap_db_fetch(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < cache_db_ptr; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0 &&
+		    memeq(key.data, cache_db[i].session_id, key.size) &&
 		    now < gnutls_db_check_entry_expire_time(
 				  &cache_db[i].session_data)) {
 			res.size = cache_db[i].session_data.size;
@@ -2122,7 +2122,7 @@ static int wrap_db_delete(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < cache_db_ptr; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0) {
+		    memeq(key.data, cache_db[i].session_id, key.size)) {
 			cache_db[i].session_id_size = 0;
 			free(cache_db[i].session_data.data);
 			cache_db[i].session_data.data = NULL;
@@ -2143,7 +2143,7 @@ static int anti_replay_db_add(void *dbf, time_t exp, const gnutls_datum_t *key,
 
 	for (i = 0; i < cache_db_ptr; i++) {
 		if (key->size == cache_db[i].session_id_size &&
-		    memcmp(key->data, cache_db[i].session_id, key->size) == 0 &&
+		    memeq(key->data, cache_db[i].session_id, key->size) &&
 		    now < gnutls_db_check_entry_expire_time(
 				  &cache_db[i].session_data))
 			return GNUTLS_E_DB_ENTRY_EXISTS;

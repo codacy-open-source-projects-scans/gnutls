@@ -70,10 +70,8 @@ static inline unsigned have_only_ssl3_enabled(gnutls_session_t session)
  */
 static int _gnutls_ext_master_secret_recv_params(gnutls_session_t session,
 						 const uint8_t *data,
-						 size_t _data_size)
+						 size_t data_size)
 {
-	ssize_t data_size = _data_size;
-
 	if ((session->internals.flags & GNUTLS_NO_DEFAULT_EXTENSIONS) ||
 	    session->internals.priorities->no_extensions ||
 	    session->internals.no_ext_master_secret != 0) {

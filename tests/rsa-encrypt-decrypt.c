@@ -148,7 +148,7 @@ void doit(void)
 		if (out2.size != hash_data.size)
 			fail("Decrypted data don't match original (1)\n");
 
-		if (memcmp(out2.data, hash_data.data, hash_data.size) != 0)
+		if (!memeq(out2.data, hash_data.data, hash_data.size))
 			fail("Decrypted data don't match original (2)\n");
 
 		/* try again with fixed length API */
@@ -158,7 +158,7 @@ void doit(void)
 		if (ret < 0)
 			fail("gnutls_privkey_decrypt_data\n");
 
-		if (memcmp(out2.data, hash_data.data, hash_data.size) != 0)
+		if (!memeq(out2.data, hash_data.data, hash_data.size))
 			fail("Decrypted data don't match original (2b)\n");
 
 		gnutls_free(out.data);
@@ -175,7 +175,7 @@ void doit(void)
 		if (out2.size != raw_data.size)
 			fail("Decrypted data don't match original (3)\n");
 
-		if (memcmp(out2.data, raw_data.data, raw_data.size) != 0)
+		if (!memeq(out2.data, raw_data.data, raw_data.size))
 			fail("Decrypted data don't match original (4)\n");
 
 		/* try again with fixed length API */
@@ -185,7 +185,7 @@ void doit(void)
 		if (ret < 0)
 			fail("gnutls_privkey_decrypt_data\n");
 
-		if (memcmp(out2.data, raw_data.data, raw_data.size) != 0)
+		if (!memeq(out2.data, raw_data.data, raw_data.size))
 			fail("Decrypted data don't match original (4b)\n");
 
 		if (debug)

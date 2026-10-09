@@ -144,8 +144,8 @@ void doit(void)
 
 	assert(m1.size == m2.size);
 	assert(e1.size == e2.size);
-	assert(memcmp(e1.data, e2.data, e2.size) == 0);
-	assert(memcmp(m1.data, m2.data, m2.size) == 0);
+	assert(memeq(e1.data, e2.data, e2.size));
+	assert(memeq(m1.data, m2.data, m2.size));
 
 	gnutls_pubkey_deinit(pub);
 	gnutls_free(m1.data);

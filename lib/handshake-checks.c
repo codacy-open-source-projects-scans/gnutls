@@ -80,10 +80,10 @@ int _gnutls_check_id_for_change(gnutls_session_t session)
 
 		if (session->internals.saved_username &&
 		    session->internals.saved_username_size != -1) {
-			if (session->internals.saved_username_size ==
-				    username_length &&
-			    strncmp(session->internals.saved_username, username,
-				    username_length)) {
+			if (session->internals.saved_username_size !=
+				    username_length ||
+			    !memeq(session->internals.saved_username, username,
+				   username_length)) {
 				_gnutls_debug_log(
 					"Session's PSK username changed during rehandshake; aborting!\n");
 				return gnutls_assert_val(
@@ -130,7 +130,7 @@ int _gnutls_check_if_cert_hash_is_same(gnutls_session_t session,
 		return gnutls_assert_val(ret);
 
 	if (session->internals.cert_hash_set) {
-		if (memcmp(tmp, session->internals.cert_hash, 32) != 0) {
+		if (!memeq(tmp, session->internals.cert_hash, 32)) {
 			_gnutls_debug_log(
 				"Session certificate changed during rehandshake; aborting!\n");
 			return gnutls_assert_val(

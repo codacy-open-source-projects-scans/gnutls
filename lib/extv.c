@@ -28,7 +28,7 @@
 /* Iterates through all extensions found, and calls the cb()
  * function with their data */
 int _gnutls_extv_parse(void *ctx, gnutls_ext_raw_process_func cb,
-		       const uint8_t *data, int data_size)
+		       const uint8_t *data, size_t data_size)
 {
 	int next, ret;
 	int pos = 0;
@@ -208,12 +208,12 @@ int _gnutls_extv_append(gnutls_buffer_st *buf, uint16_t tls_id, void *ctx,
 	int size_pos, appended, ret;
 	size_t size_prev;
 
-	ret = _gnutls_buffer_append_prefix(buf, 16, tls_id);
+	ret = _gnutls_buffer_append_uint16(buf, tls_id);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
 	size_pos = buf->length;
-	ret = _gnutls_buffer_append_prefix(buf, 16, 0);
+	ret = _gnutls_buffer_append_uint16(buf, 0);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 

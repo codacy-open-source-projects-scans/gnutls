@@ -80,7 +80,7 @@ static int supp_client_recv_func(gnutls_session_t session,
 	if (buflen != sizeof(supp_data))
 		fail("supp_client_recv_func: Invalid input buffer len\n");
 
-	if (memcmp(buf, supp_data, sizeof(supp_data)) != 0)
+	if (!memeq(buf, supp_data, sizeof(supp_data)))
 		fail("supp_client_recv_func: Invalid input buffer data\n");
 
 	return GNUTLS_E_SUCCESS;
@@ -101,7 +101,7 @@ static int supp_server_recv_func(gnutls_session_t session,
 	if (buflen != sizeof(supp_data))
 		fail("supp_server_recv_func: Invalid input buffer len\n");
 
-	if (memcmp(buf, supp_data, sizeof(supp_data)) != 0)
+	if (!memeq(buf, supp_data, sizeof(supp_data)))
 		fail("supp_server_recv_func: Invalid input buffer data\n");
 
 	return GNUTLS_E_SUCCESS;

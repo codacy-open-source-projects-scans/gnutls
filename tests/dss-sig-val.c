@@ -46,15 +46,13 @@ static void encode(const char *test_name, const gnutls_datum_t *sig,
 		exit(1);
 	}
 
-	if (tmp_r.size != r->size ||
-	    memcmp(r->data, tmp_r.data, r->size) != 0) {
+	if (tmp_r.size != r->size || !memeq(r->data, tmp_r.data, r->size)) {
 		fail("%s: gnutls_decode_rs_value: r doesn't match\n",
 		     test_name);
 		exit(1);
 	}
 
-	if (tmp_s.size != s->size ||
-	    memcmp(s->data, tmp_s.data, s->size) != 0) {
+	if (tmp_s.size != s->size || !memeq(s->data, tmp_s.data, s->size)) {
 		fail("%s: gnutls_decode_rs_value: s doesn't match\n",
 		     test_name);
 		exit(1);
@@ -72,7 +70,7 @@ static void encode(const char *test_name, const gnutls_datum_t *sig,
 	}
 
 	if (tmp_sig.size != sig->size ||
-	    memcmp(sig->data, tmp_sig.data, sig->size) != 0) {
+	    !memeq(sig->data, tmp_sig.data, sig->size)) {
 		fail("%s: gnutls_encode_rs_value: sig doesn't match\n",
 		     test_name);
 		exit(1);

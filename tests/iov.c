@@ -225,8 +225,8 @@ void doit(void)
 			translate(iov[j].iov_base, iov[j].iov_len);
 
 			if (iov[j].iov_len != tests[i].iov[j].iov_len ||
-			    memcmp(iov[j].iov_base, tests[i].iov[j].iov_base,
-				   iov[j].iov_len) != 0)
+			    !memeq(iov[j].iov_base, tests[i].iov[j].iov_base,
+				   iov[j].iov_len))
 				fail("iov doesn't match: \"%.*s\" != \"%.*s\"\n",
 				     (int)iov[j].iov_len,
 				     (char *)iov[j].iov_base,

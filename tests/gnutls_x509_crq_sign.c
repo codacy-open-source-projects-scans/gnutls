@@ -157,7 +157,7 @@ void doit(void)
 		printf("%s\n", out.data);
 
 	assert(out.size == saved_crq.size);
-	assert(memcmp(out.data, saved_crq.data, out.size) == 0);
+	assert(memeq(out.data, saved_crq.data, out.size));
 
 	verify_crq(&out);
 

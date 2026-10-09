@@ -601,8 +601,8 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 				ptr += sizeof("-----BEGIN ") - 1;
 
 				if (left > sizeof(PEM_KEY_RSA) &&
-				    memcmp(ptr, PEM_KEY_RSA,
-					   sizeof(PEM_KEY_RSA) - 1) == 0) {
+				    memeq(ptr, PEM_KEY_RSA,
+					  sizeof(PEM_KEY_RSA) - 1)) {
 					result = _gnutls_fbase64_decode(
 						PEM_KEY_RSA, begin_ptr, left,
 						&_data);
@@ -610,18 +610,16 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 						key->params.algo =
 							GNUTLS_PK_RSA;
 				} else if (left > sizeof(PEM_KEY_ECC) &&
-					   memcmp(ptr, PEM_KEY_ECC,
-						  sizeof(PEM_KEY_ECC) - 1) ==
-						   0) {
+					   memeq(ptr, PEM_KEY_ECC,
+						 sizeof(PEM_KEY_ECC) - 1)) {
 					result = _gnutls_fbase64_decode(
 						PEM_KEY_ECC, begin_ptr, left,
 						&_data);
 					if (result >= 0)
 						key->params.algo = GNUTLS_PK_EC;
 				} else if (left > sizeof(PEM_KEY_DSA) &&
-					   memcmp(ptr, PEM_KEY_DSA,
-						  sizeof(PEM_KEY_DSA) - 1) ==
-						   0) {
+					   memeq(ptr, PEM_KEY_DSA,
+						 sizeof(PEM_KEY_DSA) - 1)) {
 					result = _gnutls_fbase64_decode(
 						PEM_KEY_DSA, begin_ptr, left,
 						&_data);
@@ -629,9 +627,8 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 						key->params.algo =
 							GNUTLS_PK_DSA;
 				} else if (left > sizeof(PEM_KEY_ML_DSA) &&
-					   memcmp(ptr, PEM_KEY_ML_DSA,
-						  sizeof(PEM_KEY_ML_DSA) - 1) ==
-						   0) {
+					   memeq(ptr, PEM_KEY_ML_DSA,
+						 sizeof(PEM_KEY_ML_DSA) - 1)) {
 					result = _gnutls_fbase64_decode(
 						PEM_KEY_ML_DSA, begin_ptr, left,
 						&_data);
@@ -643,9 +640,8 @@ int gnutls_x509_privkey_import(gnutls_x509_privkey_t key,
 
 				if (key->params.algo == GNUTLS_PK_UNKNOWN &&
 				    left >= sizeof(PEM_KEY_PKCS8)) {
-					if (memcmp(ptr, PEM_KEY_PKCS8,
-						   sizeof(PEM_KEY_PKCS8) - 1) ==
-					    0) {
+					if (memeq(ptr, PEM_KEY_PKCS8,
+						  sizeof(PEM_KEY_PKCS8) - 1)) {
 						result = _gnutls_fbase64_decode(
 							PEM_KEY_PKCS8,
 							begin_ptr, left,
@@ -871,17 +867,17 @@ int gnutls_x509_privkey_import2(gnutls_x509_privkey_t key,
 
 			if (ptr != NULL) {
 				if ((left > sizeof(PEM_KEY_RSA) &&
-				     memcmp(ptr, PEM_KEY_RSA,
-					    sizeof(PEM_KEY_RSA) - 1) == 0) ||
+				     memeq(ptr, PEM_KEY_RSA,
+					   sizeof(PEM_KEY_RSA) - 1)) ||
 				    (left > sizeof(PEM_KEY_ECC) &&
-				     memcmp(ptr, PEM_KEY_ECC,
-					    sizeof(PEM_KEY_ECC) - 1) == 0) ||
+				     memeq(ptr, PEM_KEY_ECC,
+					   sizeof(PEM_KEY_ECC) - 1)) ||
 				    (left > sizeof(PEM_KEY_DSA) &&
-				     memcmp(ptr, PEM_KEY_DSA,
-					    sizeof(PEM_KEY_DSA) - 1) == 0) ||
+				     memeq(ptr, PEM_KEY_DSA,
+					   sizeof(PEM_KEY_DSA) - 1)) ||
 				    (left > sizeof(PEM_KEY_ML_DSA) &&
-				     memcmp(ptr, PEM_KEY_ML_DSA,
-					    sizeof(PEM_KEY_ML_DSA) - 1) == 0)) {
+				     memeq(ptr, PEM_KEY_ML_DSA,
+					   sizeof(PEM_KEY_ML_DSA) - 1))) {
 					head_enc = 0;
 				}
 			}
@@ -2240,31 +2236,31 @@ static int cmp_rsa_key(gnutls_x509_privkey_t key1, gnutls_x509_privkey_t key2)
 		goto cleanup;
 	}
 
-	if (m1.size != m2.size || memcmp(m1.data, m2.data, m1.size) != 0) {
+	if (m1.size != m2.size || !memeq(m1.data, m2.data, m1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (d1.size != d2.size || memcmp(d1.data, d2.data, d1.size) != 0) {
+	if (d1.size != d2.size || !memeq(d1.data, d2.data, d1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (e1.size != e2.size || memcmp(e1.data, e2.data, e1.size) != 0) {
+	if (e1.size != e2.size || !memeq(e1.data, e2.data, e1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (p1.size != p2.size || memcmp(p1.data, p2.data, p1.size) != 0) {
+	if (p1.size != p2.size || !memeq(p1.data, p2.data, p1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (q1.size != q2.size || memcmp(q1.data, q2.data, q1.size) != 0) {
+	if (q1.size != q2.size || !memeq(q1.data, q2.data, q1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
@@ -2305,19 +2301,19 @@ static int cmp_dsa_key(gnutls_x509_privkey_t key1, gnutls_x509_privkey_t key2)
 		goto cleanup;
 	}
 
-	if (g1.size != g2.size || memcmp(g1.data, g2.data, g1.size) != 0) {
+	if (g1.size != g2.size || !memeq(g1.data, g2.data, g1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (p1.size != p2.size || memcmp(p1.data, p2.data, p1.size) != 0) {
+	if (p1.size != p2.size || !memeq(p1.data, p2.data, p1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
 	}
 
-	if (q1.size != q2.size || memcmp(q1.data, q2.data, q1.size) != 0) {
+	if (q1.size != q2.size || !memeq(q1.data, q2.data, q1.size)) {
 		gnutls_assert();
 		ret = GNUTLS_E_PRIVKEY_VERIFICATION_ERROR;
 		goto cleanup;
@@ -2381,8 +2377,10 @@ int gnutls_x509_privkey_verify_seed(gnutls_x509_privkey_t key,
 		seed_size = key->params.seed_size;
 	}
 
-	if (seed == NULL || seed_size == 0)
-		return gnutls_assert_val(GNUTLS_E_PK_NO_VALIDATION_PARAMS);
+	if (seed == NULL || seed_size == 0) {
+		ret = gnutls_assert_val(GNUTLS_E_PK_NO_VALIDATION_PARAMS);
+		goto cleanup;
+	}
 
 	data.type = GNUTLS_KEYGEN_SEED;
 	data.data = (void *)seed;

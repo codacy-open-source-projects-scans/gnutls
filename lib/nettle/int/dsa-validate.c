@@ -208,9 +208,9 @@ int _dsa_validate_dss_pq(struct dsa_params *pub,
 	    (cert->qgen_counter > 0 &&
 	     cert->qgen_counter != cert2.qgen_counter) ||
 	    (cert->qseed_length > 0 &&
-	     memcmp(cert->qseed, cert2.qseed, cert2.qseed_length) != 0) ||
+	     !memeq(cert->qseed, cert2.qseed, cert2.qseed_length)) ||
 	    (cert->pseed_length > 0 &&
-	     memcmp(cert->pseed, cert2.pseed, cert2.pseed_length) != 0)) {
+	     !memeq(cert->pseed, cert2.pseed, cert2.pseed_length))) {
 		goto fail;
 	}
 

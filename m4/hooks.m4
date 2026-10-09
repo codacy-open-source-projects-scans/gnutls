@@ -40,9 +40,9 @@ AC_DEFUN([LIBGNUTLS_HOOKS],
   #     in CONTRIBUTION.md for more info.
   #
   # Interfaces removed:                           AGE=0 (+bump all symbol versions in .map)
-  AC_SUBST(LT_CURRENT, 71)
-  AC_SUBST(LT_REVISION, 1)
-  AC_SUBST(LT_AGE, 41)
+  AC_SUBST(LT_CURRENT, 72)
+  AC_SUBST(LT_REVISION, 0)
+  AC_SUBST(LT_AGE, 42)
 
   AC_SUBST(LT_SSL_CURRENT, 27)
   AC_SUBST(LT_SSL_REVISION, 2)
@@ -86,48 +86,26 @@ AC_MSG_ERROR([[
 
   GNUTLS_REQUIRES_PRIVATE="Requires.private: nettle, hogweed"
 
-  AC_ARG_WITH(nettle-mini,
-    AS_HELP_STRING([--with-nettle-mini], [Link against a mini-nettle (that includes mini-gmp)]),
-      mini_nettle=$withval,
-      mini_nettle=no)
-
   AC_ARG_VAR(GMP_CFLAGS, [C compiler flags for gmp])
   AC_ARG_VAR(GMP_LIBS, [linker flags for gmp])
-  if test "$mini_nettle" != no;then
-    GMP_CFLAGS=""
-    GMP_LIBS=""
-  else
-    if test "x$GMP_LIBS" = "x"; then
-	AC_CHECK_LIB(gmp, __gmpz_cmp, [GMP_LIBS="-lgmp"], [AC_MSG_ERROR([[
+  if test "x$GMP_LIBS" = "x"; then
+    AC_CHECK_LIB(gmp, __gmpz_cmp, [GMP_LIBS="-lgmp"], [AC_MSG_ERROR([[
 ***
 *** gmp was not found.
 ]])])
-    fi
   fi
   AC_SUBST(GMP_CFLAGS)
   AC_SUBST(GMP_LIBS)
 
 LIBTASN1_MINIMUM=4.9
-  AC_ARG_WITH(included-libtasn1,
-    AS_HELP_STRING([--with-included-libtasn1], [use the included libtasn1]),
-      included_libtasn1=$withval,
-      included_libtasn1=no)
-  if test "$included_libtasn1" = "no"; then
-    PKG_CHECK_MODULES(LIBTASN1, [libtasn1 >= $LIBTASN1_MINIMUM], [], [included_libtasn1=yes])
-    if test "$included_libtasn1" = yes; then
-      AC_MSG_ERROR([[
+  PKG_CHECK_MODULES(LIBTASN1, [libtasn1 >= $LIBTASN1_MINIMUM], [], [
+AC_MSG_ERROR([[
   ***
-  *** Libtasn1 $LIBTASN1_MINIMUM was not found. To use the included one, use --with-included-libtasn1
-  ]])
-    fi
-  fi
-  AC_MSG_CHECKING([whether to use the included minitasn1])
-  AC_MSG_RESULT($included_libtasn1)
-  AM_CONDITIONAL(ENABLE_MINITASN1, test "$included_libtasn1" = "yes")
+  *** Libtasn1 $LIBTASN1_MINIMUM was not found.
+]])
+  ])
 
-  if test "$included_libtasn1" = "no"; then
-    GNUTLS_REQUIRES_PRIVATE="${GNUTLS_REQUIRES_PRIVATE}, libtasn1"
-  fi
+  GNUTLS_REQUIRES_PRIVATE="${GNUTLS_REQUIRES_PRIVATE}, libtasn1"
 
   ac_strict_der_time=yes
   AC_MSG_CHECKING([whether to disable strict DER time encodings for backwards compatibility])

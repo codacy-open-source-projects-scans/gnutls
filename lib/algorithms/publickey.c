@@ -32,12 +32,12 @@ typedef struct {
 	gnutls_pk_algorithm_t pk_algorithm;
 	enum encipher_type
 		encipher_type; /* CIPHER_ENCRYPT if this algorithm is to be used
-						 * for encryption, CIPHER_SIGN if signature only,
-						 * CIPHER_IGN if this does not apply at all.
-						 *
-						 * This is useful to certificate cipher suites, which check
-						 * against the certificate key usage bits.
-						 */
+			* for encryption, CIPHER_SIGN if signature only,
+			* CIPHER_IGN if this does not apply at all.
+			*
+			* This is useful to certificate cipher suites, which check
+			* against the certificate key usage bits.
+			*/
 } gnutls_pk_map;
 
 /* This table maps the Key exchange algorithms to
@@ -311,7 +311,7 @@ gnutls_pk_algorithm_t gnutls_pk_get_id(const char *name)
 	const gnutls_pk_entry *p;
 
 	for (p = pk_algorithms; p->name != NULL; p++)
-		if (name && strcmp(p->name, name) == 0) {
+		if (name && streq(p->name, name)) {
 			ret = p->id;
 			break;
 		}
@@ -382,7 +382,7 @@ gnutls_pk_algorithm_t gnutls_oid_to_pk(const char *oid)
 	const gnutls_pk_entry *p;
 
 	for (p = pk_algorithms; p->name != NULL; p++)
-		if (p->oid && strcmp(p->oid, oid) == 0) {
+		if (p->oid && streq(p->oid, oid)) {
 			ret = p->id;
 			break;
 		}
@@ -437,7 +437,7 @@ gnutls_pk_algorithm_t _gnutls_oid_to_pk_and_curve(const char *oid,
 	const gnutls_pk_entry *p;
 
 	for (p = pk_algorithms; p->name != NULL; p++)
-		if (p->oid && strcmp(p->oid, oid) == 0) {
+		if (p->oid && streq(p->oid, oid)) {
 			ret = p->id;
 			if (curve)
 				*curve = p->curve;

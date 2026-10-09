@@ -519,7 +519,7 @@ static gnutls_datum_t wrap_db_fetch(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < TLS_SESSION_CACHE; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0) {
+		    memeq(key.data, cache_db[i].session_id, key.size)) {
 			if (debug)
 				success("resume db fetch... return info\n");
 
@@ -560,7 +560,7 @@ static int wrap_db_delete(void *dbf, gnutls_datum_t key)
 
 	for (i = 0; i < TLS_SESSION_CACHE; i++) {
 		if (key.size == cache_db[i].session_id_size &&
-		    memcmp(key.data, cache_db[i].session_id, key.size) == 0) {
+		    memeq(key.data, cache_db[i].session_id, key.size)) {
 			cache_db[i].session_id_size = 0;
 			cache_db[i].session_data_size = 0;
 

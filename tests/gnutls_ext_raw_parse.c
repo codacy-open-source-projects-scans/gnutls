@@ -93,7 +93,7 @@ static int ext_callback(void *ctx, unsigned tls_id, const unsigned char *data,
 		data += 2;
 		size -= 2;
 
-		assert(memcmp(data, HOSTNAME, strlen(HOSTNAME)) == 0);
+		assert(memeq(data, HOSTNAME, strlen(HOSTNAME)));
 		found_server_name = 1;
 	} else if (tls_id == 5) {
 		found_status_req = 1;

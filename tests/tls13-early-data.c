@@ -335,9 +335,9 @@ static void check_secrets(const struct secret *secrets, size_t count,
 			     expected->secrets[i].secret_read);
 		}
 		if (expected->secrets[i].secret_read &&
-		    memcmp(secrets[i].secret_read,
+		    !memeq(secrets[i].secret_read,
 			   expected->secrets[i].secret_read,
-			   secrets[i].secret_size) != 0) {
+			   secrets[i].secret_size)) {
 			fail("unexpected secret for read\n");
 		}
 		if ((secrets[i].secret_write == NULL) !=
@@ -347,9 +347,9 @@ static void check_secrets(const struct secret *secrets, size_t count,
 			     expected->secrets[i].secret_write);
 		}
 		if (expected->secrets[i].secret_write &&
-		    memcmp(secrets[i].secret_write,
+		    !memeq(secrets[i].secret_write,
 			   expected->secrets[i].secret_write,
-			   secrets[i].secret_size) != 0) {
+			   secrets[i].secret_size)) {
 			fail("unexpected secret for write\n");
 		}
 	}
@@ -582,8 +582,7 @@ static int storage_add(void *ptr, time_t expires, const gnutls_datum_t *key,
 
 	for (i = 0; i < storage->num_entries; i++) {
 		if (key->size == storage->entries[i].size &&
-		    memcmp(storage->entries[i].data, key->data, key->size) ==
-			    0) {
+		    memeq(storage->entries[i].data, key->data, key->size)) {
 			return GNUTLS_E_DB_ENTRY_EXISTS;
 		}
 	}
@@ -762,7 +761,7 @@ static void server(int sds[], const struct fixture *fixture)
 				} else if ((size_t)ret !=
 						   MIN(fixture->early_data.size,
 						       fixture->max_early_data_size) ||
-					   memcmp(buffer,
+					   !memeq(buffer,
 						  fixture->early_data.data,
 						  ret)) {
 					fail("server: early data mismatch\n");

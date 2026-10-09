@@ -51,7 +51,7 @@ For example, see [x509cert-tl.c](tests/x509cert-tl.c).
 # File names:
 
   Files are split to directories according to the subsystem
-they belong to. Examples are x509/, minitasn1/, openpgp/,
+they belong to. Examples are x509/, openpgp/,
 opencdk/ etc. The files in the root directory related
 to the main TLS protocol implementation.
 
@@ -81,6 +81,17 @@ used, they are used to document something that is not obvious, or the protocol
 expectations. Though we haven't followed that rule strictly in the past, it
 should be followed on new code.
 
+# Coding conventions
+
+To improve readability and avoid common mistakes, prefer helper
+functions over raw comparisons when available.
+
+- Use `streq(a, b)` instead of `strcmp(a, b) == 0` or `!strcmp(a, b)`
+  for string equality checks.
+- Use `memeq(a, b, l)` instead of `memcmp(a, b, l) == 0` or `!memcmp(a, b, l)`
+  for equality checks on binary blobs.
+
+This reduces the risk of errors, especially in more complex conditions.
 
 # Function names:
 

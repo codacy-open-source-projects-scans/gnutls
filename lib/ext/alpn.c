@@ -90,7 +90,7 @@ static int _gnutls_alpn_recv_params(gnutls_session_t session,
 
 			for (i = 0; i < priv->size; i++) {
 				if (priv->protocol_size[i] == len1 &&
-				    memcmp(p, priv->protocols[i], len1) == 0) {
+				    memeq(p, priv->protocols[i], len1)) {
 					if (priv->flags &
 					    GNUTLS_ALPN_SERVER_PRECEDENCE) {
 						if (selected_protocol_index >
@@ -126,7 +126,7 @@ static int _gnutls_alpn_recv_params(gnutls_session_t session,
 
 		for (i = 0; i < priv->size; i++) {
 			if (priv->protocol_size[i] == len1 &&
-			    memcmp(p, priv->protocols[i], len1) == 0) {
+			    memeq(p, priv->protocols[i], len1)) {
 				priv->selected_protocol = priv->protocols[i];
 				priv->selected_protocol_size =
 					priv->protocol_size[i];
@@ -164,15 +164,15 @@ static int _gnutls_alpn_send_params(gnutls_session_t session,
 		if (priv->selected_protocol_size == 0)
 			return 0;
 
-		ret = _gnutls_buffer_append_prefix(
-			extdata, 16, priv->selected_protocol_size + 1);
+		ret = _gnutls_buffer_append_uint16(
+			extdata, priv->selected_protocol_size + 1);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
 		total_size += 2;
 
-		ret = _gnutls_buffer_append_data_prefix(
-			extdata, 8, priv->selected_protocol,
+		ret = _gnutls_buffer_append_data_prefix8(
+			extdata, priv->selected_protocol,
 			priv->selected_protocol_size);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
@@ -183,15 +183,15 @@ static int _gnutls_alpn_send_params(gnutls_session_t session,
 		for (i = 0; i < priv->size; i++)
 			t += priv->protocol_size[i] + 1;
 
-		ret = _gnutls_buffer_append_prefix(extdata, 16, t);
+		ret = _gnutls_buffer_append_uint16(extdata, t);
 		if (ret < 0)
 			return gnutls_assert_val(ret);
 
 		total_size += 2;
 
 		for (i = 0; i < priv->size; i++) {
-			ret = _gnutls_buffer_append_data_prefix(
-				extdata, 8, priv->protocols[i],
+			ret = _gnutls_buffer_append_data_prefix8(
+				extdata, priv->protocols[i],
 				priv->protocol_size[i]);
 			if (ret < 0)
 				return gnutls_assert_val(ret);

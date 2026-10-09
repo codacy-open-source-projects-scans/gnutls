@@ -214,7 +214,7 @@ static void test_aead_happy(int algo)
 	if (ret < 0)
 		fail("could not decrypt data: %s\n", gnutls_strerror(ret));
 
-	if (!memcmp(ptext, otext, sizeof(ptext)))
+	if (memeq(ptext, otext, sizeof(ptext)))
 		fail("mismatch of decrypted data\n");
 
 	gnutls_aead_cipher_deinit(ch);

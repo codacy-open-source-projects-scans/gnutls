@@ -69,7 +69,7 @@ void doit(void)
 	if (ret != GNUTLS_SAN_OTHERNAME_XMPP)
 		fail("did not recognize GNUTLS_SAN_OTHERNAME_XMPP");
 
-	if (strcmp(name, id_on_xmppAddr) != 0)
+	if (!streq(name, id_on_xmppAddr))
 		fail("xmppAddr not decoded correctly: %s", name);
 
 	gnutls_free(data.data);

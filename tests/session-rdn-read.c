@@ -69,8 +69,7 @@ static int cert_callback(gnutls_session_t session,
 			fail("CA[%d] size mismatch\n", i);
 		}
 
-		if (memcmp(req_ca_rdn[i].data, ca_dn[i].data, ca_dn[i].size) !=
-		    0) {
+		if (!memeq(req_ca_rdn[i].data, ca_dn[i].data, ca_dn[i].size)) {
 			fail("CA[%d] data mismatch\n", i);
 		}
 	}

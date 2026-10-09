@@ -21,7 +21,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.71])
 
 dnl when updating version also update LT_REVISION in m4/hooks.m4
-AC_INIT([GnuTLS],[3.8.12],[bugs@gnutls.org])
+AC_INIT([GnuTLS],[3.8.13],[bugs@gnutls.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4 src/gl/m4 lib/unistring/m4])
 AC_CANONICAL_HOST
@@ -47,6 +47,7 @@ AM_PROG_CC_C_O
 AC_PROG_MKDIR_P
 AC_PROG_YACC
 AC_PROG_SED
+AC_PROG_FGREP
 
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -1113,10 +1114,7 @@ fi
 AC_DEFINE_UNQUOTED([TROUSERS_LIB], ["$ac_trousers_lib"], [the location of the trousers library])
 AC_SUBST(TROUSERS_LIB)
 
-
-# For minitasn1.
 AC_CHECK_SIZEOF(unsigned long int, 4)
-AC_CHECK_SIZEOF(unsigned int, 4)
 AC_CHECK_SIZEOF(time_t, 4)
 
 AC_ARG_WITH(zlib,
@@ -1530,7 +1528,6 @@ AC_CONFIG_FILES([
   lib/gnutls.pc
   lib/includes/Makefile
   lib/includes/gnutls/gnutls.h
-  lib/minitasn1/Makefile
   lib/nettle/Makefile
   lib/pkcs11/Makefile
   lib/x509/Makefile
@@ -1561,9 +1558,7 @@ AC_MSG_NOTICE([summary of build options:
   Valgrind:             $opt_valgrind_tests ${VALGRIND}
   CFlags:               ${CFLAGS}
   Library types:        Shared=${enable_shared}, Static=${enable_static}
-  Local libtasn1:       ${included_libtasn1}
   Local unistring:      ${included_unistring}
-  Use nettle-mini:      ${mini_nettle}
   Documentation:        ${enable_doc} (manpages: ${enable_manpages})
 ])
 

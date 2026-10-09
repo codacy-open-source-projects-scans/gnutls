@@ -55,7 +55,7 @@ static int compare(gnutls_datum_t *d1, gnutls_datum_t *d2)
 
 	if (t1.size != t2.size)
 		return -1;
-	if (memcmp(t1.data, t2.data, t1.size) != 0)
+	if (!memeq(t1.data, t2.data, t1.size))
 		return -1;
 	return 0;
 }

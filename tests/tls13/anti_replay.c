@@ -54,8 +54,7 @@ static int storage_add(void *ptr, time_t expires, const gnutls_datum_t *key,
 
 	for (i = 0; i < storage->num_entries; i++) {
 		if (key->size == storage->entries[i].size &&
-		    memcmp(storage->entries[i].data, key->data, key->size) ==
-			    0) {
+		    memeq(storage->entries[i].data, key->data, key->size)) {
 			return GNUTLS_E_DB_ENTRY_EXISTS;
 		}
 	}

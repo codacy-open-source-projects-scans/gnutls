@@ -310,7 +310,7 @@ static int check_mgf1(asn1_node root, const char *name,
 	}
 
 	/* Error out if algorithm other than mgf1 is specified */
-	if (strcmp(oid, PKIX1_RSA_PSS_MGF1_OID) != 0) {
+	if (!streq(oid, PKIX1_RSA_PSS_MGF1_OID)) {
 		gnutls_assert();
 		_gnutls_debug_log("Unknown mask algorithm: %s\n", oid);
 		return gnutls_assert_val(GNUTLS_E_UNKNOWN_ALGORITHM);
@@ -480,7 +480,7 @@ static int read_rsa_oaep_label(asn1_node root, const char *name,
 	}
 
 	/* Error out if algorithm other than mgf1 is specified */
-	if (strcmp(oid, PKIX1_RSA_OAEP_P_SPECIFIED_OID) != 0) {
+	if (!streq(oid, PKIX1_RSA_OAEP_P_SPECIFIED_OID)) {
 		gnutls_assert();
 		_gnutls_debug_log("Unknown pSourceFunc algorithm: %s\n", oid);
 		return GNUTLS_E_UNKNOWN_ALGORITHM;

@@ -177,7 +177,7 @@ static int cmp(const char *name, int line, gnutls_datum_t *v1,
 		exit(1);
 	}
 
-	if (memcmp(v1->data, v2, size) != 0) {
+	if (!memeq(v1->data, v2, size)) {
 		fprintf(stderr, "error in %s:%d\n", name, line);
 		dump("expected", v2, size);
 		dump("got", v1->data, v1->size);
@@ -207,7 +207,7 @@ static int cmp_no_lz(const char *name, int line, gnutls_datum_t *v1,
 		exit(1);
 	}
 
-	if (memcmp(v1->data, v2.data, v2.size) != 0) {
+	if (!memeq(v1->data, v2.data, v2.size)) {
 		fprintf(stderr, "error in %s:%d\n", name, line);
 		dump("expected", v2.data, v2.size);
 		dump("got", v1->data, v1->size);

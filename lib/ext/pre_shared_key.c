@@ -334,22 +334,22 @@ int gnutls_psk_format_imported_identity(const gnutls_datum_t *identity,
 	_gnutls_buffer_init(&buf);
 
 	/* external_identity */
-	ret = _gnutls_buffer_append_data_prefix(&buf, 16, identity->data,
-						identity->size);
+	ret = _gnutls_buffer_append_data_prefix16(&buf, identity->data,
+						  identity->size);
 	if (ret < 0) {
 		goto error;
 	}
 
 	/* context */
-	ret = _gnutls_buffer_append_data_prefix(&buf, 16, context->data,
-						context->size);
+	ret = _gnutls_buffer_append_data_prefix16(&buf, context->data,
+						  context->size);
 	if (ret < 0) {
 		goto error;
 	}
 
 	/* target_protocol */
 	target_protocol = ver->major << 8 | ver->minor;
-	ret = _gnutls_buffer_append_prefix(&buf, 16, target_protocol);
+	ret = _gnutls_buffer_append_uint16(&buf, target_protocol);
 	if (ret < 0) {
 		goto error;
 	}
@@ -366,7 +366,7 @@ int gnutls_psk_format_imported_identity(const gnutls_datum_t *identity,
 		ret = gnutls_assert_val(GNUTLS_E_UNKNOWN_HASH_ALGORITHM);
 		goto error;
 	}
-	ret = _gnutls_buffer_append_prefix(&buf, 16, target_kdf);
+	ret = _gnutls_buffer_append_uint16(&buf, target_kdf);
 	if (ret < 0) {
 		goto error;
 	}
@@ -421,7 +421,6 @@ static int parse_imported_identity(const gnutls_datum_t *imported_identity,
 	uint16_t target_protocol;
 	uint16_t target_kdf;
 	gnutls_buffer_st buf;
-	size_t size;
 	int ret;
 
 	_gnutls_ro_buffer_from_datum(&buf, (gnutls_datum_t *)imported_identity);
@@ -439,20 +438,18 @@ static int parse_imported_identity(const gnutls_datum_t *imported_identity,
 	}
 
 	/* target_protocol */
-	ret = _gnutls_buffer_pop_prefix16(&buf, &size, 0);
+	ret = _gnutls_buffer_pop_uint16(&buf, &target_protocol);
 	if (ret < 0) {
 		return ret;
 	}
-	target_protocol = size;
 	*version = _gnutls_version_get((target_protocol >> 8) & 0xFF,
 				       target_protocol & 0xFF);
 
 	/* target_kdf */
-	ret = _gnutls_buffer_pop_prefix16(&buf, &size, 0);
+	ret = _gnutls_buffer_pop_uint16(&buf, &target_kdf);
 	if (ret < 0) {
 		return ret;
 	}
-	target_kdf = size;
 	switch (target_kdf) {
 	case 0x0001:
 		*hash = GNUTLS_DIG_SHA256;
@@ -497,7 +494,7 @@ static int client_send_params(gnutls_session_t session, gnutls_buffer_t extdata,
 
 	/* placeholder to be filled later */
 	spos = extdata->length;
-	ret = _gnutls_buffer_append_prefix(extdata, 16, 0);
+	ret = _gnutls_buffer_append_uint16(extdata, 0);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
@@ -537,15 +534,15 @@ static int client_send_params(gnutls_session_t session, gnutls_buffer_t extdata,
 		/* Calculate obfuscated ticket age, in milliseconds, mod 2^32 */
 		ob_ticket_age = ticket_age + ticket->age_add;
 
-		if ((ret = _gnutls_buffer_append_data_prefix(
-			     extdata, 16, ticket->ticket.data,
+		if ((ret = _gnutls_buffer_append_data_prefix16(
+			     extdata, ticket->ticket.data,
 			     ticket->ticket.size)) < 0) {
 			gnutls_assert();
 			goto cleanup;
 		}
 
 		/* Now append the obfuscated ticket age */
-		if ((ret = _gnutls_buffer_append_prefix(extdata, 32,
+		if ((ret = _gnutls_buffer_append_uint32(extdata,
 							ob_ticket_age)) < 0) {
 			gnutls_assert();
 			goto cleanup;
@@ -654,14 +651,14 @@ ignore_ticket:
 			goto cleanup;
 		}
 
-		if ((ret = _gnutls_buffer_append_data_prefix(
-			     extdata, 16, username.data, username.size)) < 0) {
+		if ((ret = _gnutls_buffer_append_data_prefix16(
+			     extdata, username.data, username.size)) < 0) {
 			gnutls_assert();
 			goto cleanup;
 		}
 
 		/* Now append the obfuscated ticket age */
-		if ((ret = _gnutls_buffer_append_prefix(extdata, 32, 0)) < 0) {
+		if ((ret = _gnutls_buffer_append_uint32(extdata, 0)) < 0) {
 			gnutls_assert();
 			goto cleanup;
 		}
@@ -691,7 +688,7 @@ ignore_ticket:
 
 	next_idx = 0;
 
-	ret = _gnutls_buffer_append_prefix(extdata, 16, binders_len);
+	ret = _gnutls_buffer_append_uint16(extdata, binders_len);
 	if (ret < 0) {
 		gnutls_assert_val(ret);
 		goto cleanup;
@@ -729,8 +726,8 @@ ignore_ticket:
 		next_idx++;
 
 		/* Add the binder */
-		ret = _gnutls_buffer_append_data_prefix(
-			extdata, 8, binder_value, prf_res->output_size);
+		ret = _gnutls_buffer_append_data_prefix8(extdata, binder_value,
+							 prf_res->output_size);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;
@@ -771,8 +768,8 @@ ignore_ticket:
 		next_idx++;
 
 		/* Add the binder */
-		ret = _gnutls_buffer_append_data_prefix(
-			extdata, 8, binder_value, prf_psk->output_size);
+		ret = _gnutls_buffer_append_data_prefix8(extdata, binder_value,
+							 prf_psk->output_size);
 		if (ret < 0) {
 			gnutls_assert();
 			goto cleanup;
@@ -798,7 +795,7 @@ static int server_send_params(gnutls_session_t session, gnutls_buffer_t extdata)
 	if (!(session->internals.hsk_flags & HSK_PSK_SELECTED))
 		return 0;
 
-	ret = _gnutls_buffer_append_prefix(extdata, 16,
+	ret = _gnutls_buffer_append_uint16(extdata,
 					   session->key.binders[0].idx);
 	if (ret < 0)
 		return gnutls_assert_val(ret);

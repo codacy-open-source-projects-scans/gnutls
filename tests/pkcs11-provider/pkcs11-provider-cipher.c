@@ -74,7 +74,7 @@ static int test_cipher(const char *alg_str, int alg)
 		return ret;
 	}
 
-	if (memcmp(data, ptext, sizeof(ptext)) != 0) {
+	if (!memeq(data, ptext, sizeof(ptext))) {
 		fprintf(stderr, "Decrypted data don't match original\n");
 		return -1;
 	}
@@ -143,8 +143,7 @@ static int test_aead(const char *alg_str, int alg)
 		return ret;
 	}
 
-	if (out_len != sizeof(ptext) ||
-	    memcmp(out, ptext, sizeof(ptext)) != 0) {
+	if (out_len != sizeof(ptext) || !memeq(out, ptext, sizeof(ptext))) {
 		fprintf(stderr, "mismatch of decrypted data\n");
 		return -1;
 	}

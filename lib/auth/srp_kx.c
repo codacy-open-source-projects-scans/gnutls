@@ -188,8 +188,8 @@ int _gnutls_gen_srp_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 
 	/* copy N (mod n) 
 	 */
-	ret = _gnutls_buffer_append_data_prefix(data, 16, pwd_entry->n.data,
-						pwd_entry->n.size);
+	ret = _gnutls_buffer_append_data_prefix16(data, pwd_entry->n.data,
+						  pwd_entry->n.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -197,8 +197,8 @@ int _gnutls_gen_srp_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 
 	/* copy G (generator) to data 
 	 */
-	ret = _gnutls_buffer_append_data_prefix(data, 16, pwd_entry->g.data,
-						pwd_entry->g.size);
+	ret = _gnutls_buffer_append_data_prefix16(data, pwd_entry->g.data,
+						  pwd_entry->g.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -206,8 +206,8 @@ int _gnutls_gen_srp_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 
 	/* copy the salt 
 	 */
-	ret = _gnutls_buffer_append_data_prefix(data, 8, pwd_entry->salt.data,
-						pwd_entry->salt.size);
+	ret = _gnutls_buffer_append_data_prefix8(data, pwd_entry->salt.data,
+						 pwd_entry->salt.size);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -216,7 +216,7 @@ int _gnutls_gen_srp_server_kx(gnutls_session_t session, gnutls_buffer_st *data)
 	/* Copy the B value
 	 */
 
-	ret = _gnutls_buffer_append_mpi(data, 16, B, 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(data, B);
 	if (ret < 0) {
 		gnutls_assert();
 		goto cleanup;
@@ -317,7 +317,7 @@ int _gnutls_gen_srp_client_kx(gnutls_session_t session, gnutls_buffer_st *data)
 		return ret;
 	}
 
-	ret = _gnutls_buffer_append_mpi(data, 16, A, 0);
+	ret = _gnutls_buffer_append_mpi_prefix16(data, A);
 	if (ret < 0)
 		return gnutls_assert_val(ret);
 
@@ -330,10 +330,9 @@ int _gnutls_gen_srp_client_kx(gnutls_session_t session, gnutls_buffer_st *data)
 
 /* just read A and put it to session */
 int _gnutls_proc_srp_client_kx(gnutls_session_t session, uint8_t *data,
-			       size_t _data_size)
+			       size_t data_size)
 {
 	ssize_t _n_A;
-	ssize_t data_size = _data_size;
 	int ret;
 
 	DECR_LEN(data_size, 2);
@@ -681,21 +680,21 @@ const gnutls_datum_t gnutls_srp_8192_group_generator = {
 static int check_g_n(const uint8_t *g, size_t n_g, const uint8_t *n, size_t n_n)
 {
 	if (n_n == sizeof(srp_params_8192)) {
-		if (memcmp(srp_params_8192, n, n_n) == 0 && n_g == 1 &&
+		if (memeq(srp_params_8192, n, n_n) && n_g == 1 &&
 		    g[0] == srp8192_generator)
 			return 0;
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}
 
 	if (n_n == sizeof(srp_params_4096)) {
-		if (memcmp(srp_params_4096, n, n_n) == 0 && n_g == 1 &&
+		if (memeq(srp_params_4096, n, n_n) && n_g == 1 &&
 		    g[0] == srp3072_generator)
 			return 0;
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
 	}
 
 	if (n_n == sizeof(srp_params_3072)) {
-		if (memcmp(srp_params_3072, n, n_n) == 0 && n_g == 1 &&
+		if (memeq(srp_params_3072, n, n_n) && n_g == 1 &&
 		    g[0] == srp3072_generator)
 			return 0;
 		return gnutls_assert_val(GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER);
@@ -707,18 +706,15 @@ static int check_g_n(const uint8_t *g, size_t n_g, const uint8_t *n, size_t n_n)
 		return GNUTLS_E_RECEIVED_ILLEGAL_PARAMETER;
 	}
 
-	if (n_n == sizeof(srp_params_1024) &&
-	    memcmp(srp_params_1024, n, n_n) == 0) {
+	if (n_n == sizeof(srp_params_1024) && memeq(srp_params_1024, n, n_n)) {
 		return 0;
 	}
 
-	if (n_n == sizeof(srp_params_1536) &&
-	    memcmp(srp_params_1536, n, n_n) == 0) {
+	if (n_n == sizeof(srp_params_1536) && memeq(srp_params_1536, n, n_n)) {
 		return 0;
 	}
 
-	if (n_n == sizeof(srp_params_2048) &&
-	    memcmp(srp_params_2048, n, n_n) == 0) {
+	if (n_n == sizeof(srp_params_2048) && memeq(srp_params_2048, n, n_n)) {
 		return 0;
 	}
 
@@ -729,7 +725,7 @@ static int check_g_n(const uint8_t *g, size_t n_g, const uint8_t *n, size_t n_n)
 /* receive the key exchange message ( n, g, s, B)
  */
 int _gnutls_proc_srp_server_kx(gnutls_session_t session, uint8_t *data,
-			       size_t _data_size)
+			       size_t data_size)
 {
 	uint8_t n_s;
 	uint16_t n_g, n_n, n_b;
@@ -741,7 +737,6 @@ int _gnutls_proc_srp_server_kx(gnutls_session_t session, uint8_t *data,
 	int i, ret;
 	uint8_t hd[SRP_MAX_HASH_SIZE];
 	char *username, *password;
-	ssize_t data_size = _data_size;
 	gnutls_srp_client_credentials_t cred;
 	gnutls_ext_priv_data_t epriv;
 	srp_ext_st *priv;
@@ -868,8 +863,8 @@ int _gnutls_proc_srp_server_kx(gnutls_session_t session, uint8_t *data,
 	}
 
 	return i; /* return the processed data
-				 * needed in auth_srp_rsa.
-				 */
+		   * needed in auth_srp_rsa.
+		   */
 }
 
 #endif /* ENABLE_SRP */

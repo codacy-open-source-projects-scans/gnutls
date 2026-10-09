@@ -112,7 +112,7 @@ static void dump(const char *name, const uint8_t *data, unsigned data_size)
 			gnutls_perror(ret);                                            \
 			exit(1);                                                       \
 		}                                                                      \
-		if (memcmp(key_material, exp, size) != 0) {                            \
+		if (!memeq(key_material, exp, size)) {                                 \
 			fprintf(stderr,                                                \
 				"gnutls_prf_rfc5705: output doesn't match for '%s'\n", \
 				label);                                                \
@@ -132,7 +132,7 @@ static void dump(const char *name, const uint8_t *data, unsigned data_size)
 			gnutls_perror(ret);                                    \
 			exit(1);                                               \
 		}                                                              \
-		if (memcmp(key_material, exp, size) != 0) {                    \
+		if (!memeq(key_material, exp, size)) {                         \
 			fprintf(stderr,                                        \
 				"gnutls_prf: output doesn't match for '%s'\n", \
 				label);                                        \

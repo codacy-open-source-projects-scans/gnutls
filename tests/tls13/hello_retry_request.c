@@ -119,8 +119,8 @@ static int hello_callback(gnutls_session_t session, unsigned int htype,
 			}
 
 			if (session_id_len != ctx->session_id_len ||
-			    memcmp(session_id, ctx->session_id,
-				   session_id_len) != 0) {
+			    !memeq(session_id, ctx->session_id,
+				   session_id_len)) {
 				fail("different legacy_session_id is sent after HRR\n");
 			}
 		}

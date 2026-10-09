@@ -93,8 +93,8 @@ void doit(void)
 			     gnutls_strerror(ret));
 		}
 
-		if (memcmp(empty, buf + sizeof(buf) - sizeof(empty) - 1,
-			   sizeof(empty)) == 0) {
+		if (memeq(empty, buf + sizeof(buf) - sizeof(empty) - 1,
+			  sizeof(empty))) {
 			fail("_rnd_get_system_entropy: did not fill buffer\n");
 		}
 	}
